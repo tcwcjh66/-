@@ -1,0 +1,22 @@
+{
+	"appId": "com.tiancaiwei.app",
+	"appName": "天才威",
+	"webDir": "www",
+	"ios": {
+		"contentInset": "never",
+		"preferredContentMode": "mobile",
+		"backgroundColor": "#f3f1fd"
+	},
+	"plugins": {
+		"StatusBar": {
+			"style": "DARK",
+			"backgroundColor": "#f3f1fd"
+		}
+	},
+	"packageClassList": [
+		"AppPlugin",
+		"HapticsPlugin",
+		"SharePlugin",
+		"StatusBarPlugin"
+	]
+}
