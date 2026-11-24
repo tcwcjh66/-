@@ -1,1 +1,61 @@
-name: Build iPhone IPAon:  push:    branches: [ main ]  workflow_dispatch:jobs:  build:    runs-on: macos-13    timeout-minutes: 40    steps:      - name: Checkout        uses: actions/checkout@v4      - name: Setup Node        uses: actions/setup-node@v4        with:          node-version: '20'      - name: Install JS deps        run: npm install --no-audit --no-fund      - name: Sync Capacitor iOS        run: npx cap sync ios      - name: Register local Health plugin        run: python3 scripts/postsync.py      - name: Install CocoaPods deps        run: |          cd ios/App          pod install --repo-update      - name: Build unsigned archive        run: |          cd ios/App          xcodebuild -workspace App.xcworkspace \            -scheme App \            -configuration Release \            -sdk iphoneos \            -archivePath "$GITHUB_WORKSPACE/build/App.xcarchive" \            CODE_SIGN_IDENTITY="" \            CODE_SIGNING_REQUIRED=NO \            CODE_SIGNING_ALLOWED=NO \            ONLY_ACTIVE_ARCH=NO \            archive      - name: Package IPA        run: |          mkdir -p "$GITHUB_WORKSPACE/build/Payload"          cp -R "$GITHUB_WORKSPACE/build/App.xcarchive/Products/Applications/App.app" "$GITHUB_WORKSPACE/build/Payload/"          cd "$GITHUB_WORKSPACE/build"          zip -qry TianCaiWei-unsigned.ipa Payload      - name: Upload IPA        uses: actions/upload-artifact@v4        with:          name: TianCaiWei-unsigned-ipa          path: build/TianCaiWei-unsigned.ipa          retention-days: 30
+name: Build iPhone IPA
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-13
+    timeout-minutes: 40
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install JS deps
+        run: npm install --no-audit --no-fund
+
+      - name: Sync Capacitor iOS
+        run: npx cap sync ios
+
+      - name: Register local Health plugin
+        run: python3 scripts/postsync.py
+
+      - name: Install CocoaPods deps
+        run: |
+          cd ios/App
+          pod install --repo-update
+
+      - name: Build unsigned archive
+        run: |
+          cd ios/App
+          xcodebuild -workspace App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -sdk iphoneos \
+            -archivePath "$GITHUB_WORKSPACE/build/App.xcarchive" \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            ONLY_ACTIVE_ARCH=NO \
+            archive
+
+      - name: Package IPA
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/build/Payload"
+          cp -R "$GITHUB_WORKSPACE/build/App.xcarchive/Products/Applications/App.app" "$GITHUB_WORKSPACE/build/Payload/"
+          cd "$GITHUB_WORKSPACE/build"
+          zip -qry TianCaiWei-unsigned.ipa Payload
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: TianCaiWei-unsigned-ipa
+          path: build/TianCaiWei-unsigned.ipa
+          retention-days: 30
