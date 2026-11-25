@@ -273,6 +273,8 @@ final class TWStore: ObservableObject {
 
     // 自定义食物
     @Published var customFoods: [CustomFood] = []
+    /// 按日期存的历史餐食明细（保留最近 40 天），供「复制昨天」用
+    @Published var mealHistory: [String: [MealEntry]] = [:]
 
     private let d = UserDefaults.standard
     private var saveWork: DispatchWorkItem?
@@ -321,6 +323,7 @@ final class TWStore: ObservableObject {
         static let dt = "tw.dt.v2"
         static let pgoal = "tw.pgoal.v2"
         static let wt = "tw.wt.v2"
+        static let mhist = "tw.mhist.v2"
         static let wsync = "tw.wsync.v2"
         static let wcount = "tw.wcount.v2"
         static let mindmin = "tw.mindmin.v2"
@@ -372,6 +375,7 @@ final class TWStore: ObservableObject {
         fat += m.fat
         veg += m.veg
         moveKcal += m.kcal * 0.06
+        syncMealHistory()
         persistSoon()
     }
 
@@ -409,6 +413,7 @@ final class TWStore: ObservableObject {
         fat = max(0, fat - m.fat)
         veg = max(0, veg - m.veg)
         moveKcal = max(0, moveKcal - m.kcal * 0.06)
+        syncMealHistory()
         persistSoon()
     }
 
@@ -665,6 +670,7 @@ final class TWStore: ObservableObject {
         fat = 0
         veg = 0
         meals = []
+        mealHistory = [:]
         mood = "ok"
         sessionStart = nil
         sessionSets = 0
@@ -747,7 +753,58 @@ final class TWStore: ObservableObject {
         carb = 0
         fat = 0
         veg = 0
+        syncMealHistory()
         persistSoon()
+    }
+
+    // MARK: - 复制昨天
+
+    private func todayKey() -> String {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        return f.string(from: Date())
+    }
+
+    /// 把今天的餐食快照写进历史
+    private func syncMealHistory() {
+        let key = todayKey()
+        if meals.isEmpty {
+            mealHistory[key] = nil
+        } else {
+            mealHistory[key] = meals
+        }
+        if mealHistory.count > 40 {
+            let sorted = mealHistory.keys.sorted()
+            for k in sorted.prefix(mealHistory.count - 40) { mealHistory.removeValue(forKey: k) }
+        }
+    }
+
+    /// 昨天的某一餐（没记录返回空）
+    func yesterdayMeals(slot: String) -> [MealEntry] {
+        guard let y = Calendar.current.date(byAdding: .day, value: -1, to: Date()) else { return [] }
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        let key = f.string(from: y)
+        let list = mealHistory[key] ?? []
+        guard !slot.isEmpty else { return list }
+        return list.filter { ($0.slot ?? "午餐") == slot }
+    }
+
+    /// 把昨天同餐次复制进今天，新 id。返回复制了几条。
+    @discardableResult
+    func copyYesterday(slot: String = "全部") -> Int {
+        guard let y = Calendar.current.date(byAdding: .day, value: -1, to: Date()) else { return 0 }
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        let all = mealHistory[f.string(from: y)] ?? []
+        let src = slot == "全部" ? all : all.filter { ($0.slot ?? "午餐") == slot }
+        guard !src.isEmpty else { return 0 }
+        for m in src {
+            addMeal(MealEntry(name: m.name, grams: m.grams, kcal: m.kcal,
+                              protein: m.protein, carb: m.carb, fat: m.fat, veg: m.veg,
+                              slot: m.slot ?? slot, time: Date()))
+        }
+        return src.count
     }
 
     func setMood(_ m: String) {
@@ -922,6 +979,9 @@ final class TWStore: ObservableObject {
         if let v = try? JSONEncoder().encode(customFoods) {
             d.set(v, forKey: Key.cfoods)
         }
+        if let v = try? JSONEncoder().encode(mealHistory) {
+            d.set(v, forKey: Key.mhist)
+        }
         d.set(weightGoal, forKey: Key.wgoal)
         d.set(chestCM, forKey: Key.chest)
         d.set(armCM, forKey: Key.arm)
@@ -978,6 +1038,10 @@ final class TWStore: ObservableObject {
         if let v = d.data(forKey: Key.meals),
            let decoded = try? JSONDecoder().decode([MealEntry].self, from: v) {
             meals = decoded
+        }
+        if let v = d.data(forKey: Key.mhist),
+           let decoded = try? JSONDecoder().decode([String: [MealEntry]].self, from: v) {
+            mealHistory = decoded
         }
         if let v = d.data(forKey: Key.logs),
            let decoded = try? JSONDecoder().decode([DayLog].self, from: v) {

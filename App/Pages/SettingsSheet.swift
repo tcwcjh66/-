@@ -9,6 +9,7 @@ struct SettingsSheet: View {
     @State private var showCopied = false
     @State private var showGoal = false
     @State private var exportURL: URL?
+    @State private var notifyDenied = false
 
     private var versionText: String {
         let v = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "3.0"
@@ -45,6 +46,7 @@ struct SettingsSheet: View {
                     }
 
                     overviewCard
+                    notifyCard
                     goalCard
                     dataCard
                     aboutCard
@@ -58,7 +60,10 @@ struct SettingsSheet: View {
                 .presentationDetents([.large])
                 .presentationCornerRadius(28)
         }
-        .onAppear { exportURL = store.exportJSONFile() }
+        .onAppear {
+            exportURL = store.exportJSONFile()
+            Task { notifyDenied = await TWNotify.denied() }
+        }
         .confirmationDialog("确定清空全部数据？", isPresented: $showReset, titleVisibility: .visible) {
             Button("清空", role: .destructive) { store.resetAll() }
             Button("取消", role: .cancel) {}
@@ -85,6 +90,83 @@ struct SettingsSheet: View {
         }
         .padding(16)
         .twGlass()
+    }
+
+    private var notifyCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("提醒")
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(TWColor.ink)
+                Spacer()
+                if notifyDenied {
+                    Button {
+                        if let url = URL(string: UIApplication.openSettingsURLString) {
+                            UIApplication.shared.open(url)
+                        }
+                    } label: {
+                        Text("去系统开启")
+                            .font(.system(size: 11.5, weight: .bold))
+                            .foregroundStyle(TWColor.coral)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+
+            ForEach(TWNotify.Kind.allCases) { k in
+                HStack(spacing: 11) {
+                    Image(systemName: k.icon)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(TWNotify.isOn(k) ? TWColor.purple : TWColor.ink3)
+                        .frame(width: 32, height: 32)
+                        .background {
+                            RoundedRectangle(cornerRadius: 9, style: .continuous)
+                                .fill((TWNotify.isOn(k) ? TWColor.purple : TWColor.ink3).opacity(0.12))
+                        }
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(k.label)
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(TWColor.ink)
+                        Text(k.detail)
+                            .font(.system(size: 11))
+                            .foregroundStyle(TWColor.ink3)
+                    }
+                    Spacer(minLength: 0)
+                    Toggle("", isOn: notifyBinding(k))
+                        .labelsHidden()
+                        .tint(TWColor.purple)
+                }
+                .padding(.vertical, 3)
+
+                if k != TWNotify.Kind.allCases.last {
+                    Rectangle().fill(TWColor.ink3.opacity(0.10)).frame(height: 0.6)
+                }
+            }
+
+            Text("本地通知，不联网。关了就不会再响。")
+                .font(.system(size: 11))
+                .foregroundStyle(TWColor.ink3)
+        }
+        .padding(16)
+        .twGlass()
+    }
+
+    private func notifyBinding(_ k: TWNotify.Kind) -> Binding<Bool> {
+        Binding(
+            get: { TWNotify.isOn(k) },
+            set: { on in
+                TWNotify.set(k, on)
+                if on {
+                    Task {
+                        let ok = await TWNotify.requestPermission()
+                        await MainActor.run {
+                            if !ok { notifyDenied = true }
+                        }
+                    }
+                }
+                TWNotify.reschedule()
+            }
+        )
     }
 
     private var goalCard: some View {

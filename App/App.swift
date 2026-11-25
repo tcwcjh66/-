@@ -8,11 +8,11 @@ struct TianCaiWeiApp: App {
         WindowGroup {
             RootView()
                 .environmentObject(store)
-                .preferredColorScheme(.light)
                 .tint(TWColor.purple)
                 .onAppear {
                     PhoneLink.shared.store = store
                     PhoneLink.shared.pushToWatch()
+                    TWNotify.reschedule()
                 }
         }
     }

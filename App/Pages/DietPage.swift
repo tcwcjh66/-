@@ -10,6 +10,7 @@ struct DietPage: View {
     @State private var hits: [FoodHit] = []
     @State private var showResult = false
     @State private var showAI = false
+    @State private var copiedCount: Int?
 
     private let slots = ["早餐", "午餐", "晚餐", "加餐"]
 
@@ -337,6 +338,29 @@ struct DietPage: View {
                     .font(.system(size: 14.5, weight: .semibold))
                     .foregroundStyle(TWColor.ink2)
                 Spacer()
+                Button {
+                    UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                    let n = store.copyYesterday()
+                    withAnimation(.snappy(duration: 0.2)) { copiedCount = n }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                        withAnimation(.snappy(duration: 0.2)) { copiedCount = nil }
+                    }
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: copiedCount == nil ? "arrow.uturn.down" : (copiedCount ?? 0) > 0 ? "checkmark" : "xmark")
+                            .font(.system(size: 10, weight: .bold))
+                        Text(copiedCount == nil
+                             ? "复制昨天"
+                             : ((copiedCount ?? 0) > 0 ? "已搬 \(copiedCount ?? 0) 条" : "昨天没记录"))
+                            .font(.system(size: 12, weight: .bold))
+                    }
+                    .foregroundStyle((copiedCount ?? 0) > 0 ? TWColor.mint : TWColor.purple)
+                    .padding(.horizontal, 9)
+                    .padding(.vertical, 5)
+                    .background { Capsule().fill(TWColor.purple.opacity(0.10)) }
+                }
+                .buttonStyle(.plain)
+
                 if !store.meals.isEmpty {
                     Button("清空") { store.resetToday() }
                         .font(.system(size: 12.5, weight: .semibold))
