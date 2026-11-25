@@ -9,6 +9,7 @@ struct DietPage: View {
     @State private var analyzing = false
     @State private var hits: [FoodHit] = []
     @State private var showResult = false
+    @State private var showAI = false
 
     private let slots = ["早餐", "午餐", "晚餐", "加餐"]
 
@@ -54,6 +55,7 @@ struct DietPage: View {
     var body: some View {
         VStack(spacing: 16) {
             PageHeader(title: "饮食", subtitle: "今日摄入 · 拍照识别")
+            aiCard
             kcalCard
             macroCard
             addCard
@@ -85,6 +87,11 @@ struct DietPage: View {
             .presentationDetents([.large])
             .presentationCornerRadius(28)
         }
+        .sheet(isPresented: $showAI) {
+            AIChatSheet()
+                .presentationDetents([.large])
+                .presentationCornerRadius(28)
+        }
         .onChange(of: pick) { _, newValue in
             guard let newValue else { return }
             analyzing = true
@@ -102,6 +109,44 @@ struct DietPage: View {
                 }
             }
         }
+    }
+
+    private var aiCard: some View {
+        Button {
+            UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+            showAI = true
+        } label: {
+            HStack(spacing: 11) {
+                ZStack {
+                    Circle()
+                        .fill(LinearGradient(colors: [TWColor.purple, TWColor.mintSoft],
+                                             startPoint: .topLeading, endPoint: .bottomTrailing))
+                        .frame(width: 40, height: 40)
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(.white)
+                }
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("问 AI 教练")
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundStyle(TWColor.ink)
+                    Text(AIClient.shared.ready
+                         ? "\(AIClient.shared.provider.label) · 结合你今天的数据回答"
+                         : "本地引擎可用 · 接上 Key 换成大模型")
+                        .font(.system(size: 11.5))
+                        .foregroundStyle(TWColor.ink3)
+                        .lineLimit(1)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(TWColor.ink3)
+            }
+            .padding(14)
+            .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .twGlass()
     }
 
     private var kcalCard: some View {
@@ -627,6 +672,7 @@ struct ShotResultSheet: View {
     var onAdd: (FoodHit) -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var selected: Set<UUID> = []
+    @State private var showAI = false
 
     private let slots = ["早餐", "午餐", "晚餐", "加餐"]
     @State private var slot: String = ""
@@ -713,24 +759,46 @@ struct ShotResultSheet: View {
                     .padding(.top, 12)
                 }
 
-                Button {
-                    for h in hits where selected.contains(h.id) {
-                        onAdd(h)
-                    }
-                    dismiss()
-                } label: {
-                    Text("记入\(activeSlot)")
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
+                HStack(spacing: 9) {
+                    Button {
+                        UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                        showAI = true
+                    } label: {
+                        HStack(spacing: 5) {
+                            Image(systemName: "sparkles")
+                                .font(.system(size: 13, weight: .bold))
+                            Text("问 AI")
+                                .font(.system(size: 14, weight: .bold))
+                        }
+                        .foregroundStyle(TWColor.purple)
+                        .padding(.horizontal, 15)
                         .padding(.vertical, 14)
                         .background {
                             RoundedRectangle(cornerRadius: 15, style: .continuous)
-                                .fill(LinearGradient(colors: [TWColor.purple, TWColor.violet],
-                                                     startPoint: .topLeading, endPoint: .bottomTrailing))
+                                .fill(Color.white.opacity(0.66))
                         }
+                    }
+                    .buttonStyle(.plain)
+
+                    Button {
+                        for h in hits where selected.contains(h.id) {
+                            onAdd(h)
+                        }
+                        dismiss()
+                    } label: {
+                        Text("记入\(activeSlot)")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background {
+                                RoundedRectangle(cornerRadius: 15, style: .continuous)
+                                    .fill(LinearGradient(colors: [TWColor.purple, TWColor.violet],
+                                                         startPoint: .topLeading, endPoint: .bottomTrailing))
+                            }
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
                 .padding(.horizontal, 18)
                 .padding(.bottom, 24)
             }
@@ -740,6 +808,20 @@ struct ShotResultSheet: View {
             selected = Set(hits.map { $0.id })
             if slot.isEmpty { slot = defaultSlot }
         }
+        .sheet(isPresented: $showAI) {
+            AIChatSheet(seed: aiSeed)
+                .presentationDetents([.large])
+                .presentationCornerRadius(28)
+        }
+    }
+
+    /// 把识别结果拼成一句开场白，AI 能直接接着聊
+    private var aiSeed: String {
+        guard !hits.isEmpty else { return "我刚拍了一餐，没认出具体食物，帮我估个热量搭配。" }
+        let list = hits.map { "\($0.name)\(Int($0.grams))g（\(Int($0.kcal)) kcal，蛋白 \(Int($0.protein))g）" }
+            .joined(separator: "、")
+        let kcal = Int(hits.reduce(0) { $0 + $1.kcal })
+        return "我刚拍了这一餐：\(list)。合计约 \(kcal) kcal。这顿搭得怎么样，还差什么？"
     }
 }
 
