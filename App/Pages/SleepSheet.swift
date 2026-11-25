@@ -76,8 +76,8 @@ struct SleepSheet: View {
                     .foregroundStyle(TWColor.ink2)
                     .frame(width: 33, height: 33)
                     .background {
-                        Circle().fill(Color.white.opacity(0.5))
-                            .overlay(Circle().stroke(Color.white.opacity(0.7), lineWidth: 0.8))
+                        Circle().fill(TWColor.glass(0.5))
+                            .overlay(Circle().stroke(TWColor.glass(0.7), lineWidth: 0.8))
                     }
             }
             .buttonStyle(.plain)
@@ -211,7 +211,7 @@ struct SleepSheet: View {
                     GeometryReader { geo in
                         ZStack(alignment: .leading) {
                             Capsule()
-                                .fill(Color.white.opacity(0.55))
+                                .fill(TWColor.glass(0.55))
                             Capsule()
                                 .fill(LinearGradient(colors: [TWColor.mint, TWColor.amber, TWColor.coral],
                                                      startPoint: .leading, endPoint: .trailing))
@@ -419,10 +419,10 @@ struct SleepSheet: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color.white.opacity(0.45))
+                .fill(TWColor.glass(0.45))
                 .overlay {
                     RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .stroke(Color.white.opacity(0.65), lineWidth: 0.8)
+                        .stroke(TWColor.glass(0.65), lineWidth: 0.8)
                 }
         }
     }
@@ -458,7 +458,7 @@ struct SleepSheet: View {
         .frame(height: height)
         .clipShape(Capsule())
         .background {
-            Capsule().fill(Color.white.opacity(0.35))
+            Capsule().fill(TWColor.glass(0.35))
         }
     }
 

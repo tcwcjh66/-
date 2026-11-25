@@ -35,6 +35,15 @@ enum TWColor {
             : UIColor(red: 1, green: 1, blue: 1, alpha: 0.55)
     })
 
+    /// 玻璃高光用的白色。深色下压到三成左右，否则整块卡片会发白。
+    static func glass(_ v: Double) -> Color {
+        Color(UIColor { t in
+            t.userInterfaceStyle == .dark
+                ? UIColor(red: 1, green: 1, blue: 1, alpha: CGFloat(v) * 0.34)
+                : UIColor(red: 1, green: 1, blue: 1, alpha: CGFloat(v))
+        })
+    }
+
     static let fillSoft = Color(UIColor { t in
         t.userInterfaceStyle == .dark
             ? UIColor(red: 1, green: 1, blue: 1, alpha: 0.05)

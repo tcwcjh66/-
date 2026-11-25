@@ -184,7 +184,7 @@ struct WeeklyReportPage: View {
                             .padding(.vertical, 14)
                             .background {
                                 RoundedRectangle(cornerRadius: 15, style: .continuous)
-                                    .fill(Color.white.opacity(0.5))
+                                    .fill(TWColor.glass(0.5))
                             }
                     }
                     .buttonStyle(.plain)
@@ -225,7 +225,7 @@ struct WeeklyReportPage: View {
         .padding(.vertical, 14)
         .background {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color.white.opacity(0.5))
+                .fill(TWColor.glass(0.5))
         }
     }
 

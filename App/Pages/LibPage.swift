@@ -47,7 +47,7 @@ struct LibPage: View {
                                         .fill(group == g
                                               ? AnyShapeStyle(LinearGradient(colors: [TWColor.purple, TWColor.violet],
                                                                              startPoint: .topLeading, endPoint: .bottomTrailing))
-                                              : AnyShapeStyle(Color.white.opacity(0.60)))
+                                              : AnyShapeStyle(TWColor.glass(0.60)))
                                 }
                                 .contentShape(Capsule(style: .continuous))
                         }
@@ -206,7 +206,7 @@ struct MoveDetailSheet: View {
                                 .foregroundStyle(fav ? TWColor.pink : TWColor.ink3)
                                 .frame(width: 42, height: 42)
                                 .background {
-                                    Circle().fill(Color.white.opacity(0.55))
+                                    Circle().fill(TWColor.glass(0.55))
                                 }
                         }
                         .buttonStyle(.plain)

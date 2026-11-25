@@ -10,7 +10,7 @@ struct ProgressRing: View {
         let p = min(max(value, 0), 1)
         ZStack {
             Circle()
-                .stroke(Color.white.opacity(0.34), lineWidth: lineWidth)
+                .stroke(TWColor.glass(0.34), lineWidth: lineWidth)
                 .frame(width: size, height: size)
 
             Circle()

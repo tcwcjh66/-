@@ -81,7 +81,7 @@ struct AIChatSheet: View {
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(TWColor.ink2)
                     .frame(width: 34, height: 34)
-                    .background(Circle().fill(Color.white.opacity(0.5)))
+                    .background(Circle().fill(TWColor.glass(0.5)))
             }
             .buttonStyle(.plain)
 
@@ -92,7 +92,7 @@ struct AIChatSheet: View {
                     .font(.system(size: 13, weight: .bold))
                     .foregroundStyle(TWColor.ink2)
                     .frame(width: 34, height: 34)
-                    .background(Circle().fill(Color.white.opacity(0.5)))
+                    .background(Circle().fill(TWColor.glass(0.5)))
             }
             .buttonStyle(.plain)
         }
@@ -125,7 +125,7 @@ struct AIChatSheet: View {
             .padding(12)
             .background {
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(Color.white.opacity(0.55))
+                    .fill(TWColor.glass(0.55))
             }
             .padding(.horizontal, 18)
             .padding(.bottom, 8)
@@ -174,7 +174,7 @@ struct AIChatSheet: View {
             if m.role != "user" {
                 ZStack {
                     Circle()
-                        .fill(Color.white.opacity(0.75))
+                        .fill(TWColor.glass(0.75))
                         .frame(width: 28, height: 28)
                     Image(systemName: "sparkles")
                         .font(.system(size: 12, weight: .bold))
@@ -194,7 +194,7 @@ struct AIChatSheet: View {
                         .fill(m.role == "user"
                               ? AnyShapeStyle(LinearGradient(colors: [TWColor.purple, TWColor.violet],
                                                              startPoint: .topLeading, endPoint: .bottomTrailing))
-                              : AnyShapeStyle(Color.white.opacity(0.62)))
+                              : AnyShapeStyle(TWColor.glass(0.62)))
                 }
             if m.role != "user" { Spacer(minLength: 26) }
         }
@@ -254,7 +254,7 @@ struct AIChatSheet: View {
                             .padding(.horizontal, 12)
                             .padding(.vertical, 8)
                             .background {
-                                Capsule().fill(Color.white.opacity(0.6))
+                                Capsule().fill(TWColor.glass(0.6))
                             }
                     }
                     .buttonStyle(.plain)
@@ -277,7 +277,7 @@ struct AIChatSheet: View {
                 .padding(.vertical, 10)
                 .background {
                     RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .fill(Color.white.opacity(0.7))
+                        .fill(TWColor.glass(0.7))
                 }
                 .submitLabel(.send)
                 .onSubmit { send(input) }
@@ -304,7 +304,7 @@ struct AIChatSheet: View {
         .padding(.bottom, 22)
         .background {
             Rectangle()
-                .fill(Color.white.opacity(0.28))
+                .fill(TWColor.glass(0.28))
                 .blur(radius: 12)
                 .ignoresSafeArea(edges: .bottom)
         }
@@ -519,7 +519,7 @@ struct AISetupSheet: View {
                                     .fill(provider == p
                                           ? AnyShapeStyle(LinearGradient(colors: [TWColor.purple, TWColor.violet],
                                                                          startPoint: .topLeading, endPoint: .bottomTrailing))
-                                          : AnyShapeStyle(Color.white.opacity(0.55)))
+                                          : AnyShapeStyle(TWColor.glass(0.55)))
                             }
                     }
                     .buttonStyle(.plain)
@@ -552,7 +552,7 @@ struct AISetupSheet: View {
                 .padding(.vertical, 11)
                 .background {
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(Color.white.opacity(0.62))
+                        .fill(TWColor.glass(0.62))
                 }
 
             HStack(spacing: 8) {
@@ -568,7 +568,7 @@ struct AISetupSheet: View {
                     .padding(.vertical, 9)
                     .background {
                         RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .fill(Color.white.opacity(0.5))
+                            .fill(TWColor.glass(0.5))
                     }
             }
 
@@ -585,7 +585,7 @@ struct AISetupSheet: View {
                     .padding(.vertical, 9)
                     .background {
                         RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .fill(Color.white.opacity(0.5))
+                            .fill(TWColor.glass(0.5))
                     }
             }
 
@@ -617,7 +617,7 @@ struct AISetupSheet: View {
                     .padding(.horizontal, 13)
                     .padding(.vertical, 9)
                     .background {
-                        Capsule().fill(Color.white.opacity(0.62))
+                        Capsule().fill(TWColor.glass(0.62))
                     }
                 }
                 .buttonStyle(.plain)

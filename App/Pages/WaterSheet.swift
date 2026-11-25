@@ -84,7 +84,7 @@ struct WaterSheet: View {
                                     .fill(cup == v
                                           ? AnyShapeStyle(LinearGradient(colors: [TWColor.blue, TWColor.mint],
                                                                          startPoint: .leading, endPoint: .trailing))
-                                          : AnyShapeStyle(Color.white.opacity(0.6)))
+                                          : AnyShapeStyle(TWColor.glass(0.6)))
                             }
                     }
                     .buttonStyle(.plain)
@@ -104,7 +104,7 @@ struct WaterSheet: View {
                     .padding(.vertical, 8)
                     .background {
                         RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .fill(Color.white.opacity(0.6))
+                            .fill(TWColor.glass(0.6))
                     }
                     .onChange(of: customText) { _, newValue in
                         if let v = Int(newValue), v >= 50, v <= 1000 { cup = v }
@@ -146,7 +146,7 @@ struct WaterSheet: View {
                         .frame(width: 46, height: 42)
                         .background {
                             RoundedRectangle(cornerRadius: 13, style: .continuous)
-                                .fill(Color.white.opacity(0.6))
+                                .fill(TWColor.glass(0.6))
                         }
                 }
                 .buttonStyle(.plain)
@@ -157,7 +157,7 @@ struct WaterSheet: View {
                             .fill(i < target
                                   ? AnyShapeStyle(LinearGradient(colors: [TWColor.blue, TWColor.mint],
                                                                  startPoint: .bottom, endPoint: .top))
-                                  : AnyShapeStyle(Color.white.opacity(0.4)))
+                                  : AnyShapeStyle(TWColor.glass(0.4)))
                             .frame(width: 9, height: 18)
                     }
                 }
@@ -173,7 +173,7 @@ struct WaterSheet: View {
                         .frame(width: 46, height: 42)
                         .background {
                             RoundedRectangle(cornerRadius: 13, style: .continuous)
-                                .fill(Color.white.opacity(0.6))
+                                .fill(TWColor.glass(0.6))
                         }
                 }
                 .buttonStyle(.plain)

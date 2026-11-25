@@ -124,7 +124,7 @@ struct FlowPage: View {
                                 .foregroundStyle(planIndex == pair.offset ? .white : TWColor.ink)
                             Text("\(pair.element.daysPerWeek) 天/周 · \(pair.element.level)")
                                 .font(.system(size: 11, weight: .medium))
-                                .foregroundStyle(planIndex == pair.offset ? .white.opacity(0.80) : TWColor.ink3)
+                                .foregroundStyle(planIndex == pair.offset ? TWColor.glass(0.80) : TWColor.ink3)
                         }
                         .padding(.horizontal, 14)
                         .padding(.vertical, 10)
@@ -133,7 +133,7 @@ struct FlowPage: View {
                                 .fill(planIndex == pair.offset
                                       ? AnyShapeStyle(LinearGradient(colors: [TWColor.purple, TWColor.violet],
                                                                      startPoint: .topLeading, endPoint: .bottomTrailing))
-                                      : AnyShapeStyle(Color.white.opacity(0.58)))
+                                      : AnyShapeStyle(TWColor.glass(0.58)))
                         }
                         .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                     }
@@ -163,7 +163,7 @@ struct FlowPage: View {
                         .padding(.vertical, 9)
                         .background {
                             RoundedRectangle(cornerRadius: 11, style: .continuous)
-                                .fill(dayIndex == pair.offset ? TWColor.purple.opacity(0.15) : Color.white.opacity(0.42))
+                                .fill(dayIndex == pair.offset ? TWColor.purple.opacity(0.15) : TWColor.glass(0.42))
                         }
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
@@ -234,7 +234,7 @@ struct FlowPage: View {
                             .padding(.vertical, 10)
                             .background {
                                 RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                    .fill(Color.white.opacity(0.55))
+                                    .fill(TWColor.glass(0.55))
                             }
                     }
                     .buttonStyle(.plain)
@@ -336,7 +336,7 @@ struct FlowPage: View {
                     .font(.system(size: 10, weight: .heavy))
                     .foregroundStyle(TWColor.ink2)
                     .frame(width: 22, height: 22)
-                    .background { Circle().fill(Color.white.opacity(0.6)) }
+                    .background { Circle().fill(TWColor.glass(0.6)) }
             }
             .buttonStyle(.plain)
             Text(value)
@@ -359,7 +359,7 @@ struct FlowPage: View {
         .padding(.horizontal, 8)
         .padding(.vertical, 6)
         .background {
-            Capsule().fill(Color.white.opacity(0.42))
+            Capsule().fill(TWColor.glass(0.42))
         }
     }
 
@@ -521,7 +521,7 @@ struct FlowPage: View {
                         .padding(.vertical, 13)
                         .background {
                             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .fill(Color.white.opacity(0.55))
+                                .fill(TWColor.glass(0.55))
                         }
                 }
                 .buttonStyle(.plain)
@@ -543,7 +543,7 @@ struct FlowPage: View {
                             .padding(.horizontal, 12)
                             .padding(.vertical, 7)
                             .background {
-                                Capsule().fill(total == s ? TWColor.purple.opacity(0.14) : Color.white.opacity(0.4))
+                                Capsule().fill(total == s ? TWColor.purple.opacity(0.14) : TWColor.glass(0.4))
                             }
                     }
                     .buttonStyle(.plain)
@@ -600,7 +600,7 @@ struct FlowPage: View {
                                 .fill(done
                                       ? AnyShapeStyle(LinearGradient(colors: [TWColor.purple, TWColor.violet],
                                                                      startPoint: .top, endPoint: .bottom))
-                                      : AnyShapeStyle(Color.white.opacity(0.40)))
+                                      : AnyShapeStyle(TWColor.glass(0.40)))
                                 .frame(width: 32, height: 32)
                             if done {
                                 Image(systemName: "checkmark")

@@ -100,7 +100,7 @@ struct BodySheet: View {
                 .padding(.vertical, 10)
                 .background {
                     RoundedRectangle(cornerRadius: 11, style: .continuous)
-                        .fill(Color.white.opacity(0.62))
+                        .fill(TWColor.glass(0.62))
                 }
 
             Text(unit)

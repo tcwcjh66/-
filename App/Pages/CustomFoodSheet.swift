@@ -57,7 +57,7 @@ struct CustomFoodSheet: View {
                                     .padding(.horizontal, 10)
                                     .padding(.vertical, 6)
                                     .background {
-                                        Capsule().fill(Color.white.opacity(0.55))
+                                        Capsule().fill(TWColor.glass(0.55))
                                     }
                                 }
                                 .buttonStyle(.plain)
@@ -114,7 +114,7 @@ struct CustomFoodSheet: View {
                 .padding(.vertical, 9)
                 .background {
                     RoundedRectangle(cornerRadius: 11, style: .continuous)
-                        .fill(Color.white.opacity(0.62))
+                        .fill(TWColor.glass(0.62))
                 }
 
             Text(unit)

@@ -74,7 +74,7 @@ struct TodayPage: View {
                 .opacity(0.92)
 
             RadialGradient(
-                colors: [Color.white.opacity(0.45), .clear],
+                colors: [TWColor.glass(0.45), .clear],
                 center: .center, startRadius: 10, endRadius: 155
             )
             .frame(width: 310, height: 310)
@@ -435,11 +435,11 @@ struct MoodChip: View {
     let onTap: () -> Void
 
     private var fill: Color {
-        selected ? Color.white.opacity(0.85) : Color.white.opacity(0.32)
+        selected ? TWColor.glass(0.85) : TWColor.glass(0.32)
     }
 
     private var stroke: Color {
-        selected ? TWColor.purple.opacity(0.35) : Color.white.opacity(0.5)
+        selected ? TWColor.purple.opacity(0.35) : TWColor.glass(0.5)
     }
 
     private var labelColor: Color {

@@ -37,7 +37,7 @@ struct PulseView: View {
 
                 Text(meter.errorText ?? meter.quality)
                     .font(.system(size: 13.5, weight: .medium))
-                    .foregroundStyle(meter.errorText == nil ? Color.white.opacity(0.62) : Color(red: 1.0, green: 0.55, blue: 0.55))
+                    .foregroundStyle(meter.errorText == nil ? TWColor.glass(0.62) : Color(red: 1.0, green: 0.55, blue: 0.55))
                     .multilineTextAlignment(.center)
                     .padding(.top, 12)
                     .padding(.horizontal, 30)
@@ -59,10 +59,10 @@ struct PulseView: View {
             } label: {
                 Image(systemName: "xmark")
                     .font(.system(size: 15, weight: .bold))
-                    .foregroundStyle(Color.white.opacity(0.85))
+                    .foregroundStyle(TWColor.glass(0.85))
                     .frame(width: 38, height: 38)
                     .background {
-                        Circle().fill(Color.white.opacity(0.12))
+                        Circle().fill(TWColor.glass(0.12))
                     }
             }
             .buttonStyle(.plain)
@@ -71,7 +71,7 @@ struct PulseView: View {
 
             Text("指尖心率")
                 .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(Color.white.opacity(0.8))
+                .foregroundStyle(TWColor.glass(0.8))
 
             Spacer()
 
@@ -84,7 +84,7 @@ struct PulseView: View {
     private var bpmBlock: some View {
         ZStack {
             Circle()
-                .stroke(Color.white.opacity(0.10), lineWidth: 9)
+                .stroke(TWColor.glass(0.10), lineWidth: 9)
                 .frame(width: 232, height: 232)
 
             Circle()
@@ -111,13 +111,13 @@ struct PulseView: View {
                 } else {
                     Text("--")
                         .font(.system(size: 64, weight: .heavy))
-                        .foregroundStyle(Color.white.opacity(0.4))
+                        .foregroundStyle(TWColor.glass(0.4))
                 }
 
                 Text(meter.bpm > 0 ? "BPM" : (meter.running ? "测量中" : "未开始"))
                     .font(.system(size: 12, weight: .semibold))
                     .tracking(2)
-                    .foregroundStyle(Color.white.opacity(0.55))
+                    .foregroundStyle(TWColor.glass(0.55))
 
                 if meter.hrv > 0 {
                     Text("HRV \(meter.hrv) ms")
@@ -154,7 +154,7 @@ struct PulseView: View {
                     )
                 } else {
                     Capsule()
-                        .fill(Color.white.opacity(0.10))
+                        .fill(TWColor.glass(0.10))
                         .frame(height: 1.4)
                 }
             }
@@ -189,7 +189,7 @@ struct PulseView: View {
                     meter.start()
                 }
                 .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(Color.white.opacity(0.7))
+                .foregroundStyle(TWColor.glass(0.7))
             } else {
                 Button {
                     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
@@ -216,7 +216,7 @@ struct PulseView: View {
 
                 Text("食指指腹轻盖后置镜头与闪光灯，别用力压，保持 30 秒不动")
                     .font(.system(size: 12))
-                    .foregroundStyle(Color.white.opacity(0.5))
+                    .foregroundStyle(TWColor.glass(0.5))
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 26)
             }

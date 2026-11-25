@@ -19,9 +19,9 @@ struct GlassSurface: ViewModifier {
                     shape.fill(
                         LinearGradient(
                             colors: [
-                                Color.white.opacity(0.46),
-                                Color.white.opacity(0.14),
-                                Color.white.opacity(0.06)
+                                TWColor.glass(0.46),
+                                TWColor.glass(0.14),
+                                TWColor.glass(0.06)
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
@@ -35,9 +35,9 @@ struct GlassSurface: ViewModifier {
                     shape.strokeBorder(
                         LinearGradient(
                             colors: [
-                                Color.white.opacity(0.92),
-                                Color.white.opacity(0.34),
-                                Color.white.opacity(0.55)
+                                TWColor.glass(0.92),
+                                TWColor.glass(0.34),
+                                TWColor.glass(0.55)
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
@@ -111,7 +111,7 @@ struct SegGroup<T: Hashable>: View {
                             Capsule(style: .continuous)
                                 .fill(on
                                       ? AnyShapeStyle(LinearGradient(colors: [TWColor.purple, TWColor.violet], startPoint: .topLeading, endPoint: .bottomTrailing))
-                                      : AnyShapeStyle(Color.white.opacity(0.55)))
+                                      : AnyShapeStyle(TWColor.glass(0.55)))
                         }
                 }
                 .buttonStyle(.plain)

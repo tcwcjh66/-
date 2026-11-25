@@ -81,7 +81,7 @@ struct TrendChart: View {
                 .frame(height: 88)
             } else {
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(Color.white.opacity(0.34))
+                    .fill(TWColor.glass(0.34))
                     .frame(height: 88)
                     .overlay {
                         Text("记录满 2 天后出现趋势")

@@ -78,7 +78,7 @@ struct WaterLogSheet: View {
                                     .fill(amount == v
                                           ? AnyShapeStyle(LinearGradient(colors: [TWColor.blue, TWColor.mint],
                                                                          startPoint: .leading, endPoint: .trailing))
-                                          : AnyShapeStyle(Color.white.opacity(0.56)))
+                                          : AnyShapeStyle(TWColor.glass(0.56)))
                             }
                     }
                     .buttonStyle(.plain)
@@ -112,7 +112,7 @@ struct WaterLogSheet: View {
                 .padding(.vertical, 12)
                 .background {
                     RoundedRectangle(cornerRadius: 13, style: .continuous)
-                        .fill(Color.white.opacity(0.62))
+                        .fill(TWColor.glass(0.62))
                 }
         }
         .padding(15)

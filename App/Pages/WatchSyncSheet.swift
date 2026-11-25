@@ -53,8 +53,8 @@ struct WatchSyncSheet: View {
                     .foregroundStyle(TWColor.ink2)
                     .frame(width: 33, height: 33)
                     .background {
-                        Circle().fill(Color.white.opacity(0.5))
-                            .overlay(Circle().stroke(Color.white.opacity(0.7), lineWidth: 0.8))
+                        Circle().fill(TWColor.glass(0.5))
+                            .overlay(Circle().stroke(TWColor.glass(0.7), lineWidth: 0.8))
                     }
             }
             .buttonStyle(.plain)
@@ -277,7 +277,7 @@ struct WatchSyncSheet: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background {
                     RoundedRectangle(cornerRadius: 11, style: .continuous)
-                        .fill(Color.white.opacity(0.55))
+                        .fill(TWColor.glass(0.55))
                 }
 
             Text("参数表：hr 心率 · hrv 心率变异性 · rhr 静息心率 · steps 步数 · dist 公里 · kcal 活动能量 · exercise 锻炼分钟 · stand 站立小时 · sleep 睡眠分钟 · deep 深睡分钟。缺哪个就不带哪个，App 会自动跳过。")

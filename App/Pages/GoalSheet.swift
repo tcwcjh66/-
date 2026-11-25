@@ -52,7 +52,7 @@ struct GoalSheet: View {
                                 .font(.system(size: 13, weight: .bold))
                                 .foregroundStyle(TWColor.ink2)
                                 .frame(width: 34, height: 34)
-                                .background { Circle().fill(Color.white.opacity(0.6)) }
+                                .background { Circle().fill(TWColor.glass(0.6)) }
                         }
                         .buttonStyle(.plain)
                     }
@@ -140,7 +140,7 @@ struct GoalSheet: View {
                     .padding(.vertical, 10)
                     .background {
                         RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .fill(Color.white.opacity(0.62))
+                            .fill(TWColor.glass(0.62))
                     }
                 Text(unit)
                     .font(.system(size: 12, weight: .semibold))

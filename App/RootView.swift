@@ -151,7 +151,7 @@ struct GlassTabBar: View {
                     .background {
                         if t == selected {
                             Capsule(style: .continuous)
-                                .fill(Color.white.opacity(0.82))
+                                .fill(TWColor.glass(0.82))
                                 .shadow(color: TWColor.cardShadow, radius: 4, y: 2)
                         }
                     }

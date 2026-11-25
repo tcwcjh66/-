@@ -279,7 +279,7 @@ struct DietPage: View {
             }
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
-                    Capsule().fill(Color.white.opacity(0.45))
+                    Capsule().fill(TWColor.glass(0.45))
                     Capsule()
                         .fill(LinearGradient(colors: [tint.opacity(0.85), tint.opacity(0.55)],
                                              startPoint: .leading, endPoint: .trailing))
@@ -562,7 +562,7 @@ struct FoodPicker: View {
                                         .fill(activeSlot == s
                                               ? AnyShapeStyle(LinearGradient(colors: [TWColor.purple, TWColor.violet],
                                                                              startPoint: .topLeading, endPoint: .bottomTrailing))
-                                              : AnyShapeStyle(Color.white.opacity(0.42)))
+                                              : AnyShapeStyle(TWColor.glass(0.42)))
                                 }
                         }
                         .buttonStyle(.plain)
@@ -683,7 +683,7 @@ struct FoodPicker: View {
             .padding(.vertical, 9)
             .background {
                 RoundedRectangle(cornerRadius: 13, style: .continuous)
-                    .fill(selected.name == f.name ? Color.white.opacity(0.82) : Color.white.opacity(0.34))
+                    .fill(selected.name == f.name ? TWColor.glass(0.82) : TWColor.glass(0.34))
             }
         }
         .buttonStyle(.plain)
@@ -742,7 +742,7 @@ struct ShotResultSheet: View {
                                                 .fill(activeSlot == s
                                                       ? AnyShapeStyle(LinearGradient(colors: [TWColor.purple, TWColor.violet],
                                                                                      startPoint: .topLeading, endPoint: .bottomTrailing))
-                                                      : AnyShapeStyle(Color.white.opacity(0.42)))
+                                                      : AnyShapeStyle(TWColor.glass(0.42)))
                                         }
                                 }
                                 .buttonStyle(.plain)
@@ -806,7 +806,7 @@ struct ShotResultSheet: View {
                             .padding(.horizontal, 12)
                             .padding(.vertical, 8)
                             .background {
-                                Capsule().fill(Color.white.opacity(0.55))
+                                Capsule().fill(TWColor.glass(0.55))
                             }
                         }
                         .buttonStyle(.plain)
@@ -831,7 +831,7 @@ struct ShotResultSheet: View {
                         .padding(.vertical, 14)
                         .background {
                             RoundedRectangle(cornerRadius: 15, style: .continuous)
-                                .fill(Color.white.opacity(0.66))
+                                .fill(TWColor.glass(0.66))
                         }
                     }
                     .buttonStyle(.plain)

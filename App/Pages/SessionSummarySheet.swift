@@ -152,7 +152,7 @@ struct SessionSummarySheet: View {
         .padding(.vertical, 15)
         .background {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color.white.opacity(0.5))
+                .fill(TWColor.glass(0.5))
         }
     }
 

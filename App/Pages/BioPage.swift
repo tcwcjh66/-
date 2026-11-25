@@ -351,7 +351,7 @@ struct BioPage: View {
         .frame(height: 8)
         .clipShape(Capsule())
         .background {
-            Capsule().fill(Color.white.opacity(0.35))
+            Capsule().fill(TWColor.glass(0.35))
         }
     }
 
@@ -568,7 +568,7 @@ struct BioPage: View {
                                     .fill(girthPick == i
                                           ? AnyShapeStyle(LinearGradient(colors: [TWColor.blue, TWColor.purple],
                                                                          startPoint: .topLeading, endPoint: .bottomTrailing))
-                                          : AnyShapeStyle(Color.white.opacity(0.42)))
+                                          : AnyShapeStyle(TWColor.glass(0.42)))
                             }
                     }
                     .buttonStyle(.plain)
@@ -624,7 +624,7 @@ struct BioPage: View {
                         .fill(i < store.waterCups
                               ? AnyShapeStyle(LinearGradient(colors: [TWColor.blue, TWColor.mint],
                                                              startPoint: .bottom, endPoint: .top))
-                              : AnyShapeStyle(Color.white.opacity(0.38)))
+                              : AnyShapeStyle(TWColor.glass(0.38)))
                         .frame(maxWidth: .infinity)
                         .frame(height: 36)
                         .overlay {
@@ -647,7 +647,7 @@ struct BioPage: View {
                         .padding(.vertical, 11)
                         .background {
                             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                .fill(Color.white.opacity(0.55))
+                                .fill(TWColor.glass(0.55))
                         }
                 }
                 .buttonStyle(.plain)
@@ -775,7 +775,7 @@ struct BioPage: View {
                         .padding(.vertical, 13)
                         .background {
                             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .fill(Color.white.opacity(0.55))
+                                .fill(TWColor.glass(0.55))
                         }
                 }
                 .buttonStyle(.plain)
@@ -983,7 +983,7 @@ struct ManualHeartSheet: View {
                     .padding(.vertical, 14)
                     .background {
                         RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .fill(Color.white.opacity(0.6))
+                            .fill(TWColor.glass(0.6))
                     }
                     .padding(.horizontal, 26)
 

@@ -52,7 +52,7 @@ struct PRSheet: View {
                                 .padding(.vertical, 10)
                                 .background {
                                     RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                        .fill(Color.white.opacity(0.62))
+                                        .fill(TWColor.glass(0.62))
                                 }
                             Text("kg")
                                 .font(.system(size: 12, weight: .bold))
@@ -74,7 +74,7 @@ struct PRSheet: View {
                                 .padding(.vertical, 10)
                                 .background {
                                     RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                        .fill(Color.white.opacity(0.62))
+                                        .fill(TWColor.glass(0.62))
                                 }
                             Text("次")
                                 .font(.system(size: 12, weight: .bold))
