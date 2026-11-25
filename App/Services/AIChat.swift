@@ -10,12 +10,13 @@ struct AIMsg: Identifiable {
 
 // MARK: - 服务商
 enum AIProvider: String, CaseIterable, Identifiable {
-    case doubao, deepseek, openai, moonshot, custom
+    case zhipu, doubao, deepseek, openai, moonshot, custom
 
     var id: String { rawValue }
 
     var label: String {
         switch self {
+        case .zhipu:    return "智谱"
         case .doubao:   return "豆包"
         case .deepseek: return "DeepSeek"
         case .openai:   return "OpenAI"
@@ -26,6 +27,7 @@ enum AIProvider: String, CaseIterable, Identifiable {
 
     var baseURL: String {
         switch self {
+        case .zhipu:    return "https://open.bigmodel.cn/api/paas/v4"
         case .doubao:   return "https://ark.cn-beijing.volces.com/api/v3"
         case .deepseek: return "https://api.deepseek.com/v1"
         case .openai:   return "https://api.openai.com/v1"
@@ -36,6 +38,7 @@ enum AIProvider: String, CaseIterable, Identifiable {
 
     var model: String {
         switch self {
+        case .zhipu:    return "glm-4.7-flash"
         case .doubao:   return "doubao-seed-2-1-pro-260915"
         case .deepseek: return "deepseek-chat"
         case .openai:   return "gpt-4o-mini"
@@ -46,6 +49,7 @@ enum AIProvider: String, CaseIterable, Identifiable {
 
     var hint: String {
         switch self {
+        case .zhipu:    return "open.bigmodel.cn 手机号注册，控制台新建 API Key"
         case .doubao:   return "ark.volcengine.com 控制台创建 API Key，实名后送免费额度"
         case .deepseek: return "platform.deepseek.com 注册即送额度，Key 以 sk- 开头"
         case .openai:   return "platform.openai.com 生成 Key，按用量计费"
@@ -56,6 +60,7 @@ enum AIProvider: String, CaseIterable, Identifiable {
 
     var pricing: String {
         switch self {
+        case .zhipu:    return "永久免费（GLM-4.7-Flash）· 1 并发"
         case .doubao:   return "有免费额度 · 之后按 token 计费"
         case .deepseek: return "有免费额度 · 之后约 ¥1 / 百万字"
         case .openai:   return "按量计费 · gpt-4o-mini 约 ¥0.001 / 次"
@@ -94,7 +99,7 @@ final class AIClient {
     private let kModel = "tw.ai.model.v2"
 
     var provider: AIProvider {
-        get { AIProvider(rawValue: UserDefaults.standard.string(forKey: kProv) ?? "") ?? .doubao }
+        get { AIProvider(rawValue: UserDefaults.standard.string(forKey: kProv) ?? "") ?? .zhipu }
         set { UserDefaults.standard.set(newValue.rawValue, forKey: kProv) }
     }
 
