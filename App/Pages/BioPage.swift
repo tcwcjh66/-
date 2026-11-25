@@ -24,6 +24,7 @@ struct BioPage: View {
     @State private var showWatch = false
     @State private var showWater = false
     @State private var showWaterLog = false
+    @State private var showWeekly = false
 
     private let pedometer = CMPedometer()
 
@@ -31,6 +32,7 @@ struct BioPage: View {
         VStack(spacing: 16) {
             PageHeader(title: "身体", subtitle: "本机实测 · 不含模拟数据")
 
+            weeklyCard
             hrCard
             watchSyncCard
             stepCard
@@ -96,6 +98,11 @@ struct BioPage: View {
                 .presentationDetents([.medium, .large])
                 .presentationCornerRadius(28)
         }
+        .sheet(isPresented: $showWeekly) {
+            WeeklyReportPage()
+                .presentationDetents([.large])
+                .presentationCornerRadius(28)
+        }
         .sheet(isPresented: $showWater) {
             WaterSheet()
                 .presentationDetents([.large])
@@ -127,6 +134,41 @@ struct BioPage: View {
             let p = log.id.split(separator: "-")
             return p.count == 3 ? "\(p[1])/\(p[2])" : log.id
         }
+    }
+
+    private var weeklyCard: some View {
+        Button {
+            UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+            showWeekly = true
+        } label: {
+            HStack(spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(LinearGradient(colors: [TWColor.blue.opacity(0.9), TWColor.purple.opacity(0.8)],
+                                             startPoint: .topLeading, endPoint: .bottomTrailing))
+                        .frame(width: 42, height: 42)
+                    Image(systemName: "chart.bar.xaxis")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundStyle(.white)
+                }
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("本周报告")
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundStyle(TWColor.ink)
+                    Text("训练 · 步数 · 蛋白 · 体重，最近 7 天一次算完")
+                        .font(.system(size: 11.5))
+                        .foregroundStyle(TWColor.ink3)
+                        .lineLimit(1)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(TWColor.ink3)
+            }
+            .padding(14)
+        }
+        .buttonStyle(.plain)
+        .twGlass()
     }
 
     private var watchSyncCard: some View {

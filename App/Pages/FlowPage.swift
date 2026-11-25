@@ -12,6 +12,9 @@ struct FlowPage: View {
 
     @State private var doneMoves: Set<String> = []
     @State private var restFrom: String = ""
+    @State private var summaryEntry: SessionLog?
+    @State private var summaryPrev: SessionLog?
+    @State private var summaryStreak: Int = 1
     @State private var restNext: String = ""
     @State private var detailSession: SessionLog?
     @State private var pendingPlan: Int?
@@ -66,6 +69,11 @@ struct FlowPage: View {
                 running = false
                 UINotificationFeedbackGenerator().notificationOccurred(.success)
             }
+        }
+        .sheet(item: $summaryEntry) { e in
+            SessionSummarySheet(entry: e, prev: summaryPrev, streak: summaryStreak)
+                .presentationDetents([.large])
+                .presentationCornerRadius(28)
         }
         .sheet(item: $detailSession) { s in
             SessionDetailSheet(session: s)
@@ -199,9 +207,14 @@ struct FlowPage: View {
                     Button {
                         UIImpactFeedbackGenerator(style: .soft).impactOccurred()
                         withAnimation(.snappy(duration: 0.2)) {
-                            store.endSession(plan: plan.name, day: day.title,
-                                             moves: day.items.count,
-                                             moveNames: day.items.map { $0.name })
+                            if let e = store.endSession(plan: plan.name, day: day.title,
+                                                        moves: day.items.count,
+                                                        moveNames: day.items.map { $0.name }) {
+                                summaryEntry = e
+                                summaryPrev = store.sessions.dropFirst()
+                                    .first { $0.plan == e.plan && $0.day == e.day }
+                                summaryStreak = max(1, store.trainingStreak)
+                            }
                             doneMoves.removeAll()
                             running = false
                             restFrom = ""

@@ -10,6 +10,7 @@ struct DietPage: View {
     @State private var hits: [FoodHit] = []
     @State private var showResult = false
     @State private var showAI = false
+    @State private var savedToast = false
 
     private let slots = ["早餐", "午餐", "晚餐", "加餐"]
 
@@ -757,6 +758,36 @@ struct ShotResultSheet: View {
                     }
                     .padding(.horizontal, 18)
                     .padding(.top, 12)
+                }
+
+                if !hits.isEmpty {
+                    HStack(spacing: 6) {
+                        Button {
+                            UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                            let picked = hits.filter { selected.contains($0.id) }
+                            store.saveAsCustom(picked.isEmpty ? hits : picked)
+                            withAnimation(.snappy(duration: 0.2)) { savedToast = true }
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) {
+                                withAnimation(.snappy(duration: 0.2)) { savedToast = false }
+                            }
+                        } label: {
+                            HStack(spacing: 5) {
+                                Image(systemName: savedToast ? "checkmark.circle.fill" : "star")
+                                    .font(.system(size: 12, weight: .bold))
+                                Text(savedToast ? "已存进我的常吃" : "存进我的常吃")
+                                    .font(.system(size: 12.5, weight: .bold))
+                            }
+                            .foregroundStyle(savedToast ? TWColor.mint : TWColor.ink2)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background {
+                                Capsule().fill(Color.white.opacity(0.55))
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        Spacer(minLength: 0)
+                    }
+                    .padding(.horizontal, 18)
                 }
 
                 HStack(spacing: 9) {

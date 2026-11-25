@@ -369,6 +369,30 @@ final class TWStore: ObservableObject {
         persistSoon()
     }
 
+    /// 把识别到的食物按每 100g 的营养换算，存进「我的常吃」。同名覆盖。
+    func saveAsCustom(_ hits: [FoodHit]) {
+        for h in hits {
+            guard h.grams > 0 else { continue }
+            let k = 100.0 / h.grams
+            let c = CustomFood(
+                name: h.name,
+                kcalPer100: (h.kcal * k).rounded(),
+                proteinPer100: ((h.protein * k) * 10).rounded() / 10,
+                carbPer100: ((h.carb * k) * 10).rounded() / 10,
+                fatPer100: ((h.fat * k) * 10).rounded() / 10
+            )
+            if let i = customFoods.firstIndex(where: { $0.name == h.name }) {
+                customFoods[i] = c
+            } else {
+                customFoods.append(c)
+            }
+        }
+        if customFoods.count > 60 {
+            customFoods.removeFirst(customFoods.count - 60)
+        }
+        persistSoon()
+    }
+
     func deleteMeal(id: UUID) {
         guard let idx = meals.firstIndex(where: { $0.id == id }) else { return }
         let m = meals[idx]
@@ -732,9 +756,11 @@ final class TWStore: ObservableObject {
         persistSoon()
     }
 
-    func endSession(plan: String = "", day: String = "", moves: Int = 0, moveNames: [String] = []) {
+    @discardableResult
+    func endSession(plan: String = "", day: String = "", moves: Int = 0, moveNames: [String] = []) -> SessionLog? {
         let start = sessionStart ?? Date()
         let mins = max(1, Int(Date().timeIntervalSince(start) / 60))
+        var added: SessionLog? = nil
         if sessionSets > 0 {
             let entry = SessionLog(
                 date: DateFormatter.twDay.string(from: Date()),
@@ -746,6 +772,7 @@ final class TWStore: ObservableObject {
                 moveNames: moveNames
             )
             sessions.insert(entry, at: 0)
+            added = entry
             if sessions.count > 90 {
                 sessions.removeLast(sessions.count - 90)
             }
@@ -754,6 +781,30 @@ final class TWStore: ObservableObject {
         mood = "win"
         upsertToday()
         persistSoon()
+        return added
+    }
+
+    /// 从今天往前数，连续有训练记录的天数。今天还没练时允许从昨天起算。
+    var trainingStreak: Int {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        var day = Date()
+        var streak = 0
+        var skipToday = true
+        while streak < 400 {
+            let key = f.string(from: day)
+            if sessions.contains(where: { $0.date == key }) {
+                streak += 1
+                skipToday = false
+            } else if skipToday && Calendar.current.isDateInToday(day) {
+                skipToday = false
+            } else {
+                break
+            }
+            guard let prev = Calendar.current.date(byAdding: .day, value: -1, to: day) else { break }
+            day = prev
+        }
+        return streak
     }
 
     // MARK: - 每日
