@@ -21,6 +21,7 @@ struct BioPage: View {
     @State private var hipText = ""
     @State private var girthPick = 0
     @State private var showSleep = false
+    @State private var showWatch = false
 
     private let pedometer = CMPedometer()
 
@@ -29,6 +30,7 @@ struct BioPage: View {
             PageHeader(title: "身体", subtitle: "本机实测 · 不含模拟数据")
 
             hrCard
+            watchSyncCard
             stepCard
             sleepCard
             bodyCard
@@ -82,6 +84,11 @@ struct BioPage: View {
                 .presentationDetents([.large])
                 .presentationCornerRadius(26)
         }
+        .sheet(isPresented: $showWatch) {
+            WatchSyncSheet()
+                .presentationDetents([.large])
+                .presentationCornerRadius(26)
+        }
     }
 
     // MARK: - 身体数据
@@ -110,6 +117,76 @@ struct BioPage: View {
         }
     }
 
+    private var watchSyncCard: some View {
+        Button {
+            UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+            showWatch = true
+        } label: {
+            VStack(alignment: .leading, spacing: 11) {
+                HStack(spacing: 8) {
+                    Image(systemName: "applewatch")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(TWColor.mint)
+                    Text("手表同步")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(TWColor.ink)
+                    Spacer()
+                    Text(store.watchSyncAt == nil ? "去配置" : "详情")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(TWColor.mint)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(TWColor.ink3)
+                }
+
+                if let t = store.watchSyncAt {
+                    Text("上次同步 \(DateFormatter.twShort.string(from: t)) · 累计 \(store.watchSyncCount) 次")
+                        .font(.system(size: 12))
+                        .foregroundStyle(TWColor.ink2)
+
+                    HStack(spacing: 0) {
+                        watchCell("心率", store.hr > 0 ? "\(store.hr)" : "—", "bpm")
+                        watchSep
+                        watchCell("步数", store.watchSteps > 0 ? "\(store.watchSteps)" : "—", "步")
+                        watchSep
+                        watchCell("睡眠", store.watchSleepMin > 0 ? "\(store.watchSleepMin / 60)h\(store.watchSleepMin % 60)" : "—", "深睡 \(store.watchDeepMin) 分")
+                    }
+                    .padding(.top, 2)
+                } else {
+                    Text("快捷指令自动化，打开 App 就自动把心率、步数、睡眠、能耗灌进来")
+                        .font(.system(size: 12))
+                        .foregroundStyle(TWColor.ink3)
+                        .lineSpacing(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .padding(16)
+            .twGlass()
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var watchSep: some View {
+        Rectangle()
+            .fill(TWColor.ink3.opacity(0.2))
+            .frame(width: 1, height: 24)
+    }
+
+    private func watchCell(_ title: String, _ value: String, _ unit: String) -> some View {
+        VStack(spacing: 2) {
+            Text(value)
+                .font(.system(size: 18, weight: .heavy, design: .rounded))
+                .foregroundStyle(TWColor.ink)
+                .monospacedDigit()
+            Text("\(title) · \(unit)")
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(TWColor.ink3)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+        }
+        .frame(maxWidth: .infinity)
+    }
+
     private var sleepCard: some View {
         Button {
             UIImpactFeedbackGenerator(style: .soft).impactOccurred()
@@ -130,6 +207,18 @@ struct BioPage: View {
                     Image(systemName: "chevron.right")
                         .font(.system(size: 10, weight: .bold))
                         .foregroundStyle(TWColor.ink3)
+                }
+
+                if store.watchSleepMin > 0 {
+                    HStack(spacing: 6) {
+                        Image(systemName: "applewatch")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(TWColor.mint)
+                        Text("手表夜间 \(store.watchSleepMin / 60) 小时 \(store.watchSleepMin % 60) 分 · 深睡 \(store.watchDeepMin) 分")
+                            .font(.system(size: 11.5, weight: .semibold))
+                            .foregroundStyle(TWColor.ink2)
+                        Spacer(minLength: 0)
+                    }
                 }
 
                 if let s = store.lastSleep {
@@ -693,13 +782,13 @@ struct BioPage: View {
             )
             sourceRow(
                 icon: "arrow.triangle.branch",
-                title: "快捷指令回传",
-                detail: "twfit://hr?bpm=72&hrv=45",
-                state: "需手动建一次",
-                tint: TWColor.amber
+                title: "快捷指令自动化",
+                detail: "打开 App 自动灌入全部健康数据",
+                state: store.watchSyncAt == nil ? "待配置" : "已连通",
+                tint: store.watchSyncAt == nil ? TWColor.amber : TWColor.mint
             )
 
-            Text("手表的数据只能经 HealthKit 或 WatchConnectivity 进入第三方 App，这两项都不在免费 Apple ID 的可签能力里。免费方案里最接近实时的是快捷指令定时读取健康数据再回传，延迟取决于自动化间隔。")
+            Text("手表的数据只能经 HealthKit 或 WatchConnectivity 进入第三方 App，这两项都不在免费 Apple ID 的可签能力里。走快捷指令自动化是免费条件下唯一能拿到全量健康数据的通道，配一次之后每次打开 App 自动同步。")
                 .font(.system(size: 11.5))
                 .foregroundStyle(TWColor.ink3)
                 .fixedSize(horizontal: false, vertical: true)

@@ -42,19 +42,69 @@ struct RootView: View {
     private func handleIncoming(_ url: URL) {
         guard url.scheme == "twfit" else { return }
         let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
-
-        if let raw = items.first(where: { $0.name == "bpm" })?.value,
-           let bpm = Int(raw), bpm >= 30, bpm <= 220 {
-            store.measuredHR = bpm
-            store.hr = bpm
-            store.measuredAt = Date()
-            store.hrSource = "快捷指令"
+        var dict: [String: String] = [:]
+        for item in items {
+            if let v = item.value, !v.isEmpty { dict[item.name.lowercased()] = v }
         }
 
-        if let raw = items.first(where: { $0.name == "hrv" })?.value,
-           let hrv = Int(raw), hrv >= 0, hrv <= 300 {
-            store.measuredHRV = hrv
-            store.hrv = hrv
+        func val(_ keys: String...) -> Double? {
+            for k in keys {
+                if let s = dict[k], let d = Double(s) { return d }
+            }
+            return nil
+        }
+
+        var changed = false
+
+        if let bpm = val("hr", "bpm"), bpm >= 25, bpm <= 230 {
+            store.hr = Int(bpm)
+            store.measuredHR = Int(bpm)
+            store.measuredAt = Date()
+            store.hrSource = "快捷指令"
+            changed = true
+        }
+        if let hrv = val("hrv"), hrv >= 0, hrv <= 400 {
+            store.hrv = Int(hrv)
+            store.measuredHRV = Int(hrv)
+            changed = true
+        }
+        if let rhr = val("rhr", "restinghr"), rhr >= 25, rhr <= 200 {
+            store.restingHR = Int(rhr)
+            changed = true
+        }
+        if let s = val("steps"), s >= 0 {
+            store.watchSteps = Int(s)
+            changed = true
+        }
+        if let d = val("dist", "distance"), d >= 0 {
+            store.pedometerDistance = d
+            changed = true
+        }
+        if let k = val("kcal", "energy"), k >= 0 {
+            store.moveKcal = k
+            changed = true
+        }
+        if let e = val("exercise", "exerciseMin"), e >= 0 {
+            store.exerciseMin = e
+            changed = true
+        }
+        if let st = val("stand"), st >= 0 {
+            store.standHours = st
+            changed = true
+        }
+        if let sl = val("sleep"), sl > 0 {
+            store.watchSleepMin = Int(sl)
+            changed = true
+        }
+        if let dp = val("deep"), dp > 0 {
+            store.watchDeepMin = Int(dp)
+            changed = true
+        }
+
+        if changed {
+            store.watchSyncAt = Date()
+            store.watchSyncCount += 1
+            store.persist()
         }
 
         UINotificationFeedbackGenerator().notificationOccurred(.success)

@@ -203,6 +203,11 @@ final class TWStore: ObservableObject {
     @Published var measuredAt: Date?
     @Published var hrSource: String = ""
     @Published var watchSteps: Int = 0
+    /// 手表同步进来的睡眠数据（Quick 快捷指令通道）
+    @Published var watchSleepMin: Int = 0
+    @Published var watchDeepMin: Int = 0
+    @Published var watchSyncAt: Date?
+    @Published var watchSyncCount: Int = 0
 
     // 饮食
     @Published var dietKcal: Double = 0
@@ -297,6 +302,10 @@ final class TWStore: ObservableObject {
         static let daypick = "tw.daypick.v2"
         static let prs = "tw.prs.v2"
         static let sleeps = "tw.sleeps.v2"
+        static let wsleep = "tw.wsleep.v2"
+        static let wdeep = "tw.wdeep.v2"
+        static let wsync = "tw.wsync.v2"
+        static let wcount = "tw.wcount.v2"
     }
 
     init() {
@@ -555,6 +564,10 @@ final class TWStore: ObservableObject {
         dayPick = 0
         prs = [:]
         sleepLogs = []
+        watchSleepMin = 0
+        watchDeepMin = 0
+        watchSyncAt = nil
+        watchSyncCount = 0
 
         persist()
     }
@@ -756,6 +769,10 @@ final class TWStore: ObservableObject {
         if let v = try? JSONEncoder().encode(sleepLogs) {
             d.set(v, forKey: Key.sleeps)
         }
+        d.set(watchSleepMin, forKey: Key.wsleep)
+        d.set(watchDeepMin, forKey: Key.wdeep)
+        d.set(watchSyncCount, forKey: Key.wcount)
+        if let t = watchSyncAt { d.set(t.timeIntervalSince1970, forKey: Key.wsync) }
         if let v = try? JSONEncoder().encode(sessions) {
             d.set(v, forKey: Key.sess)
         }
@@ -828,6 +845,11 @@ final class TWStore: ObservableObject {
            let decoded = try? JSONDecoder().decode([SleepLog].self, from: v) {
             sleepLogs = decoded
         }
+        watchSleepMin = d.integer(forKey: Key.wsleep)
+        watchDeepMin = d.integer(forKey: Key.wdeep)
+        watchSyncCount = d.integer(forKey: Key.wcount)
+        let ts = d.double(forKey: Key.wsync)
+        watchSyncAt = ts > 0 ? Date(timeIntervalSince1970: ts) : nil
         if let v = d.data(forKey: Key.sess),
            let decoded = try? JSONDecoder().decode([SessionLog].self, from: v) {
             sessions = decoded
