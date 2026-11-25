@@ -2770,16 +2770,16 @@ button, .sel-chip, .icon-btn, .tab, .move-card, .metric-row, .mp, .act{
               <div class="sec-mini">识别候选 · 点选加入</div>
               <div class="cand-chips" id="candChips"></div>
 
-              <div class="sec-mini">手动补充</div>
-              <input class="food-search" id="foodSearch" placeholder="搜食物名，例如 鸡胸肉" autocomplete="off">
-              <div class="food-search-out" id="foodSearchOut"></div>
+              <div class="sec-mini">本餐清单</div>
+              <div class="picked-list" id="pickedList"></div>
+              <div class="sheet-total" id="sheetTotal"></div>
 
               <div class="sec-mini">营养评估 · 这一餐够不够</div>
               <div class="meal-advice" id="mealAdvice"></div>
 
-              <div class="sec-mini">本餐清单</div>
-              <div class="picked-list" id="pickedList"></div>
-              <div class="sheet-total" id="sheetTotal"></div>
+              <div class="sec-mini">手动补充</div>
+              <input class="food-search" id="foodSearch" placeholder="搜食物名，例如 鸡胸肉" autocomplete="off">
+              <div class="food-search-out" id="foodSearchOut"></div>
             </div>
             <button class="btn-primary" id="btnSaveMeal" disabled>记入今日</button>
           </div>
@@ -5138,8 +5138,11 @@ button, .sel-chip, .icon-btn, .tab, .move-card, .metric-row, .mp, .act{
       return;
     }
 
-    // 默认把得分最高的两条先替用户选上，不对再点掉
-    picked = res.cands.slice(0, 2).map(function (c) {
+    // 自动替用户勾上所有够可信的候选（最多 4 项），漏一项肉就会把蛋白算少
+    var auto = res.cands.filter(function (c) { return c.conf >= 0.45; });
+    if (auto.length > 4) auto = auto.slice(0, 4);
+    if (!auto.length) auto = res.cands.slice(0, 1);
+    picked = auto.map(function (c) {
       return { food: c.food, grams: c.grams || c.food.uG };
     });
 
@@ -6140,7 +6143,7 @@ button, .sel-chip, .icon-btn, .tab, .move-card, .metric-row, .mp, .act{
           '<div class="pc-main"><b>' + esc(it.name) + '</b>' +
           '<em>' + esc(it.cues[0]) + '</em></div>' +
           '<div class="pc-set"><strong>' + it.sets + ' × ' + esc(it.reps) + '</strong>' +
-          '<span>休 ' + it.rest + 's</span></div>' +
+          '<span>' + (it.rest > 0 ? '休 ' + it.rest + 's' : '连续做') + '</span></div>' +
           '</div>';
       }).join('');
       return '<div class="pc-day"><div class="pc-day-h"><b>' + esc(d.n) + '</b>' +
