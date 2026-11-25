@@ -257,6 +257,8 @@ struct MoveDetailSheet: View {
                     .padding(14)
                     .twGlass()
 
+                    StrengthCurveCard(points: store.e1rmPoints(move: move.name))
+
                     videoBlock
 
                     cardBlock(title: "动作要点", body: move.cue, tint: TWColor.mint, icon: "checkmark.seal.fill")

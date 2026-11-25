@@ -74,6 +74,15 @@ struct SetRecord: Codable, Hashable {
     var date: String   // yyyy-MM-dd
 }
 
+/// 某动作某天的最好 e1RM（Epley 估算），用来画力量曲线。
+struct E1RMPoint: Identifiable, Hashable {
+    var id: String { date }
+    var date: String      // yyyy-MM-dd
+    var kg: Double        // 估算的 1RM
+    var reps: Int
+    var weight: Double
+}
+
 struct SessionLog: Codable, Identifiable, Hashable {
     var id = UUID()
     var date: String        // yyyy-MM-dd
@@ -1100,6 +1109,47 @@ final class TWStore: ObservableObject {
                               slot: m.slot ?? slot, time: Date()))
         }
         return src.count
+    }
+
+    // MARK: - 快捷复现 & 力量曲线
+
+    /// 最近吃过的食物：今天的 + 近 7 天归档，按名字去重，越近越前。
+    func recentMeals(limit: Int = 12) -> [MealEntry] {
+        var out: [MealEntry] = []
+        var seen = Set<String>()
+        for m in meals.reversed() {
+            let k = m.name.lowercased()
+            if seen.contains(k) { continue }
+            seen.insert(k)
+            out.append(m)
+        }
+        for key in mealHistory.keys.sorted(by: >).prefix(7) {
+            for m in (mealHistory[key] ?? []).reversed() {
+                let k = m.name.lowercased()
+                if seen.contains(k) { continue }
+                seen.insert(k)
+                out.append(m)
+            }
+        }
+        return Array(out.prefix(limit))
+    }
+
+    /// 某动作的力量曲线：每天取最高 e1RM（Epley：w × (1 + reps/30)）。
+    /// 老记录没有 records 就跳过，不会凭空造点。
+    func e1rmPoints(move: String, limit: Int = 14) -> [E1RMPoint] {
+        guard !move.isEmpty else { return [] }
+        var best: [String: E1RMPoint] = [:]
+        for s in sessions {
+            guard let recs = s.records else { continue }
+            for r in recs where r.move == move && r.weight > 0 && r.reps > 0 {
+                let e = r.weight * (1 + Double(r.reps) / 30.0)
+                let d = r.date.isEmpty ? s.date : r.date
+                if let old = best[d], old.kg >= e { continue }
+                best[d] = E1RMPoint(date: d, kg: e, reps: r.reps, weight: r.weight)
+            }
+        }
+        let arr = best.values.sorted { $0.date < $1.date }
+        return Array(arr.suffix(limit))
     }
 
     func setMood(_ m: String) {

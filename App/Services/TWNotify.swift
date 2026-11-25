@@ -120,6 +120,38 @@ enum TWNotify {
         return ids
     }
 
+    // MARK: - 签名到期
+
+    private static let expiryID = "tw.notif.req.expiry"
+
+    /// 第 5 天 9:00 推一次「该重装了」。一次性通知，不重复。
+    static func scheduleExpiry(installAt: Date) {
+        let c = UNUserNotificationCenter.current()
+        c.removePendingNotificationRequests(withIdentifiers: [expiryID])
+        let cal = Calendar.current
+        var day = cal.dateComponents([.year, .month, .day], from: installAt)
+        day.hour = 0
+        day.minute = 0
+        guard let base = cal.date(from: day),
+              let fire = cal.date(byAdding: .day, value: 5, to: base) else { return }
+        var at = cal.dateComponents([.year, .month, .day], from: fire)
+        at.hour = 9
+        at.minute = 0
+        guard let fireDate = cal.date(from: at), fireDate > Date() else { return }
+
+        let content = UNMutableNotificationContent()
+        content.title = "免费签名还剩 2 天"
+        content.body = "这次安装到第 5 天了。连数据线用 Sideloadly 重装一遍就行，记录都在，不会丢。"
+        content.sound = .default
+        let trigger = UNCalendarNotificationTrigger(dateMatching: at, repeats: false)
+        c.add(UNNotificationRequest(identifier: expiryID, content: content, trigger: trigger))
+    }
+
+    static func cancelExpiry() {
+        UNUserNotificationCenter.current()
+            .removePendingNotificationRequests(withIdentifiers: [expiryID])
+    }
+
     // MARK: - 组间休息
 
     private static let restID = "tw.notif.req.rest"

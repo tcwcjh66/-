@@ -14,6 +14,7 @@ struct SettingsSheet: View {
     @State private var showImporter = false
     @State private var importAlert = false
     @State private var importMsg = ""
+    @State private var sideloadText: String = TWSideload.dayText
 
     private var versionText: String {
         let v = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "3.0"
@@ -51,6 +52,7 @@ struct SettingsSheet: View {
 
                     overviewCard
                     notifyCard
+                    sideloadCard
                     goalCard
                     dataCard
                     aboutCard
@@ -197,6 +199,48 @@ struct SettingsSheet: View {
                 TWNotify.reschedule()
             }
         )
+    }
+
+    private var sideloadCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("免费签名")
+                    .font(.system(size: 14.5, weight: .bold))
+                    .foregroundStyle(TWColor.ink)
+                Spacer(minLength: 0)
+                Text(sideloadText)
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(TWSideload.daysLeft <= 2 ? TWColor.coral : TWColor.mint)
+                    .padding(.horizontal, 9)
+                    .padding(.vertical, 4)
+                    .background {
+                        Capsule().fill((TWSideload.daysLeft <= 2 ? TWColor.coral : TWColor.mint).opacity(0.12))
+                    }
+            }
+            Text("7 天到期要重签一次。第 5 天会推一条提醒；重装前先在下面「数据」里导出一份 JSON 双保险。")
+                .font(.system(size: 11.5))
+                .foregroundStyle(TWColor.ink3)
+                .lineSpacing(2.5)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Button {
+                UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                let t = TWSideload.reset()
+                TWNotify.scheduleExpiry(installAt: t)
+                sideloadText = TWSideload.dayText
+            } label: {
+                Text("我刚重装过，重新计时")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(TWColor.purple)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 7)
+                    .background { Capsule().fill(TWColor.purple.opacity(0.12)) }
+            }
+            .buttonStyle(.plain)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .twGlass()
     }
 
     private var goalCard: some View {

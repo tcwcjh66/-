@@ -26,6 +26,10 @@ struct FlowPage: View {
     @State private var showPlanEditor = false
     @State private var editPlanIndex: Int?
     @State private var showRestSet = false
+    /// 本次训练替换过的动作：key 是计划里的原名，value 是实际练的动作。
+    /// 只影响这次训练，不动计划模板。
+    @State private var swapped: [String: String] = [:]
+    @State private var swapTarget: PlanItem?
 
     private var planIndex: Int {
         min(max(store.planPick, 0), max(store.allPlans.count - 1, 0))
@@ -104,6 +108,21 @@ struct FlowPage: View {
                 .environmentObject(store)
                 .presentationDetents([.height(420)])
                 .presentationCornerRadius(26)
+        }
+        .sheet(item: $swapTarget) { item in
+            SwapMoveSheet(current: swapped[item.name] ?? item.name) { picked in
+                withAnimation(.snappy(duration: 0.2)) {
+                    if picked == item.name {
+                        swapped[item.name] = nil
+                    } else {
+                        swapped[item.name] = picked
+                    }
+                }
+                activeMove = picked
+                restFrom = ""
+                restNext = ""
+            }
+            .environmentObject(store)
         }
         .confirmationDialog("正在训练，切换方案会清空当前组数？",
                             isPresented: $showSwitchConfirm,
@@ -345,7 +364,7 @@ struct FlowPage: View {
                         withAnimation(.snappy(duration: 0.2)) {
                             if let e = store.endSession(plan: plan.name, day: day.title,
                                                         moves: day.items.count,
-                                                        moveNames: day.items.map { $0.name }) {
+                                                        moveNames: day.items.map { swapped[$0.name] ?? $0.name }) {
                                 summaryEntry = e
                                 summaryPrev = store.sessions.dropFirst()
                                     .first { $0.plan == e.plan && $0.day == e.day }
@@ -379,8 +398,9 @@ struct FlowPage: View {
                 Button {
                     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                     withAnimation(.snappy(duration: 0.2)) {
-                        store.startSession(moves: day.items.map { $0.name })
+                        store.startSession(moves: day.items.map { swapped[$0.name] ?? $0.name })
                         doneMoves.removeAll()
+                        activeMove = day.items.first.map { swapped[$0.name] ?? $0.name } ?? ""
                     }
                 } label: {
                     HStack(spacing: 7) {
@@ -435,7 +455,8 @@ struct FlowPage: View {
 
     private func toggleDone(_ name: String, key: String, rest: String, next: String) {
         if store.sessionStart == nil {
-            store.startSession(moves: day.items.map { $0.name })
+            store.startSession(moves: day.items.map { swapped[$0.name] ?? $0.name })
+            activeMove = day.items.first.map { swapped[$0.name] ?? $0.name } ?? ""
         }
         if doneMoves.contains(key) {
             doneMoves.remove(key)
@@ -531,11 +552,12 @@ struct FlowPage: View {
                 ForEach(Array(day.items.enumerated()), id: \.element.id) { pair in
                     let key = "\(day.title)｜\(pair.element.name)"
                     let done = doneMoves.contains(key)
+                    let nm = swapped[pair.element.name] ?? pair.element.name
                     HStack(spacing: 10) {
                         Button {
                             UIImpactFeedbackGenerator(style: .rigid).impactOccurred()
                             withAnimation(.snappy(duration: 0.2)) {
-                                toggleDone(pair.element.name, key: key,
+                                toggleDone(nm, key: key,
                                            rest: pair.element.rest,
                                            next: pair.offset + 1 < day.items.count ? day.items[pair.offset + 1].name : "")
                             }
@@ -564,12 +586,12 @@ struct FlowPage: View {
                         .buttonStyle(.plain)
 
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(pair.element.name)
+                            Text(nm)
                                 .font(.system(size: 14.5, weight: .semibold))
                                 .foregroundStyle(done ? TWColor.ink3 : TWColor.ink)
                                 .strikethrough(done, color: TWColor.ink3)
                                 .lineLimit(1)
-                            if let last = store.lastRecord(move: pair.element.name) {
+                            if let last = store.lastRecord(move: nm) {
                                 Text("上次 \(fmtKg(last.weight))kg × \(last.reps) 次")
                                     .font(.system(size: 10.5, weight: .medium))
                                     .foregroundStyle(TWColor.ink3)
@@ -579,13 +601,13 @@ struct FlowPage: View {
 
                         Spacer(minLength: 4)
 
-                        if !done, let sug = store.suggestWeight(move: pair.element.name,
+                        if !done, let sug = store.suggestWeight(move: nm,
                                                                targetReps: firstInt(pair.element.reps)) {
                             Button {
                                 UIImpactFeedbackGenerator(style: .soft).impactOccurred()
                                 withAnimation(.snappy(duration: 0.2)) {
                                     setWeight = sug
-                                    activeMove = pair.element.name
+                                    activeMove = nm
                                 }
                             } label: {
                                 Text("建议 \(fmtKg(sug))kg")
@@ -599,6 +621,23 @@ struct FlowPage: View {
                             }
                             .buttonStyle(.plain)
                         }
+
+                        Button {
+                            UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                            swapTarget = pair.element
+                        } label: {
+                            HStack(spacing: 2) {
+                                Image(systemName: "arrow.triangle.2.circlepath")
+                                    .font(.system(size: 9, weight: .bold))
+                                Text(swapped[pair.element.name] == nil ? "换" : "已换")
+                                    .font(.system(size: 9.5, weight: .bold))
+                            }
+                            .foregroundStyle(swapped[pair.element.name] == nil ? TWColor.ink3 : TWColor.mint)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 3)
+                            .background { Capsule().fill(TWColor.ink3.opacity(0.09)) }
+                        }
+                        .buttonStyle(.plain)
 
                         Text("\(pair.element.sets) × \(pair.element.reps)")
                             .font(.system(size: 12.5, weight: .bold))

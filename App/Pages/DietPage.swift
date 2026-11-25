@@ -652,6 +652,9 @@ struct FoodPicker: View {
     private let slots = ["早餐", "午餐", "晚餐", "加餐"]
     private var activeSlot: String { slot.isEmpty ? defaultSlot : slot }
 
+    /// 最近吃过（含今天和近 7 天归档），点一下按原克数再记一次
+    private var recents: [MealEntry] { store.recentMeals(limit: 10) }
+
     private var customPresets: [FoodPreset] {
         store.customFoods.map { c in
             FoodPreset(name: c.name, emoji: "🍽️",
@@ -718,6 +721,55 @@ struct FoodPicker: View {
                     }
                 }
                 .padding(.horizontal, 18)
+
+                if !recents.isEmpty {
+                    VStack(alignment: .leading, spacing: 7) {
+                        HStack {
+                            Text("最近吃过")
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundStyle(TWColor.ink3)
+                            Spacer(minLength: 0)
+                            Text("点一下按原分量直接记")
+                                .font(.system(size: 10.5))
+                                .foregroundStyle(TWColor.ink3)
+                        }
+                        .padding(.horizontal, 18)
+
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 8) {
+                                ForEach(recents) { m in
+                                    Button {
+                                        UIImpactFeedbackGenerator(style: .rigid).impactOccurred()
+                                        onPick(MealEntry(name: m.name, grams: m.grams, kcal: m.kcal,
+                                                         protein: m.protein, carb: m.carb,
+                                                         fat: m.fat, veg: m.veg,
+                                                         slot: activeSlot, time: Date()))
+                                        dismiss()
+                                    } label: {
+                                        VStack(alignment: .leading, spacing: 3) {
+                                            Text(m.name)
+                                                .font(.system(size: 12.5, weight: .semibold))
+                                                .foregroundStyle(TWColor.ink)
+                                                .lineLimit(1)
+                                            Text("\(Int(m.kcal)) kcal · \(Int(m.grams))g")
+                                                .font(.system(size: 10))
+                                                .foregroundStyle(TWColor.ink3)
+                                        }
+                                        .padding(.horizontal, 11)
+                                        .padding(.vertical, 8)
+                                        .frame(maxWidth: 170, alignment: .leading)
+                                        .background {
+                                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                                .fill(TWColor.glass(0.5))
+                                        }
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                            .padding(.horizontal, 18)
+                        }
+                    }
+                }
 
                 ScrollView {
                     VStack(spacing: 8) {

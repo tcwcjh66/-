@@ -20,6 +20,7 @@ struct TodayPage: View {
             header
             heroDial
             ringsCard
+            if firstRun { firstRunCard }
             todayTrainCard
             statsRow
             waterQuick
@@ -41,6 +42,72 @@ struct TodayPage: View {
             WaterLogSheet()
                 .presentationDetents([.medium, .large])
                 .presentationCornerRadius(28)
+        }
+    }
+
+    /// 今天一条数据都没有：新装第一天，或者刚清空过
+    private var firstRun: Bool {
+        store.stepsForDisplay == 0 && store.meals.isEmpty && store.sessions.isEmpty
+    }
+
+    private var firstRunCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 6) {
+                Image(systemName: "sparkles")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(TWColor.purple)
+                Text("第一天，从这三件开始")
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(TWColor.ink)
+                Spacer(minLength: 0)
+            }
+
+            hintLine("1", "测一次心率", "「身体」→ 指尖轻压后置镜头，20 秒出数", TWColor.coral)
+            hintLine("2", "记第一餐", "「饮食」→ 搜食物或扫条码，填克数就出热量", TWColor.mint)
+            hintLine("3", "练第一次", "选个方案点「开始今天的训练」，记下来的组会进曲线", TWColor.blue)
+
+            Button {
+                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                onOpenFlow()
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "play.circle.fill")
+                        .font(.system(size: 14, weight: .bold))
+                    Text("去训练")
+                        .font(.system(size: 13.5, weight: .bold))
+                }
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 11)
+                .background {
+                    RoundedRectangle(cornerRadius: 13, style: .continuous)
+                        .fill(LinearGradient(colors: [TWColor.purple, TWColor.violet],
+                                             startPoint: .topLeading, endPoint: .bottomTrailing))
+                }
+            }
+            .buttonStyle(.plain)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .twGlass()
+    }
+
+    private func hintLine(_ n: String, _ title: String, _ detail: String, _ tint: Color) -> some View {
+        HStack(alignment: .top, spacing: 9) {
+            Text(n)
+                .font(.system(size: 10, weight: .bold))
+                .foregroundStyle(tint)
+                .frame(width: 18, height: 18)
+                .background { Circle().fill(tint.opacity(0.14)) }
+            VStack(alignment: .leading, spacing: 1) {
+                Text(title)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(TWColor.ink)
+                Text(detail)
+                    .font(.system(size: 11))
+                    .foregroundStyle(TWColor.ink3)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
     }
 

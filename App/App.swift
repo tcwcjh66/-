@@ -17,6 +17,9 @@ struct TianCaiWeiApp: App {
                     PhoneLink.shared.store = store
                     PhoneLink.shared.pushToWatch()
                     TWNotify.reschedule()
+                    // 免费签名 7 天，第 5 天提醒重装；中途重签过会自动重算
+                    let install = TWSideload.touch()
+                    TWNotify.scheduleExpiry(installAt: install)
                     StepLive.shared.bind(store)
                     StepLive.shared.start()
                     store.rollIfNewDay()

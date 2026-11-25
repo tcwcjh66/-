@@ -28,6 +28,7 @@ struct WatchSyncSheet: View {
                     oneTapCard
                     statusCard
                     quickCard
+                    autoCard
                     paramCard
                     templateCard
                     troubleCard
@@ -235,6 +236,60 @@ struct WatchSyncSheet: View {
             Text("收尾：回到自动化那条 → 「添加动作」→ 选刚建的快捷指令 → 完成。之后每次打开天才威就自动同步。")
                 .font(.system(size: 11.5))
                 .foregroundStyle(TWColor.ink3)
+                .lineSpacing(2.5)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .twGlass()
+    }
+
+    /// 定时自动化：真正不用手动开 App 的那条路径
+    private var autoCard: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 6) {
+                Image(systemName: "clock.badge.checkmark")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(TWColor.mint)
+                Text("改成定时，不用你记着开 App")
+                    .font(.system(size: 14.5, weight: .bold))
+                    .foregroundStyle(TWColor.ink)
+                Spacer(minLength: 0)
+            }
+
+            Text("上面五步里的第 2 步用的是「打开天才威时」触发——你得先开 App 它才跑。把触发条件换成时间，就彻底不用管了：")
+                .font(.system(size: 12))
+                .foregroundStyle(TWColor.ink3)
+                .lineSpacing(2.5)
+                .fixedSize(horizontal: false, vertical: true)
+
+            step(1,
+                 "快捷指令 → 自动化 → 右上角 + → 选「特定时间」",
+                 "不要选「App」，那是上面已经建过的那条。这里要新建一条用时间触发的。")
+
+            step(2,
+                 "时间设 07:00，重复选「每天」，把「运行前询问」关掉 → 下一步",
+                 "关掉询问才是真的自动。不关的话每天会弹一个确认框，等于又变成手动。")
+
+            step(3,
+                 "动作只加一条：「运行快捷指令」→ 选你第 3 步建好的那条（比如“天才威同步”）→ 完成",
+                 "这条自动化不用再写查找健康样本，直接调那条现成的就行。两条共用同一个快捷指令，改一处两边都生效。")
+
+            Text("更准的两种触发：把「特定时间」换成「当闹钟关闭时」，或「当断开充电时」。这两件事你每天都会做，不用等整点。")
+                .font(.system(size: 11.5))
+                .foregroundStyle(TWColor.ink3)
+                .lineSpacing(2.5)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Text("会闪一下：最后那条「打开 URL」会把天才威拉到前台。手机锁着的话，解锁那一刻才跳过去，数据不会丢。")
+                .font(.system(size: 11.5))
+                .foregroundStyle(TWColor.ink3)
+                .lineSpacing(2.5)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Text("别用「打开 App 时」当触发器配定时：打开 App 又跳回 App，会自己套自己，表现为原地转圈。定时和闹钟都不会。")
+                .font(.system(size: 11.5))
+                .foregroundStyle(TWColor.amber)
                 .lineSpacing(2.5)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -521,6 +576,12 @@ struct WatchSyncSheet: View {
 
         收尾：自动化那条 → 添加动作 → 选刚建的快捷指令
         之后每次打开天才威自动同步。
+
+        ---- 想彻底不用手动开 App，再加一条定时的 ----
+        快捷指令 → 自动化 → + → 选「特定时间」
+        时间 07:00，重复「每天」，关掉「运行前询问」→ 下一步
+        动作只加「运行快捷指令」→ 选上面那条 → 完成
+        （也可把触发换成「当闹钟关闭时」/「当断开充电时」，更准时）
         """
         UIPasteboard.general.string = text
         UIImpactFeedbackGenerator(style: .soft).impactOccurred()
