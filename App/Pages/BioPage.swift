@@ -15,6 +15,10 @@ struct BioPage: View {
     @State private var hText = ""
     @State private var waistText = ""
     @State private var goalText = ""
+    @State private var chestText = ""
+    @State private var armText = ""
+    @State private var thighText = ""
+    @State private var hipText = ""
 
     private let pedometer = CMPedometer()
 
@@ -52,9 +56,15 @@ struct BioPage: View {
         }
         .onAppear { loadSteps() }
         .sheet(isPresented: $showBody) {
-            BodySheet(w: $wText, h: $hText, waist: $waistText, goal: $goalText) { kg, height, waist, goal in
+            BodySheet(w: $wText, h: $hText, waist: $waistText, goal: $goalText,
+                      chest: $chestText, arm: $armText, thigh: $thighText, hip: $hipText) {
+                kg, height, waist, goal, chest, arm, thigh, hip in
                 if height > 0 { store.heightCM = height }
                 if waist > 0 { store.waistCM = waist }
+                if chest > 0 { store.chestCM = chest }
+                if arm > 0 { store.armCM = arm }
+                if thigh > 0 { store.thighCM = thigh }
+                if hip > 0 { store.hipCM = hip }
                 if goal > 0 { store.weightGoal = goal }
                 if kg > 0 { store.logWeight(kg) }
                 store.persist()
@@ -119,6 +129,17 @@ struct BioPage: View {
                 }
             }
 
+            HStack(spacing: 0) {
+                girthCell(title: "胸", value: store.chestCM)
+                Rectangle().fill(TWColor.ink3.opacity(0.14)).frame(width: 0.8, height: 26)
+                girthCell(title: "臂", value: store.armCM)
+                Rectangle().fill(TWColor.ink3.opacity(0.14)).frame(width: 0.8, height: 26)
+                girthCell(title: "腿", value: store.thighCM)
+                Rectangle().fill(TWColor.ink3.opacity(0.14)).frame(width: 0.8, height: 26)
+                girthCell(title: "臀", value: store.hipCM)
+            }
+            .padding(.vertical, 8)
+
             if weightPoints.count >= 2 {
                 TrendChart(title: "体重 · 最近 7 次",
                            values: weightPoints,
@@ -155,12 +176,16 @@ struct BioPage: View {
                 hText = store.heightCM > 0 ? "\(Int(store.heightCM))" : ""
                 waistText = store.waistCM > 0 ? "\(Int(store.waistCM))" : ""
                 goalText = store.weightGoal > 0 ? String(format: "%.1f", store.weightGoal) : ""
+                chestText = store.chestCM > 0 ? "\(Int(store.chestCM))" : ""
+                armText = store.armCM > 0 ? "\(Int(store.armCM))" : ""
+                thighText = store.thighCM > 0 ? "\(Int(store.thighCM))" : ""
+                hipText = store.hipCM > 0 ? "\(Int(store.hipCM))" : ""
                 showBody = true
             } label: {
                 HStack(spacing: 6) {
                     Image(systemName: "scalemass.fill")
                         .font(.system(size: 14, weight: .bold))
-                    Text("记录体重 / 腰围")
+                    Text("记录身体数据")
                         .font(.system(size: 14.5, weight: .bold))
                 }
                 .foregroundStyle(.white)
@@ -176,6 +201,18 @@ struct BioPage: View {
         }
         .padding(18)
         .twGlass()
+    }
+
+    private func girthCell(title: String, value: Double) -> some View {
+        VStack(spacing: 2) {
+            Text(title)
+                .font(.system(size: 10.5, weight: .semibold))
+                .foregroundStyle(TWColor.ink3)
+            Text(value > 0 ? String(format: "%.0f", value) : "--")
+                .font(.system(size: 16, weight: .heavy))
+                .foregroundStyle(TWColor.ink)
+        }
+        .frame(maxWidth: .infinity)
     }
 
     // MARK: - 饮水

@@ -12,7 +12,9 @@ struct RootView: View {
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(spacing: 0) {
                     switch tab {
-                    case .today: TodayPage()
+                    case .today: TodayPage(onOpenFlow: {
+                        withAnimation(.snappy(duration: 0.26)) { tab = .flow }
+                    })
                     case .bio:   BioPage()
                     case .lib:   LibPage()
                     case .flow:  FlowPage()

@@ -62,6 +62,7 @@ struct SessionLog: Codable, Identifiable, Hashable {
     var moves: Int
     var sets: Int
     var minutes: Int
+    var moveNames: [String]? = nil
 }
 
 struct MoveItem: Identifiable, Hashable {
@@ -135,6 +136,10 @@ final class TWStore: ObservableObject {
     @Published var bodyWeight: Double = 0
     @Published var heightCM: Double = 0
     @Published var waistCM: Double = 0
+    @Published var chestCM: Double = 0
+    @Published var armCM: Double = 0
+    @Published var thighCM: Double = 0
+    @Published var hipCM: Double = 0
     @Published var weightGoal: Double = 0
     @Published var weightLogs: [WeightLog] = []
 
@@ -179,6 +184,10 @@ final class TWStore: ObservableObject {
         static let cfoods = "tw.cfoods.v2"
         static let wgoal = "tw.wgoal.v2"
         static let sess = "tw.sess.v2"
+        static let chest = "tw.chest.v2"
+        static let arm = "tw.arm.v2"
+        static let thigh = "tw.thigh.v2"
+        static let hip = "tw.hip.v2"
     }
 
     init() {
@@ -269,6 +278,19 @@ final class TWStore: ObservableObject {
         persistSoon()
     }
 
+    /// 按最近一次训练推断下一个该练的是哪天（同方案内轮转）
+    var nextDayHint: (plan: String, day: String)? {
+        guard let last = sessions.first else { return nil }
+        guard let tpl = planTemplates.first(where: { $0.name == last.plan }) else {
+            return (last.plan, last.day)
+        }
+        if let idx = tpl.days.firstIndex(where: { $0.title == last.day }) {
+            let next = tpl.days[(idx + 1) % tpl.days.count]
+            return (tpl.name, next.title)
+        }
+        return (tpl.name, tpl.days.first?.title ?? "")
+    }
+
     var bmi: Double {
         guard bodyWeight > 0, heightCM > 0 else { return 0 }
         let h = heightCM / 100
@@ -338,7 +360,7 @@ final class TWStore: ObservableObject {
         persistSoon()
     }
 
-    func endSession(plan: String = "", day: String = "", moves: Int = 0) {
+    func endSession(plan: String = "", day: String = "", moves: Int = 0, moveNames: [String] = []) {
         let start = sessionStart ?? Date()
         let mins = max(1, Int(Date().timeIntervalSince(start) / 60))
         if sessionSets > 0 {
@@ -348,7 +370,8 @@ final class TWStore: ObservableObject {
                 day: day,
                 moves: moves,
                 sets: sessionSets,
-                minutes: mins
+                minutes: mins,
+                moveNames: moveNames
             )
             sessions.insert(entry, at: 0)
             if sessions.count > 90 {
@@ -438,6 +461,10 @@ final class TWStore: ObservableObject {
             d.set(v, forKey: Key.cfoods)
         }
         d.set(weightGoal, forKey: Key.wgoal)
+        d.set(chestCM, forKey: Key.chest)
+        d.set(armCM, forKey: Key.arm)
+        d.set(thighCM, forKey: Key.thigh)
+        d.set(hipCM, forKey: Key.hip)
         if let v = try? JSONEncoder().encode(sessions) {
             d.set(v, forKey: Key.sess)
         }
@@ -492,6 +519,10 @@ final class TWStore: ObservableObject {
             customFoods = decoded
         }
         weightGoal = d.double(forKey: Key.wgoal)
+        chestCM = d.double(forKey: Key.chest)
+        armCM = d.double(forKey: Key.arm)
+        thighCM = d.double(forKey: Key.thigh)
+        hipCM = d.double(forKey: Key.hip)
         if let v = d.data(forKey: Key.sess),
            let decoded = try? JSONDecoder().decode([SessionLog].self, from: v) {
             sessions = decoded

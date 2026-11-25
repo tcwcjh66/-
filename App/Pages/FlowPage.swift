@@ -13,6 +13,7 @@ struct FlowPage: View {
     @State private var planIndex: Int = 0
     @State private var dayIndex: Int = 0
     @State private var doneMoves: Set<String> = []
+    @State private var detailSession: SessionLog?
 
     private var plan: PlanTemplate {
         planTemplates[min(planIndex, planTemplates.count - 1)]
@@ -54,6 +55,11 @@ struct FlowPage: View {
                 running = false
                 UINotificationFeedbackGenerator().notificationOccurred(.success)
             }
+        }
+        .sheet(item: $detailSession) { s in
+            SessionDetailSheet(session: s)
+                .presentationDetents([.medium, .large])
+                .presentationCornerRadius(28)
         }
     }
 
@@ -158,7 +164,9 @@ struct FlowPage: View {
                     Button {
                         UIImpactFeedbackGenerator(style: .soft).impactOccurred()
                         withAnimation(.snappy(duration: 0.2)) {
-                            store.endSession(plan: plan.name, day: day.title, moves: day.items.count)
+                            store.endSession(plan: plan.name, day: day.title,
+                                             moves: day.items.count,
+                                             moveNames: day.items.map { $0.name })
                             doneMoves.removeAll()
                         }
                     } label: {
@@ -423,24 +431,34 @@ struct FlowPage: View {
                     .fixedSize(horizontal: false, vertical: true)
             } else {
                 ForEach(Array(store.sessions.prefix(5).enumerated()), id: \.element.id) { pair in
-                    HStack(spacing: 10) {
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text(pair.element.day.isEmpty
-                                 ? pair.element.plan
-                                 : "\(pair.element.plan) · \(pair.element.day)")
-                                .font(.system(size: 13.5, weight: .semibold))
-                                .foregroundStyle(TWColor.ink)
-                                .lineLimit(1)
-                            Text("\(pair.element.sets) 组 · \(pair.element.minutes) 分钟 · \(pair.element.moves) 个动作")
-                                .font(.system(size: 11.5))
+                    Button {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        detailSession = pair.element
+                    } label: {
+                        HStack(spacing: 10) {
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(pair.element.day.isEmpty
+                                     ? pair.element.plan
+                                     : "\(pair.element.plan) · \(pair.element.day)")
+                                    .font(.system(size: 13.5, weight: .semibold))
+                                    .foregroundStyle(TWColor.ink)
+                                    .lineLimit(1)
+                                Text("\(pair.element.sets) 组 · \(pair.element.minutes) 分钟 · \(pair.element.moves) 个动作")
+                                    .font(.system(size: 11.5))
+                                    .foregroundStyle(TWColor.ink3)
+                            }
+                            Spacer(minLength: 4)
+                            Text(shortDate(pair.element.date))
+                                .font(.system(size: 11.5, weight: .semibold))
                                 .foregroundStyle(TWColor.ink3)
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundStyle(TWColor.ink3.opacity(0.6))
                         }
-                        Spacer(minLength: 4)
-                        Text(shortDate(pair.element.date))
-                            .font(.system(size: 11.5, weight: .semibold))
-                            .foregroundStyle(TWColor.ink3)
+                        .padding(.vertical, 7)
+                        .contentShape(Rectangle())
                     }
-                    .padding(.vertical, 7)
+                    .buttonStyle(.plain)
 
                     if pair.offset < min(store.sessions.count, 5) - 1 {
                         Rectangle()

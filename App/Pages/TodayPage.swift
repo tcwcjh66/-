@@ -4,6 +4,7 @@ import UIKit
 struct TodayPage: View {
     @EnvironmentObject var store: TWStore
     @State private var appeared = false
+    var onOpenFlow: () -> Void = {}
 
     private var dateText: String {
         let f = DateFormatter()
@@ -17,6 +18,7 @@ struct TodayPage: View {
             header
             heroDial
             ringsCard
+            todayTrainCard
             statsRow
             trendCard
             moodRow
@@ -173,6 +175,91 @@ struct TodayPage: View {
         .padding(.horizontal, 13)
         .padding(.vertical, 12)
         .twGlass(radius: 17)
+    }
+
+    private var weekCount: Int {
+        let cal = Calendar.current
+        let start = cal.date(byAdding: .day, value: -6, to: cal.startOfDay(for: Date())) ?? Date()
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        let since = f.string(from: start)
+        return store.sessions.filter { $0.date >= since }.count
+    }
+
+    private var todayTrainCard: some View {
+        VStack(alignment: .leading, spacing: 11) {
+            HStack {
+                Text("今日训练")
+                    .font(.system(size: 14.5, weight: .semibold))
+                    .foregroundStyle(TWColor.ink2)
+                Spacer()
+                GlassPill(text: "本周 \(weekCount) 次", tint: TWColor.mint)
+            }
+
+            if store.sessionStart != nil {
+                HStack(spacing: 8) {
+                    Circle()
+                        .fill(TWColor.purple)
+                        .frame(width: 7, height: 7)
+                    Text("正在练：\(store.sessionMoves.first ?? "")\(store.sessionMoves.count > 1 ? " 等" : "")")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(TWColor.ink)
+                        .lineLimit(1)
+                    Spacer(minLength: 0)
+                    Text("已 \(store.sessionSets) 组")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundStyle(TWColor.purple)
+                }
+            } else if let hint = store.nextDayHint {
+                HStack(spacing: 8) {
+                    Text(hint.day)
+                        .font(.system(size: 20, weight: .heavy))
+                        .foregroundStyle(TWColor.ink)
+                    Text(hint.plan)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(TWColor.ink3)
+                    Spacer(minLength: 0)
+                    if let last = store.sessions.first {
+                        Text("上次 \(shortDay(last.date))")
+                            .font(.system(size: 11.5, weight: .semibold))
+                            .foregroundStyle(TWColor.ink3)
+                    }
+                }
+            } else {
+                Text("还没有训练记录。挑一套方案，从今天开始。")
+                    .font(.system(size: 13))
+                    .foregroundStyle(TWColor.ink3)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Button {
+                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                onOpenFlow()
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "dumbbell.fill")
+                        .font(.system(size: 13, weight: .bold))
+                    Text(store.sessionStart != nil ? "回到训练" : "去训练")
+                        .font(.system(size: 14.5, weight: .bold))
+                }
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 11)
+                .background {
+                    RoundedRectangle(cornerRadius: 13, style: .continuous)
+                        .fill(LinearGradient(colors: [TWColor.purple, TWColor.violet],
+                                             startPoint: .topLeading, endPoint: .bottomTrailing))
+                }
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(14)
+        .twGlass(radius: 18)
+    }
+
+    private func shortDay(_ raw: String) -> String {
+        let p = raw.split(separator: "-")
+        return p.count == 3 ? "\(p[1])/\(p[2])" : raw
     }
 
     private var moodRow: some View {
