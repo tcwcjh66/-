@@ -149,13 +149,28 @@ struct DietPage: View {
         .twGlass()
     }
 
+    private var proteinNeed: Double {
+        (store.sessionStart == nil && store.sessions.isEmpty) ? 110 : 130
+    }
+
+    private var proteinLeft: Double { max(0, proteinNeed - store.protein) }
+
+    private var proteinHint: String {
+        proteinLeft <= 0 ? "蛋白已达标" : "还差 \(Int(proteinLeft))g 蛋白"
+    }
+
     private var macroCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("三大营养素")
-                .font(.system(size: 14.5, weight: .semibold))
-                .foregroundStyle(TWColor.ink2)
+            HStack {
+                Text("三大营养素")
+                    .font(.system(size: 14.5, weight: .semibold))
+                    .foregroundStyle(TWColor.ink2)
+                Spacer()
+                GlassPill(text: proteinHint,
+                          tint: proteinLeft <= 0 ? TWColor.mint : TWColor.coral)
+            }
 
-            macroRow(title: "蛋白质", value: store.protein, target: 110, tint: TWColor.coral, unit: "g")
+            macroRow(title: "蛋白质", value: store.protein, target: proteinNeed, tint: TWColor.coral, unit: "g")
             macroRow(title: "碳水", value: store.carb, target: 260, tint: TWColor.blue, unit: "g")
             macroRow(title: "脂肪", value: store.fat, target: 70, tint: TWColor.amber, unit: "g")
         }

@@ -156,6 +156,10 @@ final class TWStore: ObservableObject {
     @Published var sessions: [SessionLog] = []
     @Published var girthLogs: [GirthLog] = []
 
+    // 方案选择记忆
+    @Published var planPick: Int = 0
+    @Published var dayPick: Int = 0
+
     // 饮水
     @Published var waterCups: Int = 0
     @Published var waterTarget: Int = 8
@@ -199,6 +203,8 @@ final class TWStore: ObservableObject {
         static let thigh = "tw.thigh.v2"
         static let hip = "tw.hip.v2"
         static let glogs = "tw.glogs.v2"
+        static let planpick = "tw.planpick.v2"
+        static let daypick = "tw.daypick.v2"
     }
 
     init() {
@@ -316,6 +322,12 @@ final class TWStore: ObservableObject {
     }
 
     // MARK: - 围度历史
+
+    func setPlan(_ plan: Int, day: Int = 0) {
+        planPick = plan
+        dayPick = day
+        persistSoon()
+    }
 
     func logGirth() {
         guard waistCM > 0 || chestCM > 0 || armCM > 0 || thighCM > 0 || hipCM > 0 else { return }
@@ -497,6 +509,8 @@ final class TWStore: ObservableObject {
         if let v = try? JSONEncoder().encode(girthLogs) {
             d.set(v, forKey: Key.glogs)
         }
+        d.set(planPick, forKey: Key.planpick)
+        d.set(dayPick, forKey: Key.daypick)
         if let v = try? JSONEncoder().encode(sessions) {
             d.set(v, forKey: Key.sess)
         }
@@ -559,6 +573,8 @@ final class TWStore: ObservableObject {
            let decoded = try? JSONDecoder().decode([GirthLog].self, from: v) {
             girthLogs = decoded
         }
+        planPick = d.integer(forKey: Key.planpick)
+        dayPick = d.integer(forKey: Key.daypick)
         if let v = d.data(forKey: Key.sess),
            let decoded = try? JSONDecoder().decode([SessionLog].self, from: v) {
             sessions = decoded

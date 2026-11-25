@@ -10,17 +10,23 @@ struct FlowPage: View {
     @State private var running: Bool = false
     @State private var tick = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
-    @State private var planIndex: Int = 0
-    @State private var dayIndex: Int = 0
     @State private var doneMoves: Set<String> = []
     @State private var detailSession: SessionLog?
 
+    private var planIndex: Int {
+        min(max(store.planPick, 0), planTemplates.count - 1)
+    }
+
+    private var dayIndex: Int {
+        min(max(store.dayPick, 0), plan.days.count - 1)
+    }
+
     private var plan: PlanTemplate {
-        planTemplates[min(planIndex, planTemplates.count - 1)]
+        planTemplates[planIndex]
     }
 
     private var day: PlanDay {
-        plan.days[min(dayIndex, plan.days.count - 1)]
+        plan.days[dayIndex]
     }
 
     private var progress: Double {
@@ -73,8 +79,8 @@ struct FlowPage: View {
                     Button {
                         UIImpactFeedbackGenerator(style: .soft).impactOccurred()
                         withAnimation(.snappy(duration: 0.22)) {
-                            planIndex = pair.offset
-                            dayIndex = 0
+                            store.setPlan(pair.offset, day: 0)
+                            doneMoves.removeAll()
                         }
                     } label: {
                         VStack(alignment: .leading, spacing: 3) {
@@ -110,7 +116,10 @@ struct FlowPage: View {
             ForEach(Array(plan.days.enumerated()), id: \.element.id) { pair in
                 Button {
                     UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    withAnimation(.snappy(duration: 0.2)) { dayIndex = pair.offset }
+                    withAnimation(.snappy(duration: 0.2)) {
+                        store.setPlan(planIndex, day: pair.offset)
+                        doneMoves.removeAll()
+                    }
                 } label: {
                     Text(pair.element.title)
                         .font(.system(size: 13.5, weight: dayIndex == pair.offset ? .bold : .medium))

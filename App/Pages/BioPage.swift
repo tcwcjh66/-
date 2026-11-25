@@ -132,6 +132,38 @@ struct BioPage: View {
                 }
             }
 
+            if store.bmi > 0 {
+                VStack(spacing: 5) {
+                    GeometryReader { geo in
+                        let w = geo.size.width
+                        ZStack(alignment: .leading) {
+                            HStack(spacing: 0) {
+                                Rectangle().fill(TWColor.blue.opacity(0.55)).frame(width: w * 0.21)
+                                Rectangle().fill(TWColor.mint.opacity(0.55)).frame(width: w * 0.32)
+                                Rectangle().fill(TWColor.amber.opacity(0.55)).frame(width: w * 0.24)
+                                Rectangle().fill(TWColor.coral.opacity(0.55))
+                            }
+                            .clipShape(Capsule())
+
+                            Capsule()
+                                .fill(Color.white)
+                                .frame(width: 4, height: 18)
+                                .shadow(color: .black.opacity(0.28), radius: 1.5, y: 0.5)
+                                .offset(x: CGFloat(min(max((store.bmi - 15) / 17, 0), 1)) * (w - 4))
+                        }
+                    }
+                    .frame(height: 18)
+
+                    HStack {
+                        Text("偏瘦 18.5").font(.system(size: 9.5)).foregroundStyle(TWColor.ink3)
+                        Spacer()
+                        Text("正常 24").font(.system(size: 9.5)).foregroundStyle(TWColor.ink3)
+                        Spacer()
+                        Text("偏高 28").font(.system(size: 9.5)).foregroundStyle(TWColor.ink3)
+                    }
+                }
+            }
+
             HStack(spacing: 0) {
                 girthCell(title: "胸", value: store.chestCM)
                 Rectangle().fill(TWColor.ink3.opacity(0.14)).frame(width: 0.8, height: 26)
