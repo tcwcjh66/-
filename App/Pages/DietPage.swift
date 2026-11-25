@@ -10,7 +10,6 @@ struct DietPage: View {
     @State private var hits: [FoodHit] = []
     @State private var showResult = false
     @State private var showAI = false
-    @State private var savedToast = false
 
     private let slots = ["早餐", "午餐", "晚餐", "加餐"]
 
@@ -671,9 +670,11 @@ struct ShotResultSheet: View {
     var hits: [FoodHit]
     var defaultSlot: String = "午餐"
     var onAdd: (FoodHit) -> Void
+    @EnvironmentObject var store: TWStore
     @Environment(\.dismiss) private var dismiss
     @State private var selected: Set<UUID> = []
     @State private var showAI = false
+    @State private var savedToast = false
 
     private let slots = ["早餐", "午餐", "晚餐", "加餐"]
     @State private var slot: String = ""
