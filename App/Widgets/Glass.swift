@@ -9,12 +9,20 @@ struct GlassSurface: ViewModifier {
     var tintAmount: Double = 0
     var shadow: Bool = true
 
+    @Environment(\.colorScheme) private var scheme
+
     func body(content: Content) -> some View {
         let shape = RoundedRectangle(cornerRadius: radius, style: .continuous)
         content
             .background {
                 ZStack {
-                    shape.fill(.ultraThinMaterial)
+                    // 浅色背景本来就是淡紫渐变，模糊看不出来，用纯色替掉能省掉整层离屏模糊。
+                    // 深色下材质差异明显，保留。
+                    if scheme == .dark {
+                        shape.fill(.ultraThinMaterial)
+                    } else {
+                        shape.fill(TWColor.fill)
+                    }
 
                     shape.fill(
                         LinearGradient(
@@ -47,11 +55,12 @@ struct GlassSurface: ViewModifier {
                 }
             }
             .clipShape(shape)
+            .compositingGroup()
             .shadow(
                 color: shadow ? TWColor.cardShadow : .clear,
-                radius: shadow ? 22 : 0,
+                radius: shadow ? 12 : 0,
                 x: 0,
-                y: shadow ? 10 : 0
+                y: shadow ? 5 : 0
             )
     }
 }
@@ -64,6 +73,20 @@ extension View {
         shadow: Bool = true
     ) -> some View {
         modifier(GlassSurface(radius: radius, tint: tint, tintAmount: tintAmount, shadow: shadow))
+    }
+}
+
+// MARK: - 滚动状态（给逐帧动画用）
+
+private struct TWScrollPauseKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
+extension EnvironmentValues {
+    /// 手指正在拖 / 惯性还没停时为 true，逐帧动画据此暂停，别跟滚动抢帧。
+    var twScrollPause: Bool {
+        get { self[TWScrollPauseKey.self] }
+        set { self[TWScrollPauseKey.self] = newValue }
     }
 }
 

@@ -5,6 +5,9 @@ struct RootView: View {
     @EnvironmentObject var store: TWStore
     @State private var tab: TWTab = .today
     @AppStorage("tw.onboarded.v3") private var onboarded = false
+    /// 手指在拖 / 惯性未停，逐帧动画据此暂停
+    @State private var isScrolling = false
+    @State private var scrollWork: DispatchWorkItem?
 
     var body: some View {
         Group {
@@ -21,6 +24,7 @@ struct RootView: View {
     private var content: some View {
         ZStack(alignment: .bottom) {
             AuroraBG()
+                .ignoresSafeArea()
 
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(spacing: 0) {
@@ -39,16 +43,29 @@ struct RootView: View {
                 .padding(.bottom, 118)
             }
             .scrollBounceBehavior(.basedOnSize)
+            .simultaneousGesture(
+                DragGesture(minimumDistance: 8)
+                    .onChanged { _ in markScrolling() }
+            )
 
             GlassTabBar(selected: $tab)
                 .padding(.horizontal, 18)
                 .padding(.bottom, 6)
         }
-        .background(AuroraBG())
+        .environment(\.twScrollPause, isScrolling)
         .ignoresSafeArea(edges: .bottom)
         .onOpenURL { url in
             handleIncoming(url)
         }
+    }
+
+    /// 拖动时暂停逐帧动画，手停下 0.45 秒后恢复（覆盖惯性减速阶段）
+    private func markScrolling() {
+        if !isScrolling { isScrolling = true }
+        scrollWork?.cancel()
+        let w = DispatchWorkItem { isScrolling = false }
+        scrollWork = w
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45, execute: w)
     }
 
     /// 快捷指令回传入口：twfit://hr?bpm=72&hrv=45

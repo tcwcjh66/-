@@ -16,6 +16,8 @@ struct LivingAvatar: View {
     @StateObject private var gyro = Gyro3D()
     /// 屏幕刷新能力：ProMotion（≥100Hz）与 60Hz 屏的拖影权重不同
     @State private var proMotion = false
+    /// 手指在拖或惯性没停时暂停逐帧求值
+    @Environment(\.twScrollPause) private var scrollPause
 
     private var trailGain: CGFloat { proMotion ? 0.14 : 0.42 }
     private var trailCap: CGFloat { proMotion ? 0.08 : 0.26 }
@@ -41,8 +43,9 @@ struct LivingAvatar: View {
     }
 
     var body: some View {
-        // 120Hz 驱动：ProMotion 机型跑满，60Hz 机型自动降频，不会跳帧
-        TimelineView(.animation(minimumInterval: 1.0 / 120.0, paused: false)) { context in
+        // 60Hz 足够：呼吸 8 次/分、摆动更慢，120Hz 只是白烧两倍算力。
+        // 滚动时直接暂停，立绘不再跟手指抢帧。
+        TimelineView(.animation(minimumInterval: 1.0 / 60.0, paused: scrollPause)) { context in
             let t = CGFloat(context.date.timeIntervalSinceReferenceDate)
             canvas(t: t)
         }
@@ -122,7 +125,7 @@ struct LivingAvatar: View {
                     x: tx * 5,
                     y: baseY - 2.6 * breath + 1.6 * drift + c.sink + ty * 3
                 )
-                .shadow(color: TWColor.cardShadow, radius: 24, x: tx * 13, y: 16)
+                .shadow(color: TWColor.cardShadow, radius: 16, x: tx * 13, y: 12)
 
             // 第 3 层：右侧轮廓高光 —— 倾斜时忽明忽暗，强化体积
             Image(asset)
