@@ -6,6 +6,7 @@ struct TodayPage: View {
     @State private var appeared = false
     @State private var showSettings = false
     @State private var showWaterLog = false
+    @State private var showRingInfo = false
     var onOpenFlow: () -> Void = {}
 
     private var dateText: String {
@@ -42,6 +43,12 @@ struct TodayPage: View {
             WaterLogSheet()
                 .presentationDetents([.medium, .large])
                 .presentationCornerRadius(28)
+        }
+        .sheet(isPresented: $showRingInfo) {
+            RingInfoSheet()
+                .environmentObject(store)
+                .presentationDetents([.height(460), .large])
+                .presentationCornerRadius(26)
         }
     }
 
@@ -170,6 +177,11 @@ struct TodayPage: View {
         .padding(.vertical, 16)
         .padding(.horizontal, 14)
         .twGlass()
+        .contentShape(Rectangle())
+        .onTapGesture {
+            UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+            showRingInfo = true
+        }
     }
 
     private func ringRow(color: Color, label: String, value: String, unit: String) -> some View {
@@ -526,5 +538,104 @@ struct MoodChip: View {
             }
         }
         .buttonStyle(.plain)
+    }
+}
+
+/// 点四环弹出来：每个数从哪来，说清楚，不做模糊表述。
+struct RingInfoSheet: View {
+    @EnvironmentObject var store: TWStore
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        ZStack {
+            AuroraBG()
+            VStack(spacing: 14) {
+                Capsule()
+                    .fill(TWColor.ink3.opacity(0.4))
+                    .frame(width: 34, height: 4)
+                    .padding(.top, 9)
+
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("这四个环怎么算的")
+                            .font(.system(size: 20, weight: .heavy))
+                            .foregroundStyle(TWColor.ink)
+                        Text("每个数都能追到来源，没有一项是编的")
+                            .font(.system(size: 11.5))
+                            .foregroundStyle(TWColor.ink3)
+                    }
+                    Spacer(minLength: 0)
+                    Button {
+                        UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                        dismiss()
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundStyle(TWColor.ink2)
+                            .frame(width: 32, height: 32)
+                            .background { Circle().fill(TWColor.glass(0.55)) }
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                infoRow(tint: TWColor.purple, title: "活动",
+                        value: "\(Int(store.moveKcal)) / \(Int(store.moveTarget)) kcal",
+                        detail: "吃进去的每 1000 kcal 记 60 的活动；每记一组训练再加 22 kcal。")
+                infoRow(tint: TWColor.pink, title: "锻炼",
+                        value: "\(Int(store.exerciseMin)) / \(Int(store.exerciseTarget)) 分钟",
+                        detail: "每记一组约 2.5 分钟；手表回传的锻炼分钟也会并进来。")
+                infoRow(tint: TWColor.mint, title: "站立",
+                        value: "\(Int(store.standHours)) / \(Int(store.standTarget)) 小时",
+                        detail: "每记一组加 0.15 小时；主体来自手表回传的站立小时，iPhone 自己测不了。")
+                infoRow(tint: TWColor.amber, title: "HRV",
+                        value: "\(store.hrv) ms",
+                        detail: "指尖测量或快捷指令回传的最新值，不会拿心率去推。")
+
+                Text("环没满只是还没到目标。某项是 0 就代表今天确实没这个数据，这里不做估算。")
+                    .font(.system(size: 11.5))
+                    .foregroundStyle(TWColor.ink3)
+                    .lineSpacing(2.5)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.top, 2)
+
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 20)
+        }
+    }
+
+    private func infoRow(tint: Color, title: String, value: String, detail: String) -> some View {
+        HStack(alignment: .top, spacing: 11) {
+            Circle()
+                .fill(tint)
+                .frame(width: 9, height: 9)
+                .padding(.top, 5)
+
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(alignment: .firstTextBaseline, spacing: 7) {
+                    Text(title)
+                        .font(.system(size: 13.5, weight: .bold))
+                        .foregroundStyle(TWColor.ink)
+                    Text(value)
+                        .font(.system(size: 12))
+                        .foregroundStyle(TWColor.ink2)
+                        .monospacedDigit()
+                }
+                Text(detail)
+                    .font(.system(size: 11))
+                    .foregroundStyle(TWColor.ink3)
+                    .lineSpacing(2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(TWColor.glass(0.46))
+        }
     }
 }

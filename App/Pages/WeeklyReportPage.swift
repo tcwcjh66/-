@@ -88,6 +88,56 @@ struct WeeklyReportPage: View {
         return parts.isEmpty ? "这周还没有能算的数据。" : parts.joined(separator: " · ")
     }
 
+    // MARK: - 和上周比
+
+    private var lastWeekKeys: [String] {
+        let cal = Calendar.current
+        return days.compactMap { cal.date(byAdding: .day, value: -7, to: $0) }
+            .map { dayFormatter.string(from: $0) }
+    }
+
+    private var lastWeekLogs: [DayLog] {
+        store.logs.filter { lastWeekKeys.contains($0.id) }
+    }
+
+    private var lastWeekAvgSteps: Int {
+        let l = lastWeekLogs
+        guard !l.isEmpty else { return 0 }
+        return Int(l.reduce(0) { $0 + $1.steps } / l.count)
+    }
+
+    private var lastWeekTonnage: Double {
+        store.sessions.filter { lastWeekKeys.contains($0.date) }
+            .reduce(0) { $0 + ($1.tonnage ?? 0) }
+    }
+
+    private var lastWeekTrainDays: Int {
+        Set(store.sessions.filter { lastWeekKeys.contains($0.date) }.map { $0.date }).count
+    }
+
+    /// 三项跟上周同期的对比；上周完全没有数据就不显示，免得出现「+8600」这种假涨幅
+    private var vsLastWeek: String? {
+        var parts: [String] = []
+
+        if avgSteps > 0, lastWeekAvgSteps > 0 {
+            let d = avgSteps - lastWeekAvgSteps
+            parts.append(d == 0 ? "日均步数持平" : "日均步数 \(d > 0 ? "+" : "")\(d)")
+        }
+
+        if totalTonnage > 0, lastWeekTonnage > 0 {
+            let d = Int(totalTonnage - lastWeekTonnage)
+            parts.append("容量 \(d >= 0 ? "+" : "")\(d) kg")
+        }
+
+        if trainDays > 0 || lastWeekTrainDays > 0 {
+            let d = trainDays - lastWeekTrainDays
+            if d == 0 { parts.append("练的天数持平") }
+            else { parts.append("\(d > 0 ? "多" : "少")练 \(abs(d)) 天") }
+        }
+
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
+    }
+
     var body: some View {
         ZStack {
             AuroraBG()
@@ -118,6 +168,19 @@ struct WeeklyReportPage: View {
                             .lineSpacing(2.5)
                             .fixedSize(horizontal: false, vertical: true)
                             .padding(.top, 2)
+
+                        if let v = vsLastWeek {
+                            HStack(alignment: .top, spacing: 5) {
+                                Image(systemName: "arrow.left.arrow.right")
+                                    .font(.system(size: 9, weight: .bold))
+                                    .padding(.top, 2)
+                                Text("比上周 " + v)
+                                    .font(.system(size: 11))
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                            .foregroundStyle(TWColor.purple.opacity(0.85))
+                            .padding(.top, 3)
+                        }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 18)

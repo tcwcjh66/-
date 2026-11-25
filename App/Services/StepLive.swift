@@ -18,6 +18,12 @@ final class StepLive: ObservableObject {
     @Published private(set) var status: String = "未启动"
     @Published private(set) var lastUpdate: Date? = nil
 
+    // 写回节流：Store 一变，五个页面的 body 全都要重算。
+    // 走 8 步（约 6 秒）或过了 15 秒才写一次，视觉上还是实时，重绘少九成。
+    private var lastWrittenSteps = 0
+    private var lastWriteAt = Date.distantPast
+    private var lastStatusAt = Date.distantPast
+
     weak var store: TWStore?
 
     private init() {}
@@ -75,6 +81,8 @@ final class StepLive: ObservableObject {
                     let current = self.store?.pedometerSteps ?? 0
                     if steps > current {
                         self.store?.pedometerSteps = steps
+                        self.lastWrittenSteps = steps
+                        self.lastWriteAt = Date()
                     } else if steps < current {
                         // 保持较大值，避免"刷新后数字变小"
                         self.store?.pedometerSteps = current
@@ -106,14 +114,25 @@ final class StepLive: ObservableObject {
             DispatchQueue.main.async {
                 guard let self else { return }
                 let steps = d.numberOfSteps.intValue
-                if steps > (self.store?.pedometerSteps ?? 0) {
+                let now = Date()
+
+                let moved = steps - self.lastWrittenSteps >= 8
+                let stale = now.timeIntervalSince(self.lastWriteAt) >= 15
+                if steps > (self.store?.pedometerSteps ?? 0), moved || stale {
                     self.store?.pedometerSteps = steps
+                    self.lastWrittenSteps = steps
+                    self.lastWriteAt = now
+                    if let dist = d.distance, dist.doubleValue > (self.store?.pedometerDistance ?? 0) {
+                        self.store?.pedometerDistance = dist.doubleValue
+                    }
                 }
-                if let dist = d.distance, dist.doubleValue > (self.store?.pedometerDistance ?? 0) {
-                    self.store?.pedometerDistance = dist.doubleValue
+
+                // 状态文案也别每秒刷，15 秒一次够看
+                if now.timeIntervalSince(self.lastStatusAt) >= 15 {
+                    self.status = "实时同步中 · \(steps) 步"
+                    self.lastUpdate = now
+                    self.lastStatusAt = now
                 }
-                self.status = "实时同步中 · \(steps) 步"
-                self.lastUpdate = Date()
             }
         }
     }
