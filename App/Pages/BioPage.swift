@@ -22,6 +22,7 @@ struct BioPage: View {
     @State private var girthPick = 0
     @State private var showSleep = false
     @State private var showWatch = false
+    @State private var showWater = false
 
     private let pedometer = CMPedometer()
 
@@ -86,6 +87,11 @@ struct BioPage: View {
         }
         .sheet(isPresented: $showWatch) {
             WatchSyncSheet()
+                .presentationDetents([.large])
+                .presentationCornerRadius(26)
+        }
+        .sheet(isPresented: $showWater) {
+            WaterSheet()
                 .presentationDetents([.large])
                 .presentationCornerRadius(26)
         }
@@ -547,9 +553,21 @@ struct BioPage: View {
                     .font(.system(size: 16, weight: .bold))
                     .foregroundStyle(TWColor.ink)
                 Spacer()
-                Text("\(store.waterCups) / \(store.waterTarget) 杯 · \(store.waterCups * 250) ml")
-                    .font(.system(size: 12.5, weight: .semibold))
-                    .foregroundStyle(TWColor.ink3)
+                Button {
+                    UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                    showWater = true
+                } label: {
+                    HStack(spacing: 4) {
+                        Text("\(store.waterCups) / \(store.waterTarget) 杯 · \(store.waterML) ml")
+                            .font(.system(size: 12.5, weight: .semibold))
+                            .foregroundStyle(TWColor.ink3)
+                            .contentTransition(.numericText())
+                        Image(systemName: "slider.horizontal.3")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundStyle(TWColor.blue)
+                    }
+                }
+                .buttonStyle(.plain)
             }
 
             HStack(spacing: 6) {

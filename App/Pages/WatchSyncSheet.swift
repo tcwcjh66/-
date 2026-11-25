@@ -22,6 +22,7 @@ struct WatchSyncSheet: View {
                     whyCard
                     stepsCard
                     templateCard
+                    mindfulCard
                     fallbackCard
                 }
                 .padding(.horizontal, 18)
@@ -284,6 +285,56 @@ struct WatchSyncSheet: View {
                 .foregroundStyle(TWColor.ink3)
                 .lineSpacing(2.5)
         }
+        .padding(16)
+        .twGlass()
+    }
+
+    // MARK: - 正念 → 心情
+
+    private var mindfulCard: some View {
+        VStack(alignment: .leading, spacing: 9) {
+            HStack(spacing: 6) {
+                Image(systemName: "brain.head.profile")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(TWColor.mintSoft)
+                Text("手表沉思 → App 心情")
+                    .font(.system(size: 14.5, weight: .bold))
+                    .foregroundStyle(TWColor.ink)
+                Spacer()
+                if store.mindfulAt != nil {
+                    Text("已生效")
+                        .font(.system(size: 10.5, weight: .bold))
+                        .foregroundStyle(TWColor.mint)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background { Capsule().fill(TWColor.mint.opacity(0.13)) }
+                }
+            }
+
+            Text("在手表上做完一次「正念 / 沉思」，Apple 会把它记进健康里的「正念分钟」。在同一个快捷指令里再加一个「查找健康样本 · 正念」（取最近 1 条），URL 结尾补上 &mind=[正念分钟] 就行。")
+                .font(.system(size: 12.5))
+                .foregroundStyle(TWColor.ink2)
+                .lineSpacing(3)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Text("接收端收到 mind 就把心情切到「平静」，首页立绘的呼吸节奏会慢下来、光晕转薄荷色。做完沉思后打开一次天才威，就生效了。")
+                .font(.system(size: 11.5))
+                .foregroundStyle(TWColor.ink3)
+                .lineSpacing(2.5)
+                .fixedSize(horizontal: false, vertical: true)
+
+            if store.mindfulAt != nil {
+                HStack(spacing: 6) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 11))
+                        .foregroundStyle(TWColor.mint)
+                    Text("上次正念 \(store.mindfulMin) 分钟 · \(DateFormatter.twShort.string(from: store.mindfulAt!))")
+                        .font(.system(size: 11.5, weight: .semibold))
+                        .foregroundStyle(TWColor.ink2)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
         .twGlass()
     }

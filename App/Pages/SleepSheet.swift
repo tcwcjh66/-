@@ -317,6 +317,10 @@ struct SleepSheet: View {
                 statRow("清醒", "\(log.awakeMinutes) 分", TWColor.amber)
             }
 
+            if !embedded {
+                adviceCard(log)
+            }
+
             if fresh {
                 Text("报告全部来自这次的真实体动数据，没有补任何默认值。\n体动法能判断「睡稳没睡稳」和大概的深浅，跟医院的多导睡眠图不是一回事。")
                     .font(.system(size: 11.5))
@@ -354,6 +358,88 @@ struct SleepSheet: View {
                 .foregroundStyle(TWColor.ink)
                 .monospacedDigit()
         }
+    }
+
+    // MARK: - 补觉建议
+
+    private func adviceCard(_ log: SleepLog) -> some View {
+        let debt = store.sleepDebt
+        let tonight = store.sleepTonightMin
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 7) {
+                Image(systemName: "bed.double.fill")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(TWColor.purple)
+                Text("今晚补多少")
+                    .font(.system(size: 14.5, weight: .bold))
+                    .foregroundStyle(TWColor.ink)
+                Spacer()
+                Text("目标 \(store.sleepGoalMin / 60) 小时 \(store.sleepGoalMin % 60) 分")
+                    .font(.system(size: 10.5))
+                    .foregroundStyle(TWColor.ink3)
+            }
+
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text("\(tonight / 60) 小时 \(tonight % 60) 分")
+                    .font(.system(size: 27, weight: .heavy, design: .rounded))
+                    .foregroundStyle(TWColor.ink)
+                    .monospacedDigit()
+                Text("建议今晚")
+                    .font(.system(size: 11.5, weight: .semibold))
+                    .foregroundStyle(TWColor.ink3)
+                Spacer(minLength: 0)
+            }
+
+            HStack(spacing: 0) {
+                adviceCell("昨晚缺口", "\(log.durationMinutes < store.sleepGoalMin ? store.sleepGoalMin - log.durationMinutes : 0) 分")
+                Rectangle().fill(TWColor.ink3.opacity(0.2)).frame(width: 1, height: 22)
+                adviceCell("近 7 天欠", "\(debt) 分")
+                Rectangle().fill(TWColor.ink3.opacity(0.2)).frame(width: 1, height: 22)
+                adviceCell("建议入睡", store.sleepBedtimeText)
+            }
+
+            VStack(alignment: .leading, spacing: 5) {
+                Text(store.sleepAdviceTitle)
+                    .font(.system(size: 12.5, weight: .bold))
+                    .foregroundStyle(TWColor.purple)
+                Text(store.sleepAdviceBody)
+                    .font(.system(size: 11.5))
+                    .foregroundStyle(TWColor.ink2)
+                    .lineSpacing(2.5)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(11)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(TWColor.purple.opacity(0.07))
+            }
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background {
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color.white.opacity(0.45))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .stroke(Color.white.opacity(0.65), lineWidth: 0.8)
+                }
+        }
+    }
+
+    private func adviceCell(_ title: String, _ value: String) -> some View {
+        VStack(spacing: 2) {
+            Text(value)
+                .font(.system(size: 13.5, weight: .heavy, design: .rounded))
+                .foregroundStyle(TWColor.ink)
+                .monospacedDigit()
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+            Text(title)
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(TWColor.ink3)
+        }
+        .frame(maxWidth: .infinity)
     }
 
     private func stageBar(_ log: SleepLog, height: CGFloat) -> some View {

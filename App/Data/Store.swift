@@ -208,6 +208,8 @@ final class TWStore: ObservableObject {
     @Published var watchDeepMin: Int = 0
     @Published var watchSyncAt: Date?
     @Published var watchSyncCount: Int = 0
+    @Published var mindfulMin: Int = 0
+    @Published var mindfulAt: Date?
 
     // 饮食
     @Published var dietKcal: Double = 0
@@ -255,6 +257,11 @@ final class TWStore: ObservableObject {
     // 饮水
     @Published var waterCups: Int = 0
     @Published var waterTarget: Int = 8
+    /// 每杯容量（ml），可自定义
+    @Published var cupSize: Int = 250
+
+    var waterML: Int { waterCups * cupSize }
+    var waterTargetML: Int { waterTarget * cupSize }
 
     // 睡眠记录（新的在前）
     @Published var sleepLogs: [SleepLog] = []
@@ -290,6 +297,7 @@ final class TWStore: ObservableObject {
         static let wlogs = "tw.wlogs.v2"
         static let water = "tw.water.v2"
         static let waterDay = "tw.waterDay.v2"
+        static let cupsize = "tw.cupsize.v2"
         static let cfoods = "tw.cfoods.v2"
         static let wgoal = "tw.wgoal.v2"
         static let sess = "tw.sess.v2"
@@ -306,6 +314,8 @@ final class TWStore: ObservableObject {
         static let wdeep = "tw.wdeep.v2"
         static let wsync = "tw.wsync.v2"
         static let wcount = "tw.wcount.v2"
+        static let mindmin = "tw.mindmin.v2"
+        static let mindat = "tw.mindat.v2"
     }
 
     init() {
@@ -435,6 +445,58 @@ final class TWStore: ObservableObject {
 
     var lastSleep: SleepLog? { sleepLogs.first }
 
+    // MARK: - 睡眠缺口与补觉建议
+
+    /// 每晚目标睡眠分钟（7 小时 30 分）
+    var sleepGoalMin: Int { 450 }
+
+    /// 近 7 天累计睡眠缺口（分钟）。只统计有记录的夜晚。
+    var sleepDebt: Int {
+        let recent = Array(sleepLogs.prefix(7))
+        guard !recent.isEmpty else { return 0 }
+        let total = recent.reduce(0) { $0 + $1.durationMinutes }
+        return max(0, sleepGoalMin * recent.count - total)
+    }
+
+    /// 建议今晚的睡眠时长：把缺口补一半，封顶 10 小时
+    var sleepTonightMin: Int {
+        min(sleepGoalMin + sleepDebt / 2, 600)
+    }
+
+    /// 按 7:00 起床倒推的建议入睡时间
+    var sleepBedtimeText: String {
+        let cal = Calendar.current
+        var comps = cal.dateComponents([.year, .month, .day], from: Date())
+        comps.hour = 7
+        comps.minute = 0
+        guard let wake = cal.date(from: comps) else { return "—" }
+        var bed = wake.addingTimeInterval(-Double(sleepTonightMin) * 60)
+        if bed > Date() { bed = bed.addingTimeInterval(-86_400) }
+        return DateFormatter.twShort.string(from: bed)
+    }
+
+    var sleepAdviceTitle: String {
+        switch sleepDebt {
+        case 0..<31:   return "睡眠够了，保持现在的作息"
+        case 31..<121: return "稍微欠一点，今晚提前睡"
+        case 121..<241: return "欠得不少，今晚和明晚都要补"
+        default:        return "债有点大，别靠周末一次补"
+        }
+    }
+
+    var sleepAdviceBody: String {
+        switch sleepDebt {
+        case 0..<31:
+            return "近 7 天平均都睡够了。固定起床时间比固定入睡时间更管用，早上同一时间见光，晚上更容易困。"
+        case 31..<121:
+            return "按 7 小时 30 分的目标，你还欠一点。今晚把入睡时间往前挪 30 分钟就能还上，别在白天靠咖啡硬撑。"
+        case 121..<241:
+            return "缺口已经积累到几个小时。今晚多睡 1 小时、明晚再多睡 1 小时，两天分开补比一次睡 10 小时更有效。"
+        default:
+            return "连续几晚都不足，反应速度和力量都会掉。今晚尽量提前 1.5 小时上床，把房间温度调低一点、屏幕提前 40 分钟放下。"
+        }
+    }
+
     func setPR(_ name: String, weight: Double, reps: Int) {
         guard reps > 0 else { return }
         let text: String
@@ -472,6 +534,7 @@ final class TWStore: ObservableObject {
         root["carb"] = carb
         root["fat"] = fat
         root["waterCups"] = waterCups
+        root["cupSize"] = cupSize
         root["bodyWeight"] = bodyWeight
         root["heightCM"] = heightCM
         root["waistCM"] = waistCM
@@ -559,6 +622,7 @@ final class TWStore: ObservableObject {
         sessions = []
         girthLogs = []
         waterCups = 0
+        cupSize = 250
         customFoods = []
         planPick = 0
         dayPick = 0
@@ -568,6 +632,8 @@ final class TWStore: ObservableObject {
         watchDeepMin = 0
         watchSyncAt = nil
         watchSyncCount = 0
+        mindfulMin = 0
+        mindfulAt = nil
 
         persist()
     }
@@ -746,6 +812,7 @@ final class TWStore: ObservableObject {
         d.set(waistCM, forKey: Key.waist)
         d.set(waterCups, forKey: Key.water)
         d.set(DateFormatter.twDay.string(from: Date()), forKey: Key.waterDay)
+        d.set(cupSize, forKey: Key.cupsize)
 
         if let v = try? JSONEncoder().encode(weightLogs) {
             d.set(v, forKey: Key.wlogs)
@@ -773,6 +840,8 @@ final class TWStore: ObservableObject {
         d.set(watchDeepMin, forKey: Key.wdeep)
         d.set(watchSyncCount, forKey: Key.wcount)
         if let t = watchSyncAt { d.set(t.timeIntervalSince1970, forKey: Key.wsync) }
+        d.set(mindfulMin, forKey: Key.mindmin)
+        if let t = mindfulAt { d.set(t.timeIntervalSince1970, forKey: Key.mindat) }
         if let v = try? JSONEncoder().encode(sessions) {
             d.set(v, forKey: Key.sess)
         }
@@ -817,6 +886,8 @@ final class TWStore: ObservableObject {
         let savedWaterDay = d.string(forKey: Key.waterDay) ?? ""
         waterCups = savedWaterDay == DateFormatter.twDay.string(from: Date())
             ? d.integer(forKey: Key.water) : 0
+        let savedCup = d.integer(forKey: Key.cupsize)
+        cupSize = savedCup > 0 ? savedCup : 250
 
         if let v = d.data(forKey: Key.wlogs),
            let decoded = try? JSONDecoder().decode([WeightLog].self, from: v) {
@@ -850,6 +921,9 @@ final class TWStore: ObservableObject {
         watchSyncCount = d.integer(forKey: Key.wcount)
         let syncTs = d.double(forKey: Key.wsync)
         watchSyncAt = syncTs > 0 ? Date(timeIntervalSince1970: syncTs) : nil
+        mindfulMin = d.integer(forKey: Key.mindmin)
+        let mindTs = d.double(forKey: Key.mindat)
+        mindfulAt = mindTs > 0 ? Date(timeIntervalSince1970: mindTs) : nil
         if let v = d.data(forKey: Key.sess),
            let decoded = try? JSONDecoder().decode([SessionLog].self, from: v) {
             sessions = decoded

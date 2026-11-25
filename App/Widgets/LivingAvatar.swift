@@ -137,6 +137,12 @@ struct MotionCfg {
                 breatheHz: 0.16, swayHz: 0.10,
                 glow: TWColor.blue, sink: 5
             )
+        case "calm":
+            // 沉思后：最慢的呼吸，光晕收成薄荷色
+            return MotionCfg(
+                breatheHz: 0.17, swayHz: 0.11,
+                glow: TWColor.mintSoft, sink: 0
+            )
         default:
             return MotionCfg(
                 breatheHz: 0.30, swayHz: 0.21,

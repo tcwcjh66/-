@@ -284,7 +284,7 @@ struct TodayPage: View {
                 Text("饮水")
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(TWColor.ink3)
-                Text("\(store.waterCups * 250) ml / \(store.waterTarget * 250) ml")
+                Text("\(store.waterML) ml / \(store.waterTargetML) ml")
                     .font(.system(size: 13.5, weight: .bold))
                     .foregroundStyle(TWColor.ink)
                     .contentTransition(.numericText())
@@ -326,7 +326,7 @@ struct TodayPage: View {
             return ("该睡了", "睡眠是恢复的第一步，睡够了明天练才不白练。", "moon.fill", TWColor.blue)
         }
         if store.waterCups < 3, hour >= 12 {
-            return ("水喝少了", "今天才 \(store.waterCups * 250) ml，先来一杯再练。", "drop.fill", TWColor.blue)
+            return ("水喝少了", "今天才 \(store.waterML) ml，先来一杯再练。", "drop.fill", TWColor.blue)
         }
         if let hint = store.nextDayHint {
             return ("今天该练", "\(hint.plan) · \(hint.day)，先热身 5 分钟再上重量。", "figure.strengthtraining.traditional", TWColor.mint)
@@ -399,6 +399,7 @@ struct TodayPage: View {
         case "win":   return "状态很好"
         case "tired": return "该减量了"
         case "sleep": return "优先补觉"
+        case "calm":  return "平静 · 刚沉思过"
         default:      return "保持节奏"
         }
     }

@@ -100,6 +100,12 @@ struct RootView: View {
             store.watchDeepMin = Int(dp)
             changed = true
         }
+        if let md = val("mind", "mindful"), md > 0 {
+            store.mindfulMin = Int(md)
+            store.mindfulAt = Date()
+            store.mood = "calm"
+            changed = true
+        }
 
         if changed {
             store.watchSyncAt = Date()
@@ -155,5 +161,6 @@ struct GlassTabBar: View {
             }
         }
         .padding(5)
+        .contentShape(Rectangle())
     }
 }
