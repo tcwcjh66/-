@@ -127,6 +127,8 @@ struct AuroraBG: View {
                 )
             }
         }
+        // 5 层渐变是静态的，栅格成一张位图，滚动时不再逐帧重画
+        .drawingGroup()
         .ignoresSafeArea()
     }
 }

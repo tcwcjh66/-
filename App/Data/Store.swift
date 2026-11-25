@@ -471,6 +471,44 @@ final class TWStore: ObservableObject {
     }
 
 
+    // MARK: - 肌群恢复
+
+    /// 某个肌群距上次训练几天。从最近 60 次训练里倒着找，没练过返回 nil。
+    func daysSinceTrain(group: String) -> Int? {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        let today = Calendar.current.startOfDay(for: Date())
+        let names = Set(allMoves.filter { $0.group == group }.map { $0.name })
+        for s in sessions.prefix(60) {
+            guard let done = s.moveNames, !done.isEmpty else { continue }
+            guard done.contains(where: { names.contains($0) }) else { continue }
+            guard let d = f.date(from: s.date) else { continue }
+            return Calendar.current.dateComponents([.day], from: d, to: today).day
+        }
+        return nil
+    }
+
+    /// 今天最该练的肌群：间隔最久、且已经过了 2 天恢复；从没练过的优先
+    var trainTip: (group: String, days: Int?, urgent: Bool)? {
+        let groups = ["胸", "背", "腿", "肩", "臂", "核心"]
+        var neverGroup: String? = nil
+        var bestGroup: String? = nil
+        var bestDays = 0
+        for g in groups {
+            guard let d = daysSinceTrain(group: g) else {
+                if neverGroup == nil { neverGroup = g }
+                continue
+            }
+            if d >= 2, d > bestDays {
+                bestGroup = g
+                bestDays = d
+            }
+        }
+        if let n = neverGroup { return (n, nil, true) }
+        guard let b = bestGroup else { return nil }
+        return (b, bestDays, bestDays >= 5)
+    }
+
     // MARK: - 热量目标推算（Mifflin-St Jeor）
 
     /// 基础代谢：10×kg + 6.25×cm − 5×年龄 +（男 +5 / 女 −161）

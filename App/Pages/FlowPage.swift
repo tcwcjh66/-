@@ -62,6 +62,7 @@ struct FlowPage: View {
                 dayTabs
             }
 
+            tipCard
             sessionBar
             sessionCard
             timerCard
@@ -249,6 +250,60 @@ struct FlowPage: View {
     }
 
     // MARK: - 今日动作
+
+    private var tipCard: some View {
+        Group {
+            if let tip = store.trainTip {
+                Button {
+                    jumpTo(group: tip.group)
+                } label: {
+                    HStack(spacing: 11) {
+                        Image(systemName: "target")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundStyle(TWColor.mint)
+                            .frame(width: 36, height: 36)
+                            .background {
+                                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                    .fill(TWColor.mint.opacity(0.12))
+                            }
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(tip.days.map { "距上次练\(tip.group) \($0) 天" } ?? "还没练过\(tip.group)")
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundStyle(TWColor.ink)
+                                .lineLimit(1)
+                            Text(tip.urgent ? "恢复够了，今天正好安排\(tip.group)" : "\(tip.group)还在恢复，先把别的练完")
+                                .font(.system(size: 11))
+                                .foregroundStyle(TWColor.ink3)
+                                .lineLimit(1)
+                        }
+
+                        Spacer(minLength: 4)
+
+                        Text("切到这天")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background { Capsule().fill(TWColor.mint) }
+                    }
+                    .padding(14)
+                    .twGlass(radius: 16)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    /// 在当前方案里找 focus 对上这个肌群的那天，直接切过去
+    private func jumpTo(group: String) {
+        if let i = plan.days.firstIndex(where: {
+            $0.focus.contains(group) || $0.title.contains(group)
+        }) {
+            UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+            withAnimation(.snappy(duration: 0.25)) { store.dayPick = i }
+        }
+    }
 
     private var sessionBar: some View {
         Group {

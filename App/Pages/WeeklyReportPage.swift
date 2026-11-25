@@ -73,6 +73,21 @@ struct WeeklyReportPage: View {
         return "这周还没开练，先补一次"
     }
 
+    /// 一句能落地的话，不堆形容词
+    private var insight: String {
+        var parts: [String] = []
+        if !weekLogs.isEmpty {
+            let hit = weekLogs.filter { $0.protein >= proteinRef }.count
+            parts.append("蛋白达标 \(hit)/\(weekLogs.count) 天")
+        }
+        if avgSteps > 0 { parts.append("日均 \(avgSteps) 步") }
+        if trainDays > 0 { parts.append("练 \(trainDays) 天 · \(Int(totalTonnage)) kg 容量") }
+        if let w = weightChange {
+            parts.append(String(format: "体重 %+.1f kg", w))
+        }
+        return parts.isEmpty ? "这周还没有能算的数据。" : parts.joined(separator: " · ")
+    }
+
     var body: some View {
         ZStack {
             AuroraBG()
@@ -96,6 +111,13 @@ struct WeeklyReportPage: View {
                             .font(.system(size: 13, weight: .semibold))
                             .foregroundStyle(TWColor.purple)
                             .padding(.top, 4)
+
+                        Text(insight)
+                            .font(.system(size: 11.5))
+                            .foregroundStyle(TWColor.ink3)
+                            .lineSpacing(2.5)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(.top, 2)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 18)

@@ -52,6 +52,11 @@ struct GlassSurface: ViewModifier {
                         ),
                         lineWidth: 0.8
                     )
+
+                    // 浅色下没有实时模糊了，补一条极淡内边，别让卡片显得发平
+                    if scheme == .light {
+                        shape.strokeBorder(Color.black.opacity(0.045), lineWidth: 1)
+                    }
                 }
             }
             .clipShape(shape)
