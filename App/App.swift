@@ -20,6 +20,11 @@ struct TianCaiWeiApp: App {
                     // 免费签名 7 天，第 5 天提醒重装；中途重签过会自动重算
                     let install = TWSideload.touch()
                     TWNotify.scheduleExpiry(installAt: install)
+                    // 14 天没导出就提醒一次，别等重装才发现没备份
+                    TWNotify.scheduleBackup(
+                        lastExport: TWStore.lastExportAt,
+                        hasData: !store.sessions.isEmpty || !store.meals.isEmpty
+                            || !store.weightLogs.isEmpty || !store.logs.isEmpty)
                     StepLive.shared.bind(store)
                     StepLive.shared.start()
                     store.rollIfNewDay()

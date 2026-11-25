@@ -14,6 +14,7 @@ struct AchievementItem: Identifiable {
 struct AchievementsSheet: View {
     @EnvironmentObject var store: TWStore
     @Environment(\.dismiss) private var dismiss
+    @State private var glow = false
 
     private var totalTonnage: Double {
         store.sessions.compactMap { $0.tonnage }.reduce(0, +)
@@ -126,6 +127,10 @@ struct AchievementsSheet: View {
                 .padding(.bottom, 30)
             }
         }
+        .onAppear {
+            // 让已解锁的徽章开始呼吸
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { glow = true }
+        }
     }
 
     private func tonText(_ v: Double) -> String {
@@ -165,6 +170,11 @@ struct AchievementsSheet: View {
                     Image(systemName: item.done ? item.icon : "lock.fill")
                         .font(.system(size: 14, weight: .bold))
                         .foregroundStyle(item.done ? item.tint : TWColor.ink3.opacity(0.7))
+                        .scaleEffect(item.done && glow ? 1.14 : 1.0)
+                        .animation(item.done
+                                   ? .easeInOut(duration: 1.6).repeatForever(autoreverses: true)
+                                   : .default,
+                                   value: glow)
                 }
                 Spacer(minLength: 0)
                 if item.done {

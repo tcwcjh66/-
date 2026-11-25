@@ -67,6 +67,22 @@ struct CustomFood: Codable, Identifiable, Hashable {
 }
 
 /// 一组的明细：哪个动作、多重、几次。有了它才能算出“上次 20kg×8 → 这次该加多少”。
+/// 扫过的条码记在本机：下次再扫同一个码，不联网也能立刻出营养。
+/// Open Food Facts 对国产包装覆盖很差，这里补的是「你自己扫出来的库」。
+struct BarcodeNote: Codable, Identifiable, Hashable {
+    var id: String { code }
+    var code: String
+    var name: String
+    var brand: String = ""
+    var kcal100: Double
+    var protein100: Double
+    var carb100: Double
+    var fat100: Double
+    var servingGrams: Double = 100
+    var fromWeb: Bool = false
+    var at: Date = Date()
+}
+
 struct SetRecord: Codable, Hashable {
     var move: String
     var weight: Double
@@ -382,6 +398,8 @@ final class TWStore: ObservableObject {
     @Published var customFoods: [CustomFood] = []
     /// 按日期存的历史餐食明细（保留最近 40 天），供「复制昨天」用
     @Published var mealHistory: [String: [MealEntry]] = [:]
+    /// 本机条码库：code → 营养。扫到过的码都留在这里。
+    @Published var barcodeNotes: [String: BarcodeNote] = [:]
 
     private let d = UserDefaults.standard
     private var saveWork: DispatchWorkItem?
@@ -777,10 +795,17 @@ final class TWStore: ObservableObject {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(name)
         do {
             try exportJSON().data(using: .utf8)?.write(to: url, options: .atomic)
+            d.set(Date().timeIntervalSince1970, forKey: "tw.lastExport.v1")
             return url
         } catch {
             return nil
         }
+    }
+
+    /// 上次导出备份的时间；没导过就是 nil
+    static var lastExportAt: Date? {
+        let t = UserDefaults.standard.double(forKey: "tw.lastExport.v1")
+        return t > 0 ? Date(timeIntervalSince1970: t) : nil
     }
 
     /// 导出全部本机数据为 JSON 文本
@@ -1113,6 +1138,32 @@ final class TWStore: ObservableObject {
 
     // MARK: - 快捷复现 & 力量曲线
 
+    /// 查本机条码库
+    func barcodeNote(_ code: String) -> BarcodeNote? {
+        barcodeNotes[code.trimmingCharacters(in: .whitespacesAndNewlines)]
+    }
+
+    /// 存一条条码。超过 400 条就丢最旧的，不至于把 UserDefaults 撑爆。
+    func saveBarcodeNote(_ n: BarcodeNote) {
+        var t = n
+        t.code = t.code.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard t.code.count >= 6, !t.name.isEmpty else { return }
+        if t.at.timeIntervalSince1970 == 0 { t.at = Date() }
+        barcodeNotes[t.code] = t
+        if barcodeNotes.count > 400 {
+            let old = barcodeNotes.values.sorted { $0.at < $1.at }
+            for o in old.prefix(barcodeNotes.count - 400) {
+                barcodeNotes.removeValue(forKey: o.code)
+            }
+        }
+        persistSoon()
+    }
+
+    func removeBarcodeNote(_ code: String) {
+        barcodeNotes.removeValue(forKey: code)
+        persistSoon()
+    }
+
     /// 最近吃过的食物：今天的 + 近 7 天归档，按名字去重，越近越前。
     func recentMeals(limit: Int = 12) -> [MealEntry] {
         var out: [MealEntry] = []
@@ -1377,6 +1428,9 @@ final class TWStore: ObservableObject {
         if let v = try? JSONEncoder().encode(mealPhotos) {
             d.set(v, forKey: "tw.photos.v3")
         }
+        if let v = try? JSONEncoder().encode(barcodeNotes) {
+            d.set(v, forKey: "tw.barcodes.v3")
+        }
         if let v = try? JSONEncoder().encode(logs) {
             d.set(v, forKey: Key.logs)
         }
@@ -1481,6 +1535,10 @@ final class TWStore: ObservableObject {
         if let v = d.data(forKey: Key.mhist),
            let decoded = try? JSONDecoder().decode([String: [MealEntry]].self, from: v) {
             mealHistory = decoded
+        }
+        if let v = d.data(forKey: "tw.barcodes.v3"),
+           let decoded = try? JSONDecoder().decode([String: BarcodeNote].self, from: v) {
+            barcodeNotes = decoded
         }
         if let v = d.data(forKey: Key.logs),
            let decoded = try? JSONDecoder().decode([DayLog].self, from: v) {

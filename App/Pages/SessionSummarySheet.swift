@@ -50,18 +50,30 @@ struct SessionSummarySheet: View {
                         .frame(width: 34, height: 4)
                         .padding(.top, 8)
 
-                    ZStack {
-                        Circle()
-                            .fill(LinearGradient(colors: [TWColor.mint.opacity(0.9), TWColor.blue.opacity(0.75)],
-                                                 startPoint: .topLeading, endPoint: .bottomTrailing))
-                            .frame(width: 74, height: 74)
-                            .shadow(color: TWColor.mint.opacity(0.4), radius: 18, y: 8)
-                        Image(systemName: "checkmark")
-                            .font(.system(size: 32, weight: .heavy))
-                            .foregroundStyle(.white)
+                    ZStack(alignment: .bottom) {
+                        // 练完切胜利态：叉腰大笑那版
+                        LivingAvatar(asset: "avatar-win", mood: "win", hour: -1)
+                            .frame(height: 288)
+                            .scaleEffect(appeared ? 1 : 0.58)
+                            .opacity(appeared ? 1 : 0)
+
+                        HStack(spacing: 5) {
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 10, weight: .heavy))
+                            Text("训练完成")
+                                .font(.system(size: 11.5, weight: .bold))
+                        }
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 5)
+                        .background {
+                            Capsule().fill(LinearGradient(colors: [TWColor.mint, TWColor.blue],
+                                                          startPoint: .leading, endPoint: .trailing))
+                        }
+                        .shadow(color: TWColor.mint.opacity(0.35), radius: 9, y: 4)
+                        .padding(.bottom, 4)
                     }
-                    .scaleEffect(appeared ? 1 : 0.55)
-                    .opacity(appeared ? 1 : 0)
+                    .frame(height: 288)
 
                     VStack(spacing: 6) {
                         Text(headline)

@@ -120,6 +120,52 @@ enum TWNotify {
         return ids
     }
 
+    // MARK: - 备份提醒
+
+    private static let backupID = "tw.notif.req.backup"
+    private static let nudgeKey = "tw.backupNudged.v1"
+
+    /// 超过 14 天没导出，明天 9:00 提醒一次；7 天内不重复骚扰。
+    static func scheduleBackup(lastExport: Date?, hasData: Bool) {
+        let c = UNUserNotificationCenter.current()
+        c.removePendingNotificationRequests(withIdentifiers: [backupID])
+        guard hasData else { return }
+
+        let days: Int
+        if let d = lastExport {
+            days = Int(floor(max(0, Date().timeIntervalSince(d)) / 86400))
+        } else {
+            days = 999
+        }
+        guard days >= 14 else { return }
+
+        let nudged = UserDefaults.standard.double(forKey: nudgeKey)
+        if nudged > 0, Date().timeIntervalSince1970 - nudged < 7 * 86400 { return }
+
+        let cal = Calendar.current
+        var at = cal.dateComponents([.year, .month, .day], from: Date())
+        at.hour = 9
+        at.minute = 0
+        guard let today9 = cal.date(from: at),
+              let fire = cal.date(byAdding: .day, value: 1, to: today9) else { return }
+
+        let content = UNMutableNotificationContent()
+        content.title = "该备份了"
+        content.body = days == 999
+            ? "还没导出过。设置 → 数据 → 导出全部数据，存一份 JSON 到「文件」，重装时能一键恢复。"
+            : "上次导出是 \(days) 天前。导一份 JSON 到「文件」，万一重装失败也捡得回来。"
+        content.sound = .default
+        let trigger = UNTimeIntervalNotificationTrigger(
+            timeInterval: max(60, fire.timeIntervalSinceNow), repeats: false)
+        c.add(UNNotificationRequest(identifier: backupID, content: content, trigger: trigger))
+        UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: nudgeKey)
+    }
+
+    static func cancelBackup() {
+        UNUserNotificationCenter.current()
+            .removePendingNotificationRequests(withIdentifiers: [backupID])
+    }
+
     // MARK: - 签名到期
 
     private static let expiryID = "tw.notif.req.expiry"

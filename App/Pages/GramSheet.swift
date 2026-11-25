@@ -316,6 +316,11 @@ struct CameraPreview: UIViewRepresentable {
     }
 }
 
+private struct NoteTarget: Identifiable {
+    let id = UUID()
+    var code: String
+}
+
 struct BarcodeScanSheet: View {
     @EnvironmentObject var store: TWStore
     @Environment(\.dismiss) private var dismiss
@@ -328,6 +333,9 @@ struct BarcodeScanSheet: View {
     @State private var errorText: String?
     @State private var searching = false
     @State private var pick: FoodPick?
+    /// 查不到时准备建档的条码（String 不是 Identifiable，包一层给 sheet 用）
+    @State private var noteTarget: NoteTarget?
+    @State private var lastCode = ""
 
     var body: some View {
         NavigationStack {
@@ -368,10 +376,29 @@ struct BarcodeScanSheet: View {
                 }
 
                 if let e = errorText {
-                    Text(e)
-                        .font(.system(size: 12))
-                        .foregroundStyle(TWColor.amber)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(e)
+                            .font(.system(size: 12))
+                            .foregroundStyle(TWColor.amber)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+
+                        Button {
+                            UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                            noteTarget = NoteTarget(code: lastCode.isEmpty ? manual : lastCode)
+                        } label: {
+                            HStack(spacing: 5) {
+                                Image(systemName: "plus.circle.fill")
+                                    .font(.system(size: 11, weight: .bold))
+                                Text("这个条码我来建档")
+                                    .font(.system(size: 12.5, weight: .bold))
+                            }
+                            .foregroundStyle(TWColor.purple)
+                            .padding(.horizontal, 11)
+                            .padding(.vertical, 7)
+                            .background { Capsule().fill(TWColor.purple.opacity(0.12)) }
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
 
                 if let r = result {
@@ -394,6 +421,19 @@ struct BarcodeScanSheet: View {
             .onChange(of: scanner.scanned) { _, code in
                 guard let code, !code.isEmpty else { return }
                 lookup(code)
+            }
+            .sheet(item: $noteTarget) { t in
+                BarcodeNoteSheet(code: t.code) { note in
+                    store.saveBarcodeNote(note)
+                    result = RemoteFood(code: note.code, name: note.name, brand: note.brand,
+                                        kcal100: note.kcal100, protein100: note.protein100,
+                                        carb100: note.carb100, fat100: note.fat100,
+                                        fiber100: 0, sugar100: 0, salt100: 0,
+                                        ingredients: "", imageURL: "",
+                                        servingGrams: note.servingGrams)
+                    errorText = nil
+                }
+                .environmentObject(store)
             }
             .sheet(item: $pick) { p in
                 GramSheet(pick: p, slot: slot) { entry in
@@ -526,8 +566,22 @@ struct BarcodeScanSheet: View {
             errorText = "条码至少 8 位，检查一下"
             return
         }
+        lastCode = clean
         errorText = nil
         result = nil
+
+        // 1) 先查本机条码库：扫过的码不用再联网
+        if let n = store.barcodeNote(clean) {
+            searching = false
+            result = RemoteFood(code: n.code, name: n.name, brand: n.brand,
+                                kcal100: n.kcal100, protein100: n.protein100,
+                                carb100: n.carb100, fat100: n.fat100,
+                                fiber100: 0, sugar100: 0, salt100: 0,
+                                ingredients: "", imageURL: "",
+                                servingGrams: n.servingGrams)
+            return
+        }
+
         searching = true
 
         Task {
@@ -536,6 +590,12 @@ struct BarcodeScanSheet: View {
                 await MainActor.run {
                     result = f
                     searching = false
+                    // 联网查到的也留一份在本机，下次秒出、断网也能用
+                    store.saveBarcodeNote(BarcodeNote(
+                        code: clean, name: f.name, brand: f.brand,
+                        kcal100: f.kcal100, protein100: f.protein100,
+                        carb100: f.carb100, fat100: f.fat100,
+                        servingGrams: f.servingGrams, fromWeb: true, at: Date()))
                 }
             } catch {
                 await MainActor.run {
