@@ -36,6 +36,8 @@ struct MealEntry: Identifiable, Hashable, Codable {
     var carb: Double
     var fat: Double
     var veg: Double
+    var slot: String? = nil
+    var time: Date? = nil
 }
 
 struct MoveItem: Identifiable, Hashable {
@@ -59,6 +61,7 @@ struct DayLog: Codable, Identifiable, Hashable {
     var hrv: Int
     var moveKcal: Double
     var exerciseMin: Double
+    var kcal: Double? = nil
 }
 
 final class TWStore: ObservableObject {
@@ -101,6 +104,9 @@ final class TWStore: ObservableObject {
     @Published var sessionMoves: [String] = []
     @Published var logs: [DayLog] = []
 
+    // 收藏
+    @Published var favoriteMoves: [String] = []
+
     private let d = UserDefaults.standard
     private var saveWork: DispatchWorkItem?
 
@@ -122,6 +128,7 @@ final class TWStore: ObservableObject {
         static let exercise = "tw.exercise.v2"
         static let moveK = "tw.moveK.v2"
         static let stand = "tw.stand.v2"
+        static let fav = "tw.fav.v2"
     }
 
     init() {
@@ -169,6 +176,28 @@ final class TWStore: ObservableObject {
         fat += m.fat
         veg += m.veg
         moveKcal += m.kcal * 0.06
+        persistSoon()
+    }
+
+    func deleteMeal(id: UUID) {
+        guard let idx = meals.firstIndex(where: { $0.id == id }) else { return }
+        let m = meals[idx]
+        meals.remove(at: idx)
+        dietKcal = max(0, dietKcal - m.kcal)
+        protein = max(0, protein - m.protein)
+        carb = max(0, carb - m.carb)
+        fat = max(0, fat - m.fat)
+        veg = max(0, veg - m.veg)
+        moveKcal = max(0, moveKcal - m.kcal * 0.06)
+        persistSoon()
+    }
+
+    func toggleFav(_ name: String) {
+        if favoriteMoves.contains(name) {
+            favoriteMoves.removeAll { $0 == name }
+        } else {
+            favoriteMoves.insert(name, at: 0)
+        }
         persistSoon()
     }
 
@@ -230,7 +259,8 @@ final class TWStore: ObservableObject {
             hr: measuredHR,
             hrv: measuredHRV,
             moveKcal: moveKcal,
-            exerciseMin: exerciseMin
+            exerciseMin: exerciseMin,
+            kcal: dietKcal
         )
         if let i = logs.firstIndex(where: { $0.id == key }) {
             logs[i] = entry
@@ -281,6 +311,7 @@ final class TWStore: ObservableObject {
         if let v = try? JSONEncoder().encode(logs) {
             d.set(v, forKey: Key.logs)
         }
+        d.set(favoriteMoves, forKey: Key.fav)
     }
 
     func load() {
@@ -314,6 +345,7 @@ final class TWStore: ObservableObject {
            let decoded = try? JSONDecoder().decode([DayLog].self, from: v) {
             logs = decoded
         }
+        favoriteMoves = d.stringArray(forKey: Key.fav) ?? []
     }
 }
 

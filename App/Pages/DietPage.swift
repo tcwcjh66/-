@@ -10,7 +10,46 @@ struct DietPage: View {
     @State private var hits: [FoodHit] = []
     @State private var showResult = false
 
+    private let slots = ["早餐", "午餐", "晚餐", "加餐"]
+
     private var remaining: Double { max(store.dietTarget - store.dietKcal, 0) }
+
+    /// 按当前时间推断餐次
+    private var autoSlot: String {
+        let h = Calendar.current.component(.hour, from: Date())
+        switch h {
+        case 5..<10:  return "早餐"
+        case 10..<15: return "午餐"
+        case 15..<21: return "晚餐"
+        default:      return "加餐"
+        }
+    }
+
+    private func meals(in slot: String) -> [MealEntry] {
+        store.meals.filter { ($0.slot ?? "加餐") == slot }
+    }
+
+    private func kcal(in slot: String) -> Int {
+        Int(meals(in: slot).reduce(0) { $0 + $1.kcal })
+    }
+
+    private func slotTint(_ s: String) -> Color {
+        switch s {
+        case "早餐": return TWColor.amber
+        case "午餐": return TWColor.mint
+        case "晚餐": return TWColor.purple
+        default:     return TWColor.blue
+        }
+    }
+
+    private var recentLogs: [DayLog] { Array(store.logs.suffix(7)) }
+
+    private var dayLabels: [String] {
+        recentLogs.map { log in
+            let p = log.id.split(separator: "-")
+            return p.count == 3 ? "\(p[1])/\(p[2])" : log.id
+        }
+    }
 
     var body: some View {
         VStack(spacing: 16) {
@@ -18,17 +57,18 @@ struct DietPage: View {
             kcalCard
             macroCard
             addCard
-            mealList
+            slotSection
+            trendCard
         }
         .sheet(isPresented: $showPicker) {
-            FoodPicker { item in
+            FoodPicker(defaultSlot: autoSlot) { item in
                 store.addMeal(item)
             }
-            .presentationDetents([.medium, .large])
+            .presentationDetents([.large])
             .presentationCornerRadius(28)
         }
         .sheet(isPresented: $showResult) {
-            ShotResultSheet(hits: hits) { hit in
+            ShotResultSheet(hits: hits, defaultSlot: autoSlot) { hit in
                 store.addMeal(MealEntry(
                     name: hit.name,
                     grams: hit.grams,
@@ -36,10 +76,12 @@ struct DietPage: View {
                     protein: hit.protein,
                     carb: hit.carb,
                     fat: hit.fat,
-                    veg: hit.veg
+                    veg: hit.veg,
+                    slot: autoSlot,
+                    time: Date()
                 ))
             }
-            .presentationDetents([.medium, .large])
+            .presentationDetents([.large])
             .presentationCornerRadius(28)
         }
         .onChange(of: pick) { _, newValue in
@@ -152,7 +194,7 @@ struct DietPage: View {
             } label: {
                 HStack(spacing: 6) {
                     Image(systemName: "plus.circle.fill").font(.system(size: 15, weight: .bold))
-                    Text("加一餐").font(.system(size: 15, weight: .bold))
+                    Text("加一餐 · \(autoSlot)").font(.system(size: 15, weight: .bold))
                 }
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
@@ -171,7 +213,7 @@ struct DietPage: View {
                     Text(analyzing ? "识别中" : "拍照识别").font(.system(size: 12, weight: .semibold))
                 }
                 .foregroundStyle(TWColor.purple)
-                .frame(width: 88, height: 52)
+                .frame(width: 92, height: 52)
                 .background {
                     RoundedRectangle(cornerRadius: 14, style: .continuous)
                         .fill(TWColor.purple.opacity(0.12))
@@ -185,8 +227,8 @@ struct DietPage: View {
         }
     }
 
-    private var mealList: some View {
-        VStack(alignment: .leading, spacing: 10) {
+    private var slotSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
             HStack {
                 Text("今天吃了什么")
                     .font(.system(size: 14.5, weight: .semibold))
@@ -204,37 +246,88 @@ struct DietPage: View {
                     .font(.system(size: 13, weight: .regular))
                     .foregroundStyle(TWColor.ink3)
                     .fixedSize(horizontal: false, vertical: true)
-                    .padding(.vertical, 8)
             } else {
-                ForEach(store.meals) { m in
-                    HStack {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(m.name)
-                                .font(.system(size: 14.5, weight: .semibold))
-                                .foregroundStyle(TWColor.ink)
-                            Text("\(Int(m.grams))g · 蛋白 \(Int(m.protein))g")
-                                .font(.system(size: 11.5, weight: .regular))
-                                .foregroundStyle(TWColor.ink3)
+                ForEach(slots, id: \.self) { s in
+                    let items = meals(in: s)
+                    if !items.isEmpty {
+                        VStack(alignment: .leading, spacing: 9) {
+                            HStack(spacing: 7) {
+                                Circle()
+                                    .fill(slotTint(s))
+                                    .frame(width: 7, height: 7)
+                                Text(s)
+                                    .font(.system(size: 13.5, weight: .bold))
+                                    .foregroundStyle(TWColor.ink)
+                                Text("\(kcal(in: s)) kcal")
+                                    .font(.system(size: 11.5, weight: .semibold))
+                                    .foregroundStyle(TWColor.ink3)
+                                Spacer(minLength: 0)
+                            }
+                            ForEach(items) { m in
+                                mealRow(m)
+                            }
                         }
-                        Spacer()
-                        Text("\(Int(m.kcal)) kcal")
-                            .font(.system(size: 13, weight: .bold))
-                            .foregroundStyle(TWColor.ink2)
                     }
-                    .padding(.vertical, 4)
                 }
             }
         }
         .padding(16)
         .twGlass()
     }
+
+    private func mealRow(_ m: MealEntry) -> some View {
+        HStack(spacing: 10) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(m.name)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(TWColor.ink)
+                Text("\(Int(m.grams))g · 蛋白 \(Int(m.protein))g · 碳 \(Int(m.carb))g · 脂 \(Int(m.fat))g")
+                    .font(.system(size: 11.5, weight: .regular))
+                    .foregroundStyle(TWColor.ink3)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
+            }
+            Spacer(minLength: 4)
+            Text("\(Int(m.kcal))")
+                .font(.system(size: 15, weight: .heavy))
+                .foregroundStyle(TWColor.ink2)
+            Button {
+                UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                withAnimation(.snappy(duration: 0.2)) { store.deleteMeal(id: m.id) }
+            } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.system(size: 16))
+                    .foregroundStyle(TWColor.ink3.opacity(0.65))
+                    .frame(width: 30, height: 30)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    private var trendCard: some View {
+        TrendChart(
+            title: "摄入热量 · 最近 7 天",
+            values: recentLogs.map { $0.kcal ?? 0 },
+            labels: dayLabels,
+            tint: TWColor.mint,
+            unit: "kcal"
+        )
+        .padding(16)
+        .twGlass()
+    }
 }
 
 struct FoodPicker: View {
+    var defaultSlot: String = "午餐"
     var onPick: (MealEntry) -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var grams: Double = 150
     @State private var selected: FoodPreset = foodPresets[0]
+    @State private var slot: String = ""
+
+    private let slots = ["早餐", "午餐", "晚餐", "加餐"]
+    private var activeSlot: String { slot.isEmpty ? defaultSlot : slot }
 
     var body: some View {
         ZStack {
@@ -248,6 +341,30 @@ struct FoodPicker: View {
                 Text("加一餐")
                     .font(.system(size: 19, weight: .heavy))
                     .foregroundStyle(TWColor.ink)
+
+                HStack(spacing: 7) {
+                    ForEach(slots, id: \.self) { s in
+                        Button {
+                            UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                            withAnimation(.snappy(duration: 0.2)) { slot = s }
+                        } label: {
+                            Text(s)
+                                .font(.system(size: 13, weight: activeSlot == s ? .bold : .medium))
+                                .foregroundStyle(activeSlot == s ? .white : TWColor.ink2)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 9)
+                                .background {
+                                    RoundedRectangle(cornerRadius: 11, style: .continuous)
+                                        .fill(activeSlot == s
+                                              ? AnyShapeStyle(LinearGradient(colors: [TWColor.purple, TWColor.violet],
+                                                                             startPoint: .topLeading, endPoint: .bottomTrailing))
+                                              : AnyShapeStyle(Color.white.opacity(0.42)))
+                                }
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal, 18)
 
                 ScrollView {
                     VStack(spacing: 8) {
@@ -266,7 +383,7 @@ struct FoodPicker: View {
                                             .foregroundStyle(TWColor.ink3)
                                     }
                                     Spacer()
-                                    if selected.id == f.id {
+                                    if selected.name == f.name {
                                         Image(systemName: "checkmark.circle.fill")
                                             .foregroundStyle(TWColor.purple)
                                     }
@@ -275,7 +392,7 @@ struct FoodPicker: View {
                                 .padding(.vertical, 9)
                                 .background {
                                     RoundedRectangle(cornerRadius: 13, style: .continuous)
-                                        .fill(selected.id == f.id ? Color.white.opacity(0.82) : Color.white.opacity(0.34))
+                                        .fill(selected.name == f.name ? Color.white.opacity(0.82) : Color.white.opacity(0.34))
                                 }
                             }
                             .buttonStyle(.plain)
@@ -308,11 +425,13 @@ struct FoodPicker: View {
                         protein: selected.proteinPer100 * g,
                         carb: selected.carbPer100 * g,
                         fat: selected.fatPer100 * g,
-                        veg: selected.vegPer100 * g
+                        veg: selected.vegPer100 * g,
+                        slot: activeSlot,
+                        time: Date()
                     ))
                     dismiss()
                 } label: {
-                    Text("记入今天")
+                    Text("记入\(activeSlot)")
                         .font(.system(size: 16, weight: .bold))
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
@@ -329,14 +448,23 @@ struct FoodPicker: View {
             }
         }
         .ignoresSafeArea(edges: .bottom)
+        .onAppear {
+            if slot.isEmpty { slot = defaultSlot }
+        }
     }
 }
 
 struct ShotResultSheet: View {
     var hits: [FoodHit]
+    var defaultSlot: String = "午餐"
     var onAdd: (FoodHit) -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var selected: Set<UUID> = []
+
+    private let slots = ["早餐", "午餐", "晚餐", "加餐"]
+    @State private var slot: String = ""
+
+    private var activeSlot: String { slot.isEmpty ? defaultSlot : slot }
 
     var body: some View {
         ZStack {
@@ -358,6 +486,29 @@ struct ShotResultSheet: View {
                              : "共 \(hits.count) 项，勾选要记入的")
                             .font(.system(size: 13))
                             .foregroundStyle(TWColor.ink3)
+
+                        HStack(spacing: 7) {
+                            ForEach(slots, id: \.self) { s in
+                                Button {
+                                    UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                                    withAnimation(.snappy(duration: 0.2)) { slot = s }
+                                } label: {
+                                    Text(s)
+                                        .font(.system(size: 13, weight: activeSlot == s ? .bold : .medium))
+                                        .foregroundStyle(activeSlot == s ? .white : TWColor.ink2)
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 9)
+                                        .background {
+                                            RoundedRectangle(cornerRadius: 11, style: .continuous)
+                                                .fill(activeSlot == s
+                                                      ? AnyShapeStyle(LinearGradient(colors: [TWColor.purple, TWColor.violet],
+                                                                                     startPoint: .topLeading, endPoint: .bottomTrailing))
+                                                      : AnyShapeStyle(Color.white.opacity(0.42)))
+                                        }
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
 
                         ForEach(hits) { h in
                             Button {
@@ -401,7 +552,7 @@ struct ShotResultSheet: View {
                     }
                     dismiss()
                 } label: {
-                    Text("记入今天")
+                    Text("记入\(activeSlot)")
                         .font(.system(size: 16, weight: .bold))
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
@@ -420,6 +571,7 @@ struct ShotResultSheet: View {
         .ignoresSafeArea(edges: .bottom)
         .onAppear {
             selected = Set(hits.map { $0.id })
+            if slot.isEmpty { slot = defaultSlot }
         }
     }
 }

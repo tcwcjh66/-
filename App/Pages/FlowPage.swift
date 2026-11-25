@@ -39,6 +39,7 @@ struct FlowPage: View {
                 dayTabs
             }
 
+            sessionBar
             sessionCard
             timerCard
             progressionCard
@@ -120,6 +121,87 @@ struct FlowPage: View {
     }
 
     // MARK: - 今日动作
+
+    private var sessionBar: some View {
+        Group {
+            if let start = store.sessionStart {
+                HStack(spacing: 10) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("训练中")
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundStyle(TWColor.purple)
+                        Text("已 \(store.sessionSets) 组 · \(elapsed(from: start))")
+                            .font(.system(size: 12.5, weight: .medium))
+                            .foregroundStyle(TWColor.ink3)
+                    }
+                    Spacer(minLength: 0)
+
+                    Button {
+                        UIImpactFeedbackGenerator(style: .rigid).impactOccurred()
+                        withAnimation(.snappy(duration: 0.2)) { store.addSet() }
+                    } label: {
+                        Text("记一组")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 10)
+                            .background {
+                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    .fill(LinearGradient(colors: [TWColor.purple, TWColor.violet],
+                                                         startPoint: .topLeading, endPoint: .bottomTrailing))
+                            }
+                    }
+                    .buttonStyle(.plain)
+
+                    Button {
+                        UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                        withAnimation(.snappy(duration: 0.2)) { store.endSession() }
+                    } label: {
+                        Text("结束")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundStyle(TWColor.ink2)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 10)
+                            .background {
+                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    .fill(Color.white.opacity(0.55))
+                            }
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(14)
+                .twGlass(radius: 18)
+            } else {
+                Button {
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    withAnimation(.snappy(duration: 0.2)) {
+                        store.startSession(moves: day.items.map { $0.name })
+                    }
+                } label: {
+                    HStack(spacing: 7) {
+                        Image(systemName: "play.circle.fill")
+                            .font(.system(size: 17, weight: .bold))
+                        Text("开始今天的训练")
+                            .font(.system(size: 15, weight: .bold))
+                    }
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 13)
+                    .background {
+                        RoundedRectangle(cornerRadius: 15, style: .continuous)
+                            .fill(LinearGradient(colors: [TWColor.purple, TWColor.violet],
+                                                 startPoint: .topLeading, endPoint: .bottomTrailing))
+                    }
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    private func elapsed(from start: Date) -> String {
+        let s = Int(Date().timeIntervalSince(start))
+        return "\(s / 60) 分钟"
+    }
 
     private var sessionCard: some View {
         VStack(alignment: .leading, spacing: 12) {
