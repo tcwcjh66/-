@@ -339,14 +339,17 @@ struct DietPage: View {
         let avg = recorded.isEmpty
             ? 0
             : recorded.reduce(0.0) { $0 + ($1.kcal ?? 0) } / Double(recorded.count)
-        let onTarget = recorded.filter { abs(($0.kcal ?? 0) - store.dietTarget) <= store.dietTarget * 0.1 }.count
+        let kcalHit = recorded.filter { abs(($0.kcal ?? 0) - store.dietTarget) <= store.dietTarget * 0.1 }.count
+        let proteinHit = recentLogs.filter { ($0.protein ?? 0) >= 110 }.count
 
         return HStack(spacing: 0) {
             miniStat(title: "平均", value: avg > 0 ? "\(Int(avg))" : "--", unit: "kcal", tint: TWColor.mint)
             divider
             miniStat(title: "有记录", value: "\(recorded.count)", unit: "天", tint: TWColor.blue)
             divider
-            miniStat(title: "达标", value: "\(onTarget)", unit: "天", tint: TWColor.purple)
+            miniStat(title: "热量达标", value: "\(kcalHit)", unit: "天", tint: TWColor.purple)
+            divider
+            miniStat(title: "蛋白达标", value: "\(proteinHit)", unit: "天", tint: TWColor.coral)
         }
         .padding(.vertical, 14)
         .twGlass(radius: 18)

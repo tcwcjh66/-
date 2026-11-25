@@ -96,6 +96,9 @@ struct DayLog: Codable, Identifiable, Hashable {
     var moveKcal: Double
     var exerciseMin: Double
     var kcal: Double? = nil
+    var protein: Double? = nil
+    var carb: Double? = nil
+    var fat: Double? = nil
 }
 
 final class TWStore: ObservableObject {
@@ -323,6 +326,118 @@ final class TWStore: ObservableObject {
 
     // MARK: - 围度历史
 
+    /// 导出全部本机数据为 JSON 文本
+    func exportJSON() -> String {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd HH:mm"
+        var root: [String: Any] = [:]
+        root["exportedAt"] = f.string(from: Date())
+        root["app"] = "天才威 3.0"
+        root["steps"] = pedometerSteps
+        root["distanceM"] = pedometerDistance
+        root["hr"] = measuredHR
+        root["hrv"] = measuredHRV
+        root["hrSource"] = hrSource
+        root["mood"] = mood
+        root["dietKcal"] = dietKcal
+        root["protein"] = protein
+        root["carb"] = carb
+        root["fat"] = fat
+        root["waterCups"] = waterCups
+        root["bodyWeight"] = bodyWeight
+        root["heightCM"] = heightCM
+        root["waistCM"] = waistCM
+        root["chestCM"] = chestCM
+        root["armCM"] = armCM
+        root["thighCM"] = thighCM
+        root["hipCM"] = hipCM
+        root["weightGoal"] = weightGoal
+        root["favoriteMoves"] = favoriteMoves
+
+        if let data = try? JSONEncoder().encode(meals),
+           let obj = try? JSONSerialization.jsonObject(with: data) {
+            root["meals"] = obj
+        }
+        if let data = try? JSONEncoder().encode(logs),
+           let obj = try? JSONSerialization.jsonObject(with: data) {
+            root["dailyLogs"] = obj
+        }
+        if let data = try? JSONEncoder().encode(weightLogs),
+           let obj = try? JSONSerialization.jsonObject(with: data) {
+            root["weightLogs"] = obj
+        }
+        if let data = try? JSONEncoder().encode(girthLogs),
+           let obj = try? JSONSerialization.jsonObject(with: data) {
+            root["girthLogs"] = obj
+        }
+        if let data = try? JSONEncoder().encode(sessions),
+           let obj = try? JSONSerialization.jsonObject(with: data) {
+            root["sessions"] = obj
+        }
+        if let data = try? JSONEncoder().encode(customFoods),
+           let obj = try? JSONSerialization.jsonObject(with: data) {
+            root["customFoods"] = obj
+        }
+
+        guard let data = try? JSONSerialization.data(withJSONObject: root,
+                                                    options: [.prettyPrinted, .sortedKeys]),
+              let text = String(data: data, encoding: .utf8) else {
+            return "{}"
+        }
+        return text
+    }
+
+    /// 清空本机全部数据
+    func resetAll() {
+        for key in d.dictionaryRepresentation().keys where key.hasPrefix("tw.") {
+            d.removeObject(forKey: key)
+        }
+
+        moveKcal = 0
+        exerciseMin = 0
+        standHours = 0
+        hrv = 0
+        steps = 0
+        hr = 0
+        restingHR = 0
+        pedometerSteps = 0
+        pedometerDistance = 0
+        measuredHR = 0
+        measuredHRV = 0
+        measuredAt = nil
+        hrSource = ""
+        watchSteps = 0
+        dietKcal = 0
+        protein = 0
+        carb = 0
+        fat = 0
+        veg = 0
+        meals = []
+        mood = "ok"
+        sessionStart = nil
+        sessionSets = 0
+        sessionMoves = []
+        logs = []
+        favoriteMoves = []
+        bodyWeight = 0
+        heightCM = 0
+        waistCM = 0
+        chestCM = 0
+        armCM = 0
+        thighCM = 0
+        hipCM = 0
+        weightGoal = 0
+        weightLogs = []
+        sessions = []
+        girthLogs = []
+        waterCups = 0
+        customFoods = []
+        planPick = 0
+        dayPick = 0
+
+        persist()
+    }
+
     func setPlan(_ plan: Int, day: Int = 0) {
         planPick = plan
         dayPick = day
@@ -436,7 +551,10 @@ final class TWStore: ObservableObject {
             hrv: measuredHRV,
             moveKcal: moveKcal,
             exerciseMin: exerciseMin,
-            kcal: dietKcal
+            kcal: dietKcal,
+            protein: protein,
+            carb: carb,
+            fat: fat
         )
         if let i = logs.firstIndex(where: { $0.id == key }) {
             logs[i] = entry

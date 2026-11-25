@@ -4,6 +4,7 @@ import UIKit
 struct TodayPage: View {
     @EnvironmentObject var store: TWStore
     @State private var appeared = false
+    @State private var showSettings = false
     var onOpenFlow: () -> Void = {}
 
     private var dateText: String {
@@ -29,6 +30,11 @@ struct TodayPage: View {
         .onAppear {
             withAnimation(.easeOut(duration: 0.5)) { appeared = true }
         }
+        .sheet(isPresented: $showSettings) {
+            SettingsSheet()
+                .presentationDetents([.large])
+                .presentationCornerRadius(28)
+        }
     }
 
     private var header: some View {
@@ -43,8 +49,9 @@ struct TodayPage: View {
             Spacer()
             Button {
                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                showSettings = true
             } label: {
-                Image(systemName: "bell.badge")
+                Image(systemName: "gearshape.fill")
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(TWColor.ink2)
                     .frame(width: 38, height: 38)
@@ -66,7 +73,8 @@ struct TodayPage: View {
             .frame(width: 310, height: 310)
             .blendMode(.plusLighter)
 
-            LivingAvatar(asset: store.avatarAsset, mood: store.mood)
+            LivingAvatar(asset: store.avatarAsset, mood: store.mood,
+                         hour: Calendar.current.component(.hour, from: Date()))
                 .id(store.avatarAsset)
                 .transition(.opacity)
         }

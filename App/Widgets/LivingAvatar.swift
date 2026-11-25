@@ -9,8 +9,21 @@ import SwiftUI
 struct LivingAvatar: View {
     let asset: String
     let mood: String
+    /// 0–23；传 -1 表示不按时段调色
+    var hour: Int = -1
 
     private var cfg: MotionCfg { MotionCfg.of(mood) }
+
+    /// 按时段给光晕换色温：清晨偏暖、白天偏紫、黄昏偏橙、夜里偏冷
+    private var lightTint: Color {
+        guard hour >= 0 else { return cfg.glow }
+        switch hour {
+        case 5..<9:   return Color(red: 1.00, green: 0.80, blue: 0.58)
+        case 9..<17:  return cfg.glow
+        case 17..<20: return Color(red: 1.00, green: 0.64, blue: 0.46)
+        default:      return Color(red: 0.46, green: 0.44, blue: 0.86)
+        }
+    }
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 60.0, paused: false)) { context in
@@ -31,11 +44,11 @@ struct LivingAvatar: View {
         let drift = sin(t * 0.18 * twoPi)
 
         return ZStack {
-            // 地面光晕，随呼吸明暗起伏
+            // 地面光晕，随呼吸明暗起伏，色温跟随时段
             Circle()
                 .fill(
                     RadialGradient(
-                        colors: [c.glow.opacity(0.26 + 0.10 * breath), .clear],
+                        colors: [lightTint.opacity(0.26 + 0.10 * breath), .clear],
                         center: .center,
                         startRadius: 12,
                         endRadius: 172
@@ -46,7 +59,7 @@ struct LivingAvatar: View {
                 .blendMode(.plusLighter)
 
             // 悬浮微粒
-            particles(t: t, tint: c.glow)
+            particles(t: t, tint: lightTint)
 
             // 落影，吸气时略收
             Ellipse()
