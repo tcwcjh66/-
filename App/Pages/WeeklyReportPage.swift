@@ -77,7 +77,7 @@ struct WeeklyReportPage: View {
     private var insight: String {
         var parts: [String] = []
         if !weekLogs.isEmpty {
-            let hit = weekLogs.filter { $0.protein >= proteinRef }.count
+            let hit = weekLogs.filter { ($0.protein ?? 0) >= proteinRef }.count
             parts.append("蛋白达标 \(hit)/\(weekLogs.count) 天")
         }
         if avgSteps > 0 { parts.append("日均 \(avgSteps) 步") }
