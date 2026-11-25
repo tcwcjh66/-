@@ -12,6 +12,8 @@ struct LivingAvatar: View {
     let mood: String
     /// 0–23；传 -1 表示不按时段调色
     var hour: Int = -1
+    /// 横版（睡眠）按这个宽度铺满，不再固定 348 死在中间留白
+    var boxWidth: CGFloat? = nil
 
     @StateObject private var gyro = Gyro3D()
     /// 屏幕刷新能力：ProMotion（≥100Hz）与 60Hz 屏的拖影权重不同
@@ -26,7 +28,7 @@ struct LivingAvatar: View {
 
     /// 睡眠态是横版构图（侧卧），按宽度适配；其余竖版按高度适配
     private var isWide: Bool { asset.hasSuffix("sleep") }
-    private var artW: CGFloat? { isWide ? 348 : nil }
+    private var artW: CGFloat? { isWide ? (boxWidth ?? 348) : nil }
     private var artH: CGFloat? { isWide ? nil : 286 }
     /// 横版躺姿整体压到地面附近
     private var baseY: CGFloat { isWide ? 26 : 8 }

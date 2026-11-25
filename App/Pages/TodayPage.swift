@@ -18,17 +18,29 @@ struct TodayPage: View {
     }
 
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 0) {
             header
-            heroDial
-            ringsCard
-            if firstRun { firstRunCard }
-            todayTrainCard
-            statsRow
-            waterQuick
-            trendCard
-            tipCard
-            moodRow
+                .padding(.bottom, 10)
+            VStack(spacing: 0) {
+                heroDial
+                ringsCard
+                if firstRun { firstRunCard }
+                hairline
+                todayTrainCard
+                hairline
+                statsRow
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 12)
+                hairline
+                waterQuick
+                hairline
+                trendCard
+                hairline
+                tipCard
+                hairline
+                moodRow
+            }
+            .twGlass(radius: 26)
         }
         .opacity(appeared ? 1 : 0)
         .offset(y: appeared ? 0 : 12)
@@ -143,14 +155,24 @@ struct TodayPage: View {
         }
     }
 
+    /// 段与段之间的细线：整页是一张卡，靠线分层而不是靠留白分块
+    private var hairline: some View {
+        Rectangle()
+            .fill(TWColor.ink3.opacity(0.10))
+            .frame(height: 0.6)
+            .padding(.horizontal, 14)
+    }
+
     private var heroDial: some View {
         ZStack {
             LivingAvatar(asset: store.avatarAsset, mood: store.mood,
-                         hour: Calendar.current.component(.hour, from: Date()))
+                         hour: Calendar.current.component(.hour, from: Date()),
+                         boxWidth: UIScreen.main.bounds.width - 60)
                 .id(store.avatarAsset)
                 .transition(.opacity)
         }
-        .frame(height: 322)
+        .frame(maxWidth: .infinity)
+        .frame(height: store.avatarAsset.hasSuffix("sleep") ? 252 : 322)
         .animation(.easeInOut(duration: 0.42), value: store.avatarAsset)
     }
 
@@ -177,7 +199,6 @@ struct TodayPage: View {
         }
         .padding(.vertical, 16)
         .padding(.horizontal, 14)
-        .twGlass()
         .contentShape(Rectangle())
         .onTapGesture {
             UIImpactFeedbackGenerator(style: .soft).impactOccurred()
@@ -239,7 +260,6 @@ struct TodayPage: View {
                        unit: "bpm")
         }
         .padding(16)
-        .twGlass()
     }
 
     private func statCard(icon: String, title: String, value: String, tint: Color) -> some View {
@@ -340,7 +360,6 @@ struct TodayPage: View {
             .buttonStyle(.plain)
         }
         .padding(14)
-        .twGlass(radius: 18)
     }
 
     private func shortDay(_ raw: String) -> String {
@@ -398,7 +417,6 @@ struct TodayPage: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 11)
-        .twGlass(radius: 17, shadow: false)
     }
 
     private var todayTip: (String, String, String, Color) {
@@ -444,7 +462,6 @@ struct TodayPage: View {
             Spacer(minLength: 0)
         }
         .padding(14)
-        .twGlass(radius: 17)
     }
 
     private var moodRow: some View {
@@ -470,7 +487,6 @@ struct TodayPage: View {
             }
         }
         .padding(14)
-        .twGlass(radius: 18)
     }
 
     private var moods: [MoodOption] {
