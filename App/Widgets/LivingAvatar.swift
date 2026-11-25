@@ -234,6 +234,12 @@ struct MotionCfg {
                 breatheHz: 0.16, swayHz: 0.10,
                 glow: TWColor.blue, sink: 5
             )
+        case "train":
+            // 训练：呼吸最急、摆动最猛，光晕烧成琥珀色，身体微微前压
+            return MotionCfg(
+                breatheHz: 0.62, swayHz: 0.34,
+                glow: TWColor.amber, sink: -4
+            )
         case "calm":
             // 沉思后：最慢的呼吸，光晕收成薄荷色
             return MotionCfg(
