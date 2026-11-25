@@ -19,6 +19,7 @@ struct BioPage: View {
     @State private var armText = ""
     @State private var thighText = ""
     @State private var hipText = ""
+    @State private var girthPick = 0
 
     private let pedometer = CMPedometer()
 
@@ -29,6 +30,7 @@ struct BioPage: View {
             hrCard
             stepCard
             bodyCard
+            girthCard
             waterCard
             sourceCard
         }
@@ -67,6 +69,7 @@ struct BioPage: View {
                 if hip > 0 { store.hipCM = hip }
                 if goal > 0 { store.weightGoal = goal }
                 if kg > 0 { store.logWeight(kg) }
+                store.logGirth()
                 store.persist()
             }
             .presentationDetents([.large])
@@ -213,6 +216,79 @@ struct BioPage: View {
                 .foregroundStyle(TWColor.ink)
         }
         .frame(maxWidth: .infinity)
+    }
+
+    private var girthLogs7: [GirthLog] {
+        Array(store.girthLogs.suffix(7))
+    }
+
+    private var girthValues: [Double] {
+        switch girthPick {
+        case 0: return girthLogs7.map { $0.waist }
+        case 1: return girthLogs7.map { $0.chest }
+        case 2: return girthLogs7.map { $0.arm }
+        case 3: return girthLogs7.map { $0.thigh }
+        default: return girthLogs7.map { $0.hip }
+        }
+    }
+
+    private var girthLabels: [String] {
+        girthLogs7.map { log in
+            let p = log.id.split(separator: "-")
+            return p.count == 3 ? "\(p[1])/\(p[2])" : log.id
+        }
+    }
+
+    private var girthTitles: [String] { ["腰围", "胸围", "臂围", "腿围", "臀围"] }
+
+    private var girthCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("围度趋势")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundStyle(TWColor.ink)
+                Spacer()
+                GlassPill(text: girthTitles[min(girthPick, 4)], tint: TWColor.blue)
+            }
+
+            HStack(spacing: 6) {
+                ForEach(0..<5, id: \.self) { i in
+                    Button {
+                        UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                        withAnimation(.snappy(duration: 0.2)) { girthPick = i }
+                    } label: {
+                        Text(String(girthTitles[i].prefix(1)))
+                            .font(.system(size: 13, weight: girthPick == i ? .bold : .medium))
+                            .foregroundStyle(girthPick == i ? .white : TWColor.ink2)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 9)
+                            .background {
+                                RoundedRectangle(cornerRadius: 11, style: .continuous)
+                                    .fill(girthPick == i
+                                          ? AnyShapeStyle(LinearGradient(colors: [TWColor.blue, TWColor.purple],
+                                                                         startPoint: .topLeading, endPoint: .bottomTrailing))
+                                          : AnyShapeStyle(Color.white.opacity(0.42)))
+                            }
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+
+            if girthValues.count >= 2 {
+                TrendChart(title: girthTitles[min(girthPick, 4)] + " · 最近 7 次",
+                           values: girthValues,
+                           labels: girthLabels,
+                           tint: TWColor.blue,
+                           unit: "cm",
+                           decimals: 1)
+            } else {
+                Text("同一个部位记录两次以上，就会出现变化曲线。")
+                    .font(.system(size: 12.5))
+                    .foregroundStyle(TWColor.ink3)
+            }
+        }
+        .padding(18)
+        .twGlass()
     }
 
     // MARK: - 饮水

@@ -45,6 +45,7 @@ struct FlowPage: View {
             sessionCard
             timerCard
             progressionCard
+            calendarCard
             historyCard
         }
         .onReceive(tick) { _ in
@@ -409,6 +410,75 @@ struct FlowPage: View {
             }
         }
         .padding(18)
+        .twGlass()
+    }
+
+    // MARK: - 最近 7 天
+
+    private func dayKey(_ d: Date) -> String {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        return f.string(from: d)
+    }
+
+    private func dayBefore(_ n: Int) -> Date {
+        Calendar.current.date(byAdding: .day, value: -n, to: Date()) ?? Date()
+    }
+
+    private func hasTraining(_ d: Date) -> Bool {
+        let key = dayKey(d)
+        return store.sessions.contains { $0.date == key }
+    }
+
+    private var calendarCard: some View {
+        let days: [Date] = (0..<7).map { dayBefore(6 - $0) }
+        let count = days.filter { hasTraining($0) }.count
+        let weekdayNames = ["日", "一", "二", "三", "四", "五", "六"]
+
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("最近 7 天")
+                    .font(.system(size: 15.5, weight: .bold))
+                    .foregroundStyle(TWColor.ink)
+                Spacer()
+                GlassPill(text: "练了 \(count) 天", tint: count > 0 ? TWColor.mint : TWColor.ink3)
+            }
+
+            HStack(spacing: 6) {
+                ForEach(0..<7, id: \.self) { i in
+                    let d = days[i]
+                    let done = hasTraining(d)
+                    let wd = Calendar.current.component(.weekday, from: d) - 1
+                    VStack(spacing: 5) {
+                        Text(weekdayNames[max(0, min(wd, 6))])
+                            .font(.system(size: 10.5, weight: .medium))
+                            .foregroundStyle(TWColor.ink3)
+                        ZStack {
+                            Circle()
+                                .fill(done
+                                      ? AnyShapeStyle(LinearGradient(colors: [TWColor.purple, TWColor.violet],
+                                                                     startPoint: .top, endPoint: .bottom))
+                                      : AnyShapeStyle(Color.white.opacity(0.40)))
+                                .frame(width: 32, height: 32)
+                            if done {
+                                Image(systemName: "checkmark")
+                                    .font(.system(size: 13, weight: .bold))
+                                    .foregroundStyle(.white)
+                            } else {
+                                Circle()
+                                    .fill(TWColor.ink3.opacity(0.35))
+                                    .frame(width: 6, height: 6)
+                            }
+                        }
+                        Text("\(Calendar.current.component(.day, from: d))")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(TWColor.ink3)
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+            }
+        }
+        .padding(16)
         .twGlass()
     }
 

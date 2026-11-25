@@ -65,6 +65,15 @@ struct SessionLog: Codable, Identifiable, Hashable {
     var moveNames: [String]? = nil
 }
 
+struct GirthLog: Codable, Identifiable, Hashable {
+    var id: String          // yyyy-MM-dd
+    var waist: Double
+    var chest: Double
+    var arm: Double
+    var thigh: Double
+    var hip: Double
+}
+
 struct MoveItem: Identifiable, Hashable {
     let id = UUID()
     var name: String
@@ -145,6 +154,7 @@ final class TWStore: ObservableObject {
 
     // 训练历史
     @Published var sessions: [SessionLog] = []
+    @Published var girthLogs: [GirthLog] = []
 
     // 饮水
     @Published var waterCups: Int = 0
@@ -188,6 +198,7 @@ final class TWStore: ObservableObject {
         static let arm = "tw.arm.v2"
         static let thigh = "tw.thigh.v2"
         static let hip = "tw.hip.v2"
+        static let glogs = "tw.glogs.v2"
     }
 
     init() {
@@ -301,6 +312,24 @@ final class TWStore: ObservableObject {
 
     func addWater(_ cups: Int = 1) {
         waterCups = max(0, min(waterCups + cups, 30))
+        persistSoon()
+    }
+
+    // MARK: - 围度历史
+
+    func logGirth() {
+        guard waistCM > 0 || chestCM > 0 || armCM > 0 || thighCM > 0 || hipCM > 0 else { return }
+        let key = DateFormatter.twDay.string(from: Date())
+        let entry = GirthLog(id: key, waist: waistCM, chest: chestCM,
+                             arm: armCM, thigh: thighCM, hip: hipCM)
+        if let i = girthLogs.firstIndex(where: { $0.id == key }) {
+            girthLogs[i] = entry
+        } else {
+            girthLogs.append(entry)
+        }
+        if girthLogs.count > 90 {
+            girthLogs.removeFirst(girthLogs.count - 90)
+        }
         persistSoon()
     }
 
@@ -465,6 +494,9 @@ final class TWStore: ObservableObject {
         d.set(armCM, forKey: Key.arm)
         d.set(thighCM, forKey: Key.thigh)
         d.set(hipCM, forKey: Key.hip)
+        if let v = try? JSONEncoder().encode(girthLogs) {
+            d.set(v, forKey: Key.glogs)
+        }
         if let v = try? JSONEncoder().encode(sessions) {
             d.set(v, forKey: Key.sess)
         }
@@ -523,6 +555,10 @@ final class TWStore: ObservableObject {
         armCM = d.double(forKey: Key.arm)
         thighCM = d.double(forKey: Key.thigh)
         hipCM = d.double(forKey: Key.hip)
+        if let v = d.data(forKey: Key.glogs),
+           let decoded = try? JSONDecoder().decode([GirthLog].self, from: v) {
+            girthLogs = decoded
+        }
         if let v = d.data(forKey: Key.sess),
            let decoded = try? JSONDecoder().decode([SessionLog].self, from: v) {
             sessions = decoded

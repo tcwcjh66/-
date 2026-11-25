@@ -21,6 +21,7 @@ struct TodayPage: View {
             todayTrainCard
             statsRow
             trendCard
+            tipCard
             moodRow
         }
         .opacity(appeared ? 1 : 0)
@@ -260,6 +261,52 @@ struct TodayPage: View {
     private func shortDay(_ raw: String) -> String {
         let p = raw.split(separator: "-")
         return p.count == 3 ? "\(p[1])/\(p[2])" : raw
+    }
+
+    private var todayTip: (String, String, String, Color) {
+        let hour = Calendar.current.component(.hour, from: Date())
+
+        if store.sessionStart != nil {
+            return ("训练中", "组间别拖太久，90 秒左右回来，全程保持呼吸。", "dumbbell.fill", TWColor.purple)
+        }
+        if store.hr > 0, store.restingHR > 0, store.hr > store.restingHR + 30 {
+            return ("心率偏高", "静息比平时高 30 以上，今天别上强度，散步或拉伸即可。", "heart.fill", TWColor.coral)
+        }
+        if hour >= 22 {
+            return ("该睡了", "睡眠是恢复的第一步，睡够了明天练才不白练。", "moon.fill", TWColor.blue)
+        }
+        if store.waterCups < 3, hour >= 12 {
+            return ("水喝少了", "今天才 \(store.waterCups * 250) ml，先来一杯再练。", "drop.fill", TWColor.blue)
+        }
+        if let hint = store.nextDayHint {
+            return ("今天该练", "\(hint.plan) · \(hint.day)，先热身 5 分钟再上重量。", "figure.strengthtraining.traditional", TWColor.mint)
+        }
+        return ("保持节奏", "今天没安排也没关系，走够步数、吃够蛋白就是在进步。", "leaf.fill", TWColor.mint)
+    }
+
+    private var tipCard: some View {
+        let tip = todayTip
+        return HStack(alignment: .top, spacing: 10) {
+            Image(systemName: tip.2)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(tip.3)
+                .frame(width: 30, height: 30)
+                .background {
+                    Circle().fill(tip.3.opacity(0.14))
+                }
+            VStack(alignment: .leading, spacing: 3) {
+                Text(tip.0)
+                    .font(.system(size: 13.5, weight: .bold))
+                    .foregroundStyle(TWColor.ink)
+                Text(tip.1)
+                    .font(.system(size: 12.5))
+                    .foregroundStyle(TWColor.ink2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(14)
+        .twGlass(radius: 17)
     }
 
     private var moodRow: some View {
