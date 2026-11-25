@@ -850,6 +850,9 @@ final class TWStore: ObservableObject {
             }
         }
 
+        // 清零之前先把昨天这一格定格：步数、心率、活动能量存的都该是“昨天走完的最终值”
+        snapshot(dayKey: lastDayKey.isEmpty ? today : lastDayKey)
+
         meals.removeAll()
         dietKcal = 0
         protein = 0
@@ -1022,11 +1025,12 @@ final class TWStore: ObservableObject {
 
     // MARK: - 每日
 
-    func upsertToday() {
-        let key = DateFormatter.twDay.string(from: Date())
+    /// 把某一天当下的数值定格进 logs 的对应格。
+    /// 传 dayKey 是为了跨天时能把“昨天”写回昨天那一格，而不是写到今天头上。
+    func snapshot(dayKey: String) {
         let entry = DayLog(
-            id: key,
-            steps: pedometerSteps,
+            id: dayKey,
+            steps: stepsForDisplay,
             hr: measuredHR,
             hrv: measuredHRV,
             moveKcal: moveKcal,
@@ -1036,7 +1040,7 @@ final class TWStore: ObservableObject {
             carb: carb,
             fat: fat
         )
-        if let i = logs.firstIndex(where: { $0.id == key }) {
+        if let i = logs.firstIndex(where: { $0.id == dayKey }) {
             logs[i] = entry
         } else {
             logs.append(entry)
@@ -1045,6 +1049,10 @@ final class TWStore: ObservableObject {
             logs.removeFirst(logs.count - 30)
         }
         persistSoon()
+    }
+
+    func upsertToday() {
+        snapshot(dayKey: DateFormatter.twDay.string(from: Date()))
     }
 
     var last7: [DayLog] {
