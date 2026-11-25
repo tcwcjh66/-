@@ -43,6 +43,8 @@ targets:
         CFBundleURLTypes:
           - CFBundleURLName: com.tiancaiwei.live
             CFBundleURLSchemes: [twfit]
+        # 解锁 iPhone 上 CoreAnimation 的 60fps 上限，配合 TimelineView 跑满刷新率
+        CADisableMinimumFrameDurationOnPhone: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.tiancaiwei.app

@@ -12,6 +12,8 @@ struct LivingAvatar: View {
     /// 0–23；传 -1 表示不按时段调色
     var hour: Int = -1
 
+    @StateObject private var gyro = Gyro3D()
+
     private var cfg: MotionCfg { MotionCfg.of(mood) }
 
     /// 按时段给光晕换色温：清晨偏暖、白天偏紫、黄昏偏橙、夜里偏冷
@@ -26,10 +28,13 @@ struct LivingAvatar: View {
     }
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 60.0, paused: false)) { context in
+        // 120Hz 驱动：ProMotion 机型跑满，60Hz 机型自动降频，不会跳帧
+        TimelineView(.animation(minimumInterval: 1.0 / 120.0, paused: false)) { context in
             let t = CGFloat(context.date.timeIntervalSinceReferenceDate)
             canvas(t: t)
         }
+        .onAppear { gyro.start() }
+        .onDisappear { gyro.stop() }
     }
 
     private func canvas(t: CGFloat) -> some View {
@@ -42,6 +47,10 @@ struct LivingAvatar: View {
         let sway = sin(t * c.swayHz * twoPi)
         // 极慢的漂浮
         let drift = sin(t * 0.18 * twoPi)
+
+        // 陀螺仪倾角：±1，低通后已经平滑
+        let tx = CGFloat(gyro.roll)
+        let ty = CGFloat(gyro.pitch)
 
         return ZStack {
             // 地面光晕，随呼吸明暗起伏，色温跟随时段
@@ -68,6 +77,17 @@ struct LivingAvatar: View {
                 .blur(radius: 9)
                 .offset(y: 140 + c.sink)
 
+            // 第 1 层：背衬厚度影 —— 与主图反向偏移，倾斜时露出"厚度"
+            Image(asset)
+                .resizable()
+                .scaledToFit()
+                .frame(height: 286)
+                .blur(radius: 15)
+                .opacity(0.28 + 0.07 * breath)
+                .scaleEffect(0.965)
+                .offset(x: -tx * 10, y: 13 + c.sink - ty * 4)
+
+            // 第 2 层：主图 —— 双轴 3D 旋转 + 位移 + 阴影分离
             Image(asset)
                 .resizable()
                 .scaledToFit()
@@ -78,14 +98,47 @@ struct LivingAvatar: View {
                     anchor: .bottom
                 )
                 .rotation3DEffect(
-                    .degrees(1.4 * sway),
+                    .degrees(1.4 * sway + tx * 9),
                     axis: (x: 0, y: 1, z: 0),
                     anchor: .bottom,
-                    perspective: 0.55
+                    perspective: 0.62
+                )
+                .rotation3DEffect(
+                    .degrees(-ty * 5.5),
+                    axis: (x: 1, y: 0, z: 0),
+                    anchor: .bottom,
+                    perspective: 0.62
                 )
                 .rotationEffect(.degrees(0.35 * sway), anchor: .bottom)
-                .offset(y: 8 - 2.6 * breath + 1.6 * drift + c.sink)
-                .shadow(color: TWColor.cardShadow, radius: 22, x: 0, y: 14)
+                .offset(
+                    x: tx * 5,
+                    y: 8 - 2.6 * breath + 1.6 * drift + c.sink + ty * 3
+                )
+                .shadow(color: TWColor.cardShadow, radius: 24, x: tx * 13, y: 16)
+
+            // 第 3 层：右侧轮廓高光 —— 倾斜时忽明忽暗，强化体积
+            Image(asset)
+                .resizable()
+                .scaledToFit()
+                .frame(height: 286)
+                .blendMode(.plusLighter)
+                .opacity(0.13 + 0.16 * max(0, tx))
+                .rotation3DEffect(
+                    .degrees(1.4 * sway + tx * 9),
+                    axis: (x: 0, y: 1, z: 0),
+                    anchor: .bottom,
+                    perspective: 0.62
+                )
+                .rotation3DEffect(
+                    .degrees(-ty * 5.5),
+                    axis: (x: 1, y: 0, z: 0),
+                    anchor: .bottom,
+                    perspective: 0.62
+                )
+                .offset(
+                    x: tx * 5,
+                    y: 8 - 2.6 * breath + 1.6 * drift + c.sink + ty * 3
+                )
         }
         .frame(height: 322, alignment: .center)
     }
