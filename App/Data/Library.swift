@@ -387,6 +387,36 @@ let planTemplates: [PlanTemplate] = [
                 PlanItem(name: "死虫", sets: "3", reps: "12/侧", rest: "45 秒")
             ])
         ]
+    ),
+
+    PlanTemplate(
+        name: "核心特训",
+        tag: "15 分钟",
+        level: "初中级",
+        daysPerWeek: 3,
+        cycle: "8 周一轮",
+        summary: "专攻腹部的三练分化：A 日上腹、B 日下腹、C 日侧腹。每次 4 个动作、15 分钟能收工，隔天练一次。腹肌需要的是张力不是次数，所以宁慢不多。",
+        progression: "第 1–2 周每个动作 2 组；第 3–4 周加到 3 组；第 5 周起改成慢速离心（下落 3 秒）或加负重。组间不躺着，站着自己调呼吸。",
+        days: [
+            PlanDay(title: "A 日 · 上腹", focus: "腹直肌上段 / 屈曲", items: [
+                PlanItem(name: "卷腹", sets: "3", reps: "15–20", rest: "45 秒"),
+                PlanItem(name: "空中蹬自行车", sets: "3", reps: "每侧 15", rest: "45 秒"),
+                PlanItem(name: "触踝卷腹", sets: "2", reps: "每侧 20", rest: "30 秒"),
+                PlanItem(name: "平板支撑", sets: "3", reps: "45–60 秒", rest: "45 秒")
+            ]),
+            PlanDay(title: "B 日 · 下腹", focus: "腹直肌下段 / 骨盆后倾", items: [
+                PlanItem(name: "反向卷腹", sets: "3", reps: "15", rest: "45 秒"),
+                PlanItem(name: "仰卧举腿", sets: "3", reps: "12–15", rest: "45 秒"),
+                PlanItem(name: "剪刀腿", sets: "3", reps: "30 秒", rest: "40 秒"),
+                PlanItem(name: "死虫", sets: "2", reps: "每侧 12", rest: "40 秒")
+            ]),
+            PlanDay(title: "C 日 · 侧腹", focus: "腹斜肌 / 抗旋转", items: [
+                PlanItem(name: "俄罗斯转体", sets: "3", reps: "20", rest: "45 秒"),
+                PlanItem(name: "负重侧屈", sets: "3", reps: "每侧 15", rest: "40 秒"),
+                PlanItem(name: "侧平板", sets: "3", reps: "每侧 40 秒", rest: "40 秒"),
+                PlanItem(name: "登山跑", sets: "3", reps: "30 秒", rest: "45 秒")
+            ])
+        ]
     )
 ]
 
