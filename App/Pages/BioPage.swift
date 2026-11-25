@@ -10,6 +10,11 @@ struct BioPage: View {
     @State private var manualText = ""
     @State private var motionStatus: String = "未查询"
 
+    @State private var showBody = false
+    @State private var wText = ""
+    @State private var hText = ""
+    @State private var waistText = ""
+
     private let pedometer = CMPedometer()
 
     var body: some View {
@@ -18,6 +23,8 @@ struct BioPage: View {
 
             hrCard
             stepCard
+            bodyCard
+            waterCard
             sourceCard
         }
         .sheet(isPresented: $showPulse) {
@@ -43,7 +50,181 @@ struct BioPage: View {
             .presentationCornerRadius(26)
         }
         .onAppear { loadSteps() }
+        .sheet(isPresented: $showBody) {
+            BodySheet(w: $wText, h: $hText, waist: $waistText) { kg, height, waist in
+                if height > 0 { store.heightCM = height }
+                if waist > 0 { store.waistCM = waist }
+                if kg > 0 { store.logWeight(kg) }
+                store.persist()
+            }
+            .presentationDetents([.height(360)])
+            .presentationCornerRadius(26)
+        }
     }
+
+    // MARK: - 身体数据
+
+    private var bmiText: String {
+        let b = store.bmi
+        guard b > 0 else { return "先填身高" }
+        let label: String
+        switch b {
+        case ..<18.5: label = "偏瘦"
+        case ..<24:   label = "正常"
+        case ..<28:   label = "偏高"
+        default:      label = "肥胖"
+        }
+        return String(format: "BMI %.1f · %@", b, label)
+    }
+
+    private var weightPoints: [Double] {
+        Array(store.weightLogs.suffix(7)).map { $0.kg }
+    }
+
+    private var weightLabels: [String] {
+        store.weightLogs.suffix(7).map { log in
+            let p = log.id.split(separator: "-")
+            return p.count == 3 ? "\(p[1])/\(p[2])" : log.id
+        }
+    }
+
+    private var bodyCard: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Text("身体数据")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundStyle(TWColor.ink)
+                Spacer()
+                GlassPill(text: bmiText, tint: TWColor.purple)
+            }
+
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text(store.bodyWeight > 0 ? String(format: "%.1f", store.bodyWeight) : "--")
+                    .font(.system(size: 42, weight: .heavy))
+                    .foregroundStyle(TWColor.ink)
+                    .contentTransition(.numericText())
+                Text("kg")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(TWColor.ink3)
+                Spacer()
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text("腰围")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(TWColor.ink3)
+                    Text(store.waistCM > 0 ? "\(Int(store.waistCM)) cm" : "--")
+                        .font(.system(size: 17, weight: .bold))
+                        .foregroundStyle(TWColor.blue)
+                }
+            }
+
+            if weightPoints.count >= 2 {
+                TrendChart(title: "体重 · 最近 7 次",
+                           values: weightPoints,
+                           labels: weightLabels,
+                           tint: TWColor.purple,
+                           unit: "kg",
+                           decimals: 1)
+            }
+
+            Button {
+                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                wText = store.bodyWeight > 0 ? String(format: "%.1f", store.bodyWeight) : ""
+                hText = store.heightCM > 0 ? "\(Int(store.heightCM))" : ""
+                waistText = store.waistCM > 0 ? "\(Int(store.waistCM))" : ""
+                showBody = true
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "scalemass.fill")
+                        .font(.system(size: 14, weight: .bold))
+                    Text("记录体重 / 腰围")
+                        .font(.system(size: 14.5, weight: .bold))
+                }
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background {
+                    RoundedRectangle(cornerRadius: 13, style: .continuous)
+                        .fill(LinearGradient(colors: [TWColor.purple, TWColor.violet],
+                                             startPoint: .topLeading, endPoint: .bottomTrailing))
+                }
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(18)
+        .twGlass()
+    }
+
+    // MARK: - 饮水
+
+    private var waterCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("饮水")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundStyle(TWColor.ink)
+                Spacer()
+                Text("\(store.waterCups) / \(store.waterTarget) 杯 · \(store.waterCups * 250) ml")
+                    .font(.system(size: 12.5, weight: .semibold))
+                    .foregroundStyle(TWColor.ink3)
+            }
+
+            HStack(spacing: 6) {
+                ForEach(Array(0..<store.waterTarget), id: \.self) { i in
+                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        .fill(i < store.waterCups
+                              ? AnyShapeStyle(LinearGradient(colors: [TWColor.blue, TWColor.mint],
+                                                             startPoint: .bottom, endPoint: .top))
+                              : AnyShapeStyle(Color.white.opacity(0.38)))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 36)
+                        .overlay {
+                            Image(systemName: "drop.fill")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundStyle(i < store.waterCups ? .white : TWColor.ink3.opacity(0.6))
+                        }
+                }
+            }
+
+            HStack(spacing: 10) {
+                Button {
+                    UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                    withAnimation(.snappy(duration: 0.18)) { store.addWater(-1) }
+                } label: {
+                    Text("− 1 杯")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(TWColor.ink2)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 11)
+                        .background {
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .fill(Color.white.opacity(0.55))
+                        }
+                }
+                .buttonStyle(.plain)
+
+                Button {
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    withAnimation(.snappy(duration: 0.18)) { store.addWater() }
+                } label: {
+                    Text("+ 1 杯（250ml）")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 11)
+                        .background {
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .fill(LinearGradient(colors: [TWColor.blue, TWColor.mint],
+                                                     startPoint: .leading, endPoint: .trailing))
+                        }
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(18)
+        .twGlass()
+    }
+
+    // MARK: - 数据通路
 
     // MARK: - 心率
 

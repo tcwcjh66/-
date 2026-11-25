@@ -321,13 +321,23 @@ struct DietPage: View {
 struct FoodPicker: View {
     var defaultSlot: String = "午餐"
     var onPick: (MealEntry) -> Void
+    @EnvironmentObject var store: TWStore
     @Environment(\.dismiss) private var dismiss
     @State private var grams: Double = 150
     @State private var selected: FoodPreset = foodPresets[0]
     @State private var slot: String = ""
+    @State private var showCustom = false
 
     private let slots = ["早餐", "午餐", "晚餐", "加餐"]
     private var activeSlot: String { slot.isEmpty ? defaultSlot : slot }
+
+    private var customPresets: [FoodPreset] {
+        store.customFoods.map { c in
+            FoodPreset(name: c.name, emoji: "🍽️",
+                       kcalPer100: c.kcalPer100, proteinPer100: c.proteinPer100,
+                       carbPer100: c.carbPer100, fatPer100: c.fatPer100, vegPer100: 0)
+        }
+    }
 
     var body: some View {
         ZStack {
@@ -338,9 +348,31 @@ struct FoodPicker: View {
                     .frame(width: 34, height: 4)
                     .padding(.top, 8)
 
-                Text("加一餐")
-                    .font(.system(size: 19, weight: .heavy))
-                    .foregroundStyle(TWColor.ink)
+                HStack(spacing: 8) {
+                    Text("加一餐")
+                        .font(.system(size: 19, weight: .heavy))
+                        .foregroundStyle(TWColor.ink)
+                    Spacer()
+                    Button {
+                        UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                        showCustom = true
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "plus")
+                                .font(.system(size: 11, weight: .bold))
+                            Text("自定义")
+                                .font(.system(size: 12.5, weight: .bold))
+                        }
+                        .foregroundStyle(TWColor.purple)
+                        .padding(.horizontal, 11)
+                        .padding(.vertical, 7)
+                        .background {
+                            Capsule().fill(TWColor.purple.opacity(0.12))
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.horizontal, 18)
 
                 HStack(spacing: 7) {
                     ForEach(slots, id: \.self) { s in
@@ -368,34 +400,31 @@ struct FoodPicker: View {
 
                 ScrollView {
                     VStack(spacing: 8) {
-                        ForEach(foodPresets) { f in
-                            Button {
-                                withAnimation(.snappy(duration: 0.2)) { selected = f }
-                            } label: {
-                                HStack {
-                                    Text(f.emoji).font(.system(size: 19))
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text(f.name)
-                                            .font(.system(size: 14.5, weight: .semibold))
-                                            .foregroundStyle(TWColor.ink)
-                                        Text("每 100g · \(Int(f.kcalPer100)) kcal · 蛋白 \(String(format: "%.1f", f.proteinPer100))g")
-                                            .font(.system(size: 11.5, weight: .regular))
-                                            .foregroundStyle(TWColor.ink3)
-                                    }
-                                    Spacer()
-                                    if selected.name == f.name {
-                                        Image(systemName: "checkmark.circle.fill")
-                                            .foregroundStyle(TWColor.purple)
-                                    }
-                                }
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 9)
-                                .background {
-                                    RoundedRectangle(cornerRadius: 13, style: .continuous)
-                                        .fill(selected.name == f.name ? Color.white.opacity(0.82) : Color.white.opacity(0.34))
-                                }
+                        if !customPresets.isEmpty {
+                            HStack {
+                                Text("我的常吃")
+                                    .font(.system(size: 12, weight: .bold))
+                                    .foregroundStyle(TWColor.ink3)
+                                Spacer()
                             }
-                            .buttonStyle(.plain)
+                            .padding(.horizontal, 4)
+
+                            ForEach(customPresets) { f in
+                                presetRow(f)
+                            }
+
+                            HStack {
+                                Text("常见食物")
+                                    .font(.system(size: 12, weight: .bold))
+                                    .foregroundStyle(TWColor.ink3)
+                                Spacer()
+                            }
+                            .padding(.horizontal, 4)
+                            .padding(.top, 4)
+                        }
+
+                        ForEach(foodPresets) { f in
+                            presetRow(f)
                         }
                     }
                     .padding(.horizontal, 16)
@@ -451,6 +480,41 @@ struct FoodPicker: View {
         .onAppear {
             if slot.isEmpty { slot = defaultSlot }
         }
+        .sheet(isPresented: $showCustom) {
+            CustomFoodSheet()
+                .presentationDetents([.height(420)])
+                .presentationCornerRadius(26)
+        }
+    }
+
+    private func presetRow(_ f: FoodPreset) -> some View {
+        Button {
+            withAnimation(.snappy(duration: 0.2)) { selected = f }
+        } label: {
+            HStack {
+                Text(f.emoji).font(.system(size: 19))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(f.name)
+                        .font(.system(size: 14.5, weight: .semibold))
+                        .foregroundStyle(TWColor.ink)
+                    Text("每 100g · \(Int(f.kcalPer100)) kcal · 蛋白 \(String(format: "%.1f", f.proteinPer100))g")
+                        .font(.system(size: 11.5, weight: .regular))
+                        .foregroundStyle(TWColor.ink3)
+                }
+                Spacer()
+                if selected.name == f.name {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(TWColor.purple)
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 9)
+            .background {
+                RoundedRectangle(cornerRadius: 13, style: .continuous)
+                    .fill(selected.name == f.name ? Color.white.opacity(0.82) : Color.white.opacity(0.34))
+            }
+        }
+        .buttonStyle(.plain)
     }
 }
 

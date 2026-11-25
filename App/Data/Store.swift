@@ -40,6 +40,20 @@ struct MealEntry: Identifiable, Hashable, Codable {
     var time: Date? = nil
 }
 
+struct WeightLog: Codable, Identifiable, Hashable {
+    var id: String   // yyyy-MM-dd
+    var kg: Double
+}
+
+struct CustomFood: Codable, Identifiable, Hashable {
+    var id = UUID()
+    var name: String
+    var kcalPer100: Double
+    var proteinPer100: Double
+    var carbPer100: Double
+    var fatPer100: Double
+}
+
 struct MoveItem: Identifiable, Hashable {
     let id = UUID()
     var name: String
@@ -107,6 +121,19 @@ final class TWStore: ObservableObject {
     // 收藏
     @Published var favoriteMoves: [String] = []
 
+    // 身体数据
+    @Published var bodyWeight: Double = 0
+    @Published var heightCM: Double = 0
+    @Published var waistCM: Double = 0
+    @Published var weightLogs: [WeightLog] = []
+
+    // 饮水
+    @Published var waterCups: Int = 0
+    @Published var waterTarget: Int = 8
+
+    // 自定义食物
+    @Published var customFoods: [CustomFood] = []
+
     private let d = UserDefaults.standard
     private var saveWork: DispatchWorkItem?
 
@@ -129,6 +156,13 @@ final class TWStore: ObservableObject {
         static let moveK = "tw.moveK.v2"
         static let stand = "tw.stand.v2"
         static let fav = "tw.fav.v2"
+        static let weight = "tw.weight.v2"
+        static let height = "tw.height.v2"
+        static let waist = "tw.waist.v2"
+        static let wlogs = "tw.wlogs.v2"
+        static let water = "tw.water.v2"
+        static let waterDay = "tw.waterDay.v2"
+        static let cfoods = "tw.cfoods.v2"
     }
 
     init() {
@@ -198,6 +232,52 @@ final class TWStore: ObservableObject {
         } else {
             favoriteMoves.insert(name, at: 0)
         }
+        persistSoon()
+    }
+
+    // MARK: - 身体数据
+
+    func logWeight(_ kg: Double) {
+        guard kg > 20, kg < 300 else { return }
+        bodyWeight = kg
+        let key = DateFormatter.twDay.string(from: Date())
+        let entry = WeightLog(id: key, kg: kg)
+        if let i = weightLogs.firstIndex(where: { $0.id == key }) {
+            weightLogs[i] = entry
+        } else {
+            weightLogs.append(entry)
+        }
+        if weightLogs.count > 90 {
+            weightLogs.removeFirst(weightLogs.count - 90)
+        }
+        persistSoon()
+    }
+
+    var bmi: Double {
+        guard bodyWeight > 0, heightCM > 0 else { return 0 }
+        let h = heightCM / 100
+        return bodyWeight / (h * h)
+    }
+
+    // MARK: - 饮水
+
+    func addWater(_ cups: Int = 1) {
+        waterCups = max(0, min(waterCups + cups, 30))
+        persistSoon()
+    }
+
+    // MARK: - 自定义食物
+
+    func addCustomFood(_ f: CustomFood) {
+        customFoods.insert(f, at: 0)
+        if customFoods.count > 60 {
+            customFoods.removeLast(customFoods.count - 60)
+        }
+        persistSoon()
+    }
+
+    func removeCustomFood(id: UUID) {
+        customFoods.removeAll { $0.id == id }
         persistSoon()
     }
 
@@ -312,6 +392,19 @@ final class TWStore: ObservableObject {
             d.set(v, forKey: Key.logs)
         }
         d.set(favoriteMoves, forKey: Key.fav)
+
+        d.set(bodyWeight, forKey: Key.weight)
+        d.set(heightCM, forKey: Key.height)
+        d.set(waistCM, forKey: Key.waist)
+        d.set(waterCups, forKey: Key.water)
+        d.set(DateFormatter.twDay.string(from: Date()), forKey: Key.waterDay)
+
+        if let v = try? JSONEncoder().encode(weightLogs) {
+            d.set(v, forKey: Key.wlogs)
+        }
+        if let v = try? JSONEncoder().encode(customFoods) {
+            d.set(v, forKey: Key.cfoods)
+        }
     }
 
     func load() {
@@ -346,6 +439,22 @@ final class TWStore: ObservableObject {
             logs = decoded
         }
         favoriteMoves = d.stringArray(forKey: Key.fav) ?? []
+
+        bodyWeight = d.double(forKey: Key.weight)
+        heightCM = d.double(forKey: Key.height)
+        waistCM = d.double(forKey: Key.waist)
+        let savedWaterDay = d.string(forKey: Key.waterDay) ?? ""
+        waterCups = savedWaterDay == DateFormatter.twDay.string(from: Date())
+            ? d.integer(forKey: Key.water) : 0
+
+        if let v = d.data(forKey: Key.wlogs),
+           let decoded = try? JSONDecoder().decode([WeightLog].self, from: v) {
+            weightLogs = decoded
+        }
+        if let v = d.data(forKey: Key.cfoods),
+           let decoded = try? JSONDecoder().decode([CustomFood].self, from: v) {
+            customFoods = decoded
+        }
     }
 }
 

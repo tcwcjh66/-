@@ -12,6 +12,7 @@ struct FlowPage: View {
 
     @State private var planIndex: Int = 0
     @State private var dayIndex: Int = 0
+    @State private var doneMoves: Set<String> = []
 
     private var plan: PlanTemplate {
         planTemplates[min(planIndex, planTemplates.count - 1)]
@@ -155,7 +156,10 @@ struct FlowPage: View {
 
                     Button {
                         UIImpactFeedbackGenerator(style: .soft).impactOccurred()
-                        withAnimation(.snappy(duration: 0.2)) { store.endSession() }
+                        withAnimation(.snappy(duration: 0.2)) {
+                            store.endSession()
+                            doneMoves.removeAll()
+                        }
                     } label: {
                         Text("结束")
                             .font(.system(size: 14, weight: .bold))
@@ -176,6 +180,7 @@ struct FlowPage: View {
                     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                     withAnimation(.snappy(duration: 0.2)) {
                         store.startSession(moves: day.items.map { $0.name })
+                        doneMoves.removeAll()
                     }
                 } label: {
                     HStack(spacing: 7) {
@@ -203,6 +208,18 @@ struct FlowPage: View {
         return "\(s / 60) 分钟"
     }
 
+    private func toggleDone(_ name: String, key: String) {
+        if store.sessionStart == nil {
+            store.startSession(moves: day.items.map { $0.name })
+        }
+        if doneMoves.contains(key) {
+            doneMoves.remove(key)
+        } else {
+            doneMoves.insert(key)
+            store.addSet()
+        }
+    }
+
     private var sessionCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
@@ -222,23 +239,49 @@ struct FlowPage: View {
 
             VStack(spacing: 0) {
                 ForEach(Array(day.items.enumerated()), id: \.element.id) { pair in
+                    let key = "\(day.title)｜\(pair.element.name)"
+                    let done = doneMoves.contains(key)
                     HStack(spacing: 10) {
-                        Text("\(pair.offset + 1)")
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundStyle(.white)
-                            .frame(width: 19, height: 19)
-                            .background { Circle().fill(TWColor.purple.opacity(0.78)) }
+                        Button {
+                            UIImpactFeedbackGenerator(style: .rigid).impactOccurred()
+                            withAnimation(.snappy(duration: 0.2)) {
+                                toggleDone(pair.element.name, key: key)
+                            }
+                        } label: {
+                            ZStack {
+                                Circle()
+                                    .fill(done
+                                          ? AnyShapeStyle(TWColor.mint)
+                                          : AnyShapeStyle(LinearGradient(colors: [TWColor.purple.opacity(0.85),
+                                                                                  TWColor.violet.opacity(0.85)],
+                                                                         startPoint: .top, endPoint: .bottom)))
+                                    .frame(width: 24, height: 24)
+                                if done {
+                                    Image(systemName: "checkmark")
+                                        .font(.system(size: 11, weight: .bold))
+                                        .foregroundStyle(.white)
+                                } else {
+                                    Text("\(pair.offset + 1)")
+                                        .font(.system(size: 12, weight: .bold))
+                                        .foregroundStyle(.white)
+                                }
+                            }
+                            .frame(width: 30, height: 30)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
 
                         Text(pair.element.name)
                             .font(.system(size: 14.5, weight: .semibold))
-                            .foregroundStyle(TWColor.ink)
+                            .foregroundStyle(done ? TWColor.ink3 : TWColor.ink)
+                            .strikethrough(done, color: TWColor.ink3)
                             .lineLimit(1)
 
                         Spacer(minLength: 4)
 
                         Text("\(pair.element.sets) × \(pair.element.reps)")
                             .font(.system(size: 12.5, weight: .bold))
-                            .foregroundStyle(TWColor.purple)
+                            .foregroundStyle(done ? TWColor.ink3 : TWColor.purple)
                             .lineLimit(1)
                     }
                     .padding(.vertical, 9)
