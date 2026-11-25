@@ -330,7 +330,7 @@ struct AIChatSheet: View {
         var t = "我是你的教练。"
         let left = max(0, Int(store.dietTarget - store.dietKcal))
         t += "今天还剩 \(left) kcal 额度"
-        let pl = max(0, Int(proteinNeed - protein))
+        let pl = max(0, Int(proteinNeed - store.protein))
         if pl > 0 { t += "，蛋白差 \(pl)g" } else { t += "，蛋白够了 👍" }
         t += "。想聊哪块？吃喝、训练、睡觉都能问。"
         if !client.ready {
