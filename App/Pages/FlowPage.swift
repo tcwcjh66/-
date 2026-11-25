@@ -44,6 +44,7 @@ struct FlowPage: View {
             sessionCard
             timerCard
             progressionCard
+            historyCard
         }
         .onReceive(tick) { _ in
             guard running else { return }
@@ -157,7 +158,7 @@ struct FlowPage: View {
                     Button {
                         UIImpactFeedbackGenerator(style: .soft).impactOccurred()
                         withAnimation(.snappy(duration: 0.2)) {
-                            store.endSession()
+                            store.endSession(plan: plan.name, day: day.title, moves: day.items.count)
                             doneMoves.removeAll()
                         }
                     } label: {
@@ -401,6 +402,62 @@ struct FlowPage: View {
         }
         .padding(18)
         .twGlass()
+    }
+
+    // MARK: - 进阶规则
+
+    private var historyCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("训练记录")
+                    .font(.system(size: 15.5, weight: .bold))
+                    .foregroundStyle(TWColor.ink)
+                Spacer()
+                GlassPill(text: "\(store.sessions.count) 次", tint: TWColor.mint)
+            }
+
+            if store.sessions.isEmpty {
+                Text("完成一次训练并点「结束」后，记录会出现在这里。")
+                    .font(.system(size: 12.5))
+                    .foregroundStyle(TWColor.ink3)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else {
+                ForEach(Array(store.sessions.prefix(5).enumerated()), id: \.element.id) { pair in
+                    HStack(spacing: 10) {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(pair.element.day.isEmpty
+                                 ? pair.element.plan
+                                 : "\(pair.element.plan) · \(pair.element.day)")
+                                .font(.system(size: 13.5, weight: .semibold))
+                                .foregroundStyle(TWColor.ink)
+                                .lineLimit(1)
+                            Text("\(pair.element.sets) 组 · \(pair.element.minutes) 分钟 · \(pair.element.moves) 个动作")
+                                .font(.system(size: 11.5))
+                                .foregroundStyle(TWColor.ink3)
+                        }
+                        Spacer(minLength: 4)
+                        Text(shortDate(pair.element.date))
+                            .font(.system(size: 11.5, weight: .semibold))
+                            .foregroundStyle(TWColor.ink3)
+                    }
+                    .padding(.vertical, 7)
+
+                    if pair.offset < min(store.sessions.count, 5) - 1 {
+                        Rectangle()
+                            .fill(TWColor.ink3.opacity(0.12))
+                            .frame(height: 0.7)
+                    }
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .twGlass()
+    }
+
+    private func shortDate(_ raw: String) -> String {
+        let p = raw.split(separator: "-")
+        return p.count == 3 ? "\(p[1])/\(p[2])" : raw
     }
 
     // MARK: - 进阶规则

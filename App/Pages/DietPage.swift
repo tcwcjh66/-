@@ -59,6 +59,7 @@ struct DietPage: View {
             addCard
             slotSection
             trendCard
+            weekCard
         }
         .sheet(isPresented: $showPicker) {
             FoodPicker(defaultSlot: autoSlot) { item in
@@ -311,10 +312,52 @@ struct DietPage: View {
             values: recentLogs.map { $0.kcal ?? 0 },
             labels: dayLabels,
             tint: TWColor.mint,
-            unit: "kcal"
+            unit: "kcal",
+            goal: store.dietTarget
         )
         .padding(16)
         .twGlass()
+    }
+
+    private var weekCard: some View {
+        let recorded = recentLogs.filter { ($0.kcal ?? 0) > 0 }
+        let avg = recorded.isEmpty
+            ? 0
+            : recorded.reduce(0.0) { $0 + ($1.kcal ?? 0) } / Double(recorded.count)
+        let onTarget = recorded.filter { abs(($0.kcal ?? 0) - store.dietTarget) <= store.dietTarget * 0.1 }.count
+
+        return HStack(spacing: 0) {
+            miniStat(title: "平均", value: avg > 0 ? "\(Int(avg))" : "--", unit: "kcal", tint: TWColor.mint)
+            divider
+            miniStat(title: "有记录", value: "\(recorded.count)", unit: "天", tint: TWColor.blue)
+            divider
+            miniStat(title: "达标", value: "\(onTarget)", unit: "天", tint: TWColor.purple)
+        }
+        .padding(.vertical, 14)
+        .twGlass(radius: 18)
+    }
+
+    private var divider: some View {
+        Rectangle()
+            .fill(TWColor.ink3.opacity(0.16))
+            .frame(width: 0.8, height: 30)
+    }
+
+    private func miniStat(title: String, value: String, unit: String, tint: Color) -> some View {
+        VStack(spacing: 3) {
+            Text(title)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(TWColor.ink3)
+            HStack(alignment: .firstTextBaseline, spacing: 2) {
+                Text(value)
+                    .font(.system(size: 19, weight: .heavy))
+                    .foregroundStyle(tint)
+                Text(unit)
+                    .font(.system(size: 10.5, weight: .medium))
+                    .foregroundStyle(TWColor.ink3)
+            }
+        }
+        .frame(maxWidth: .infinity)
     }
 }
 

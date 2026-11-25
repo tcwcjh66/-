@@ -54,6 +54,16 @@ struct CustomFood: Codable, Identifiable, Hashable {
     var fatPer100: Double
 }
 
+struct SessionLog: Codable, Identifiable, Hashable {
+    var id = UUID()
+    var date: String        // yyyy-MM-dd
+    var plan: String
+    var day: String
+    var moves: Int
+    var sets: Int
+    var minutes: Int
+}
+
 struct MoveItem: Identifiable, Hashable {
     let id = UUID()
     var name: String
@@ -125,7 +135,11 @@ final class TWStore: ObservableObject {
     @Published var bodyWeight: Double = 0
     @Published var heightCM: Double = 0
     @Published var waistCM: Double = 0
+    @Published var weightGoal: Double = 0
     @Published var weightLogs: [WeightLog] = []
+
+    // 训练历史
+    @Published var sessions: [SessionLog] = []
 
     // 饮水
     @Published var waterCups: Int = 0
@@ -163,6 +177,8 @@ final class TWStore: ObservableObject {
         static let water = "tw.water.v2"
         static let waterDay = "tw.waterDay.v2"
         static let cfoods = "tw.cfoods.v2"
+        static let wgoal = "tw.wgoal.v2"
+        static let sess = "tw.sess.v2"
     }
 
     init() {
@@ -322,7 +338,23 @@ final class TWStore: ObservableObject {
         persistSoon()
     }
 
-    func endSession() {
+    func endSession(plan: String = "", day: String = "", moves: Int = 0) {
+        let start = sessionStart ?? Date()
+        let mins = max(1, Int(Date().timeIntervalSince(start) / 60))
+        if sessionSets > 0 {
+            let entry = SessionLog(
+                date: DateFormatter.twDay.string(from: Date()),
+                plan: plan,
+                day: day,
+                moves: moves,
+                sets: sessionSets,
+                minutes: mins
+            )
+            sessions.insert(entry, at: 0)
+            if sessions.count > 90 {
+                sessions.removeLast(sessions.count - 90)
+            }
+        }
         sessionStart = nil
         mood = "win"
         upsertToday()
@@ -405,6 +437,10 @@ final class TWStore: ObservableObject {
         if let v = try? JSONEncoder().encode(customFoods) {
             d.set(v, forKey: Key.cfoods)
         }
+        d.set(weightGoal, forKey: Key.wgoal)
+        if let v = try? JSONEncoder().encode(sessions) {
+            d.set(v, forKey: Key.sess)
+        }
     }
 
     func load() {
@@ -454,6 +490,11 @@ final class TWStore: ObservableObject {
         if let v = d.data(forKey: Key.cfoods),
            let decoded = try? JSONDecoder().decode([CustomFood].self, from: v) {
             customFoods = decoded
+        }
+        weightGoal = d.double(forKey: Key.wgoal)
+        if let v = d.data(forKey: Key.sess),
+           let decoded = try? JSONDecoder().decode([SessionLog].self, from: v) {
+            sessions = decoded
         }
     }
 }

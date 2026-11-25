@@ -14,6 +14,7 @@ struct BioPage: View {
     @State private var wText = ""
     @State private var hText = ""
     @State private var waistText = ""
+    @State private var goalText = ""
 
     private let pedometer = CMPedometer()
 
@@ -51,13 +52,14 @@ struct BioPage: View {
         }
         .onAppear { loadSteps() }
         .sheet(isPresented: $showBody) {
-            BodySheet(w: $wText, h: $hText, waist: $waistText) { kg, height, waist in
+            BodySheet(w: $wText, h: $hText, waist: $waistText, goal: $goalText) { kg, height, waist, goal in
                 if height > 0 { store.heightCM = height }
                 if waist > 0 { store.waistCM = waist }
+                if goal > 0 { store.weightGoal = goal }
                 if kg > 0 { store.logWeight(kg) }
                 store.persist()
             }
-            .presentationDetents([.height(360)])
+            .presentationDetents([.large])
             .presentationCornerRadius(26)
         }
     }
@@ -123,7 +125,28 @@ struct BioPage: View {
                            labels: weightLabels,
                            tint: TWColor.purple,
                            unit: "kg",
-                           decimals: 1)
+                           decimals: 1,
+                           goal: store.weightGoal > 0 ? store.weightGoal : nil)
+            }
+
+            if store.weightGoal > 0 {
+                let diff = store.bodyWeight - store.weightGoal
+                HStack(spacing: 8) {
+                    Image(systemName: abs(diff) < 0.3 ? "checkmark.circle.fill" : "flag.fill")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(abs(diff) < 0.3 ? TWColor.mint : TWColor.amber)
+                    Text("目标 \(String(format: "%.1f", store.weightGoal)) kg")
+                        .font(.system(size: 12.5, weight: .semibold))
+                        .foregroundStyle(TWColor.ink2)
+                    Spacer()
+                    Text(abs(diff) < 0.3
+                         ? "已达成"
+                         : (diff > 0
+                            ? String(format: "还差 %.1f kg", diff)
+                            : String(format: "超目标 %.1f kg", -diff)))
+                        .font(.system(size: 12.5, weight: .bold))
+                        .foregroundStyle(abs(diff) < 0.3 ? TWColor.mint : TWColor.amber)
+                }
             }
 
             Button {
@@ -131,6 +154,7 @@ struct BioPage: View {
                 wText = store.bodyWeight > 0 ? String(format: "%.1f", store.bodyWeight) : ""
                 hText = store.heightCM > 0 ? "\(Int(store.heightCM))" : ""
                 waistText = store.waistCM > 0 ? "\(Int(store.waistCM))" : ""
+                goalText = store.weightGoal > 0 ? String(format: "%.1f", store.weightGoal) : ""
                 showBody = true
             } label: {
                 HStack(spacing: 6) {

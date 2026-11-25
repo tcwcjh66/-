@@ -8,9 +8,10 @@ struct TrendChart: View {
     var tint: Color
     var unit: String
     var decimals: Int = 0
+    var goal: Double? = nil
 
-    private var maxV: Double { max(values.max() ?? 1, 1) }
-    private var minV: Double { values.min() ?? 0 }
+    private var maxV: Double { max(values.max() ?? 1, goal ?? 0, 1) }
+    private var minV: Double { min(values.min() ?? 0, goal ?? Double.greatestFiniteMagnitude) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 9) {
@@ -51,6 +52,16 @@ struct TrendChart: View {
                                 endPoint: .bottom
                             )
                         )
+
+                        if let g = goal {
+                            let gy = h - CGFloat((g - minV) / span) * h * 0.78 - h * 0.11
+                            Path { p in
+                                p.move(to: CGPoint(x: 0, y: gy))
+                                p.addLine(to: CGPoint(x: w, y: gy))
+                            }
+                            .stroke(tint.opacity(0.50),
+                                    style: StrokeStyle(lineWidth: 1.2, dash: [4, 4]))
+                        }
 
                         Path { p in
                             p.move(to: pts[0])

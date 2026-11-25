@@ -5,7 +5,8 @@ struct BodySheet: View {
     @Binding var w: String
     @Binding var h: String
     @Binding var waist: String
-    var onSubmit: (Double, Double, Double) -> Void
+    @Binding var goal: String
+    var onSubmit: (Double, Double, Double, Double) -> Void
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -24,8 +25,9 @@ struct BodySheet: View {
                 field(title: "体重", text: $w, unit: "kg", placeholder: "如 68.5")
                 field(title: "身高", text: $h, unit: "cm", placeholder: "如 175")
                 field(title: "腰围", text: $waist, unit: "cm", placeholder: "如 78")
+                field(title: "目标体重", text: $goal, unit: "kg", placeholder: "如 65")
 
-                Text("体重按天记录，同一天再记会覆盖；只填想更新的项也行。")
+                Text("体重按天记录，同一天再记会覆盖；只填想更新的项也行。目标体重会画在趋势图上。")
                     .font(.system(size: 11.5))
                     .foregroundStyle(TWColor.ink3)
                     .multilineTextAlignment(.center)
@@ -34,7 +36,8 @@ struct BodySheet: View {
                     let kg = Double(w) ?? 0
                     let height = Double(h) ?? 0
                     let waistV = Double(waist) ?? 0
-                    onSubmit(kg, height, waistV)
+                    let goalV = Double(goal) ?? 0
+                    onSubmit(kg, height, waistV, goalV)
                     dismiss()
                 } label: {
                     Text("保存")
