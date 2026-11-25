@@ -116,6 +116,14 @@ struct GlassTabBar: View {
     @Binding var selected: TWTab
 
     var body: some View {
+        if #available(iOS 26.0, *) {
+            bar.glassEffect(.regular, in: .rect(cornerRadius: 29))
+        } else {
+            bar.twGlass(radius: 29, tintAmount: 0.04)
+        }
+    }
+
+    private var bar: some View {
         HStack(spacing: 0) {
             ForEach(TWTab.allCases) { t in
                 Button {
@@ -137,7 +145,7 @@ struct GlassTabBar: View {
                     .background {
                         if t == selected {
                             Capsule(style: .continuous)
-                                .fill(Color.white.opacity(0.78))
+                                .fill(Color.white.opacity(0.82))
                                 .shadow(color: TWColor.cardShadow, radius: 4, y: 2)
                         }
                     }
@@ -147,6 +155,5 @@ struct GlassTabBar: View {
             }
         }
         .padding(5)
-        .twGlass(radius: 29, tintAmount: 0.04)
     }
 }
