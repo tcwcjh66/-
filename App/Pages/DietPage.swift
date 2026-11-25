@@ -173,9 +173,51 @@ struct DietPage: View {
             macroRow(title: "蛋白质", value: store.protein, target: proteinNeed, tint: TWColor.coral, unit: "g")
             macroRow(title: "碳水", value: store.carb, target: 260, tint: TWColor.blue, unit: "g")
             macroRow(title: "脂肪", value: store.fat, target: 70, tint: TWColor.amber, unit: "g")
+
+            macroRatioBar
         }
         .padding(16)
         .twGlass()
+    }
+
+    private var macroRatioBar: some View {
+        let pKcal = store.protein * 4
+        let cKcal = store.carb * 4
+        let fKcal = store.fat * 9
+        let total = max(pKcal + cKcal + fKcal, 1)
+
+        return VStack(alignment: .leading, spacing: 6) {
+            GeometryReader { geo in
+                HStack(spacing: 2) {
+                    Capsule()
+                        .fill(TWColor.coral.opacity(0.78))
+                        .frame(width: max(geo.size.width * CGFloat(pKcal / total) - 2, 0))
+                    Capsule()
+                        .fill(TWColor.blue.opacity(0.78))
+                        .frame(width: max(geo.size.width * CGFloat(cKcal / total) - 2, 0))
+                    Capsule()
+                        .fill(TWColor.amber.opacity(0.78))
+                }
+            }
+            .frame(height: 7)
+
+            HStack(spacing: 10) {
+                ratioTag("蛋白", pKcal / total, TWColor.coral)
+                ratioTag("碳水", cKcal / total, TWColor.blue)
+                ratioTag("脂肪", fKcal / total, TWColor.amber)
+                Spacer(minLength: 0)
+            }
+        }
+        .padding(.top, 2)
+    }
+
+    private func ratioTag(_ name: String, _ ratio: Double, _ tint: Color) -> some View {
+        HStack(spacing: 3) {
+            Circle().fill(tint).frame(width: 5, height: 5)
+            Text("\(name) \(Int(ratio * 100))%")
+                .font(.system(size: 10.5, weight: .semibold))
+                .foregroundStyle(TWColor.ink3)
+        }
     }
 
     private func macroRow(title: String, value: Double, target: Double, tint: Color, unit: String) -> some View {

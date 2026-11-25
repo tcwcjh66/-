@@ -12,6 +12,8 @@ struct FlowPage: View {
 
     @State private var doneMoves: Set<String> = []
     @State private var detailSession: SessionLog?
+    @State private var pendingPlan: Int?
+    @State private var showSwitchConfirm = false
 
     private var planIndex: Int {
         min(max(store.planPick, 0), planTemplates.count - 1)
@@ -68,6 +70,22 @@ struct FlowPage: View {
                 .presentationDetents([.medium, .large])
                 .presentationCornerRadius(28)
         }
+        .confirmationDialog("正在训练，切换方案会清空当前组数？",
+                            isPresented: $showSwitchConfirm,
+                            titleVisibility: .visible) {
+            Button("切换", role: .destructive) {
+                if let p = pendingPlan {
+                    withAnimation(.snappy(duration: 0.22)) {
+                        store.setPlan(p, day: 0)
+                        doneMoves.removeAll()
+                    }
+                }
+                pendingPlan = nil
+            }
+            Button("继续当前训练", role: .cancel) { pendingPlan = nil }
+        } message: {
+            Text("已经记了 \(store.sessionSets) 组，切过去这些数据不会保留。")
+        }
     }
 
     // MARK: - 方案选择
@@ -78,9 +96,14 @@ struct FlowPage: View {
                 ForEach(Array(planTemplates.enumerated()), id: \.element.id) { pair in
                     Button {
                         UIImpactFeedbackGenerator(style: .soft).impactOccurred()
-                        withAnimation(.snappy(duration: 0.22)) {
-                            store.setPlan(pair.offset, day: 0)
-                            doneMoves.removeAll()
+                        if store.sessionStart != nil && store.sessionSets > 0 {
+                            pendingPlan = pair.offset
+                            showSwitchConfirm = true
+                        } else {
+                            withAnimation(.snappy(duration: 0.22)) {
+                                store.setPlan(pair.offset, day: 0)
+                                doneMoves.removeAll()
+                            }
                         }
                     } label: {
                         VStack(alignment: .leading, spacing: 3) {

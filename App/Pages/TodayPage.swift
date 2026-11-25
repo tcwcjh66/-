@@ -21,6 +21,7 @@ struct TodayPage: View {
             ringsCard
             todayTrainCard
             statsRow
+            waterQuick
             trendCard
             tipCard
             moodRow
@@ -269,6 +270,47 @@ struct TodayPage: View {
     private func shortDay(_ raw: String) -> String {
         let p = raw.split(separator: "-")
         return p.count == 3 ? "\(p[1])/\(p[2])" : raw
+    }
+
+    private var waterQuick: some View {
+        HStack(spacing: 11) {
+            Image(systemName: "drop.fill")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(TWColor.blue)
+                .frame(width: 30, height: 30)
+                .background { Circle().fill(TWColor.blue.opacity(0.12)) }
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("饮水")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(TWColor.ink3)
+                Text("\(store.waterCups * 250) ml / \(store.waterTarget * 250) ml")
+                    .font(.system(size: 13.5, weight: .bold))
+                    .foregroundStyle(TWColor.ink)
+                    .contentTransition(.numericText())
+            }
+
+            Spacer(minLength: 0)
+
+            Button {
+                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                withAnimation(.snappy(duration: 0.18)) { store.addWater() }
+            } label: {
+                Text("+1 杯")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 15)
+                    .padding(.vertical, 8)
+                    .background {
+                        Capsule().fill(LinearGradient(colors: [TWColor.blue, TWColor.mint],
+                                                      startPoint: .leading, endPoint: .trailing))
+                    }
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 11)
+        .twGlass(radius: 17, shadow: false)
     }
 
     private var todayTip: (String, String, String, Color) {
