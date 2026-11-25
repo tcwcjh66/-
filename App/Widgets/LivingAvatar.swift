@@ -22,6 +22,13 @@ struct LivingAvatar: View {
 
     private var cfg: MotionCfg { MotionCfg.of(mood) }
 
+    /// 睡眠态是横版构图（侧卧），按宽度适配；其余竖版按高度适配
+    private var isWide: Bool { asset.hasSuffix("sleep") }
+    private var artW: CGFloat? { isWide ? 348 : nil }
+    private var artH: CGFloat? { isWide ? nil : 286 }
+    /// 横版躺姿整体压到地面附近
+    private var baseY: CGFloat { isWide ? 26 : 8 }
+
     /// 按时段给光晕换色温：清晨偏暖、白天偏紫、黄昏偏橙、夜里偏冷
     private var lightTint: Color {
         guard hour >= 0 else { return cfg.glow }
@@ -74,7 +81,7 @@ struct LivingAvatar: View {
             // 落影，吸气时略收
             Ellipse()
                 .fill(Color(red: 0.34, green: 0.27, blue: 0.50).opacity(0.14))
-                .frame(width: 132 - 7 * breath, height: 17 + 1.5 * breath)
+                .frame(width: isWide ? 236 : 132 - 7 * breath, height: isWide ? 24 : 17 + 1.5 * breath)
                 .blur(radius: 9)
                 .offset(x: -tx * 6, y: 140 + c.sink)
 
@@ -82,17 +89,17 @@ struct LivingAvatar: View {
             Image(asset)
                 .resizable()
                 .scaledToFit()
-                .frame(height: 286)
+                .frame(width: artW, height: artH)
                 .blur(radius: 15)
                 .opacity(0.12 + 0.04 * breath)
                 .scaleEffect(0.965)
-                .offset(x: -tx * 10, y: 13 + c.sink - ty * 4)
+                .offset(x: -tx * 10, y: (isWide ? 32 : 13) + c.sink - ty * 4)
 
             // 第 2 层：主图 —— 双轴 3D 旋转 + 位移 + 阴影分离
             Image(asset)
                 .resizable()
                 .scaledToFit()
-                .frame(height: 286)
+                .frame(width: artW, height: artH)
                 .scaleEffect(
                     x: 1 + 0.010 * breath,
                     y: 1 + 0.020 * breath,
@@ -113,7 +120,7 @@ struct LivingAvatar: View {
                 .rotationEffect(.degrees(0.35 * sway), anchor: .bottom)
                 .offset(
                     x: tx * 5,
-                    y: 8 - 2.6 * breath + 1.6 * drift + c.sink + ty * 3
+                    y: baseY - 2.6 * breath + 1.6 * drift + c.sink + ty * 3
                 )
                 .shadow(color: TWColor.cardShadow, radius: 24, x: tx * 13, y: 16)
 
@@ -121,7 +128,7 @@ struct LivingAvatar: View {
             Image(asset)
                 .resizable()
                 .scaledToFit()
-                .frame(height: 286)
+                .frame(width: artW, height: artH)
                 .blendMode(.plusLighter)
                 .opacity(0.13 + 0.16 * max(0, tx))
                 .rotation3DEffect(
@@ -138,14 +145,14 @@ struct LivingAvatar: View {
                 )
                 .offset(
                     x: tx * 5,
-                    y: 8 - 2.6 * breath + 1.6 * drift + c.sink + ty * 3
+                    y: baseY - 2.6 * breath + 1.6 * drift + c.sink + ty * 3
                 )
 
             // 第 4 层：运动拖影 —— 倾得越快越明显，60Hz 屏上也能读出"顺"
             Image(asset)
                 .resizable()
                 .scaledToFit()
-                .frame(height: 286)
+                .frame(width: artW, height: artH)
                 .blur(radius: 4)
                 .opacity(trailOpacity)
                 .rotation3DEffect(
@@ -156,7 +163,7 @@ struct LivingAvatar: View {
                 )
                 .offset(
                     x: tx * 5 - sp * 26,
-                    y: 8 - 2.6 * breath + 1.6 * drift + c.sink + ty * 3
+                    y: baseY - 2.6 * breath + 1.6 * drift + c.sink + ty * 3
                 )
 
             // 第 5 层：近景微粒 —— 视差最大，压在人物前景，做出"镜头穿过粒子"的纵深
