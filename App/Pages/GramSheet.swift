@@ -83,8 +83,8 @@ struct GramSheet: View {
                     .foregroundStyle(TWColor.ink3)
                 Spacer()
                 HStack(spacing: 10) {
-                    roundBtn("minus") { grams = max(5, grams - 5) }
-                    roundBtn("plus") { grams = min(1000, grams + 5) }
+                    roundBtn("minus")
+                    roundBtn("plus")
                 }
             }
 
