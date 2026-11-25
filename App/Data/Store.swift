@@ -259,8 +259,10 @@ final class TWStore: ObservableObject {
     @Published var waterTarget: Int = 8
     /// 每杯容量（ml），可自定义
     @Published var cupSize: Int = 250
+    /// 非整杯的零头（喝了一瓶 550ml、半杯 120ml 这类）
+    @Published var waterExtraML: Int = 0
 
-    var waterML: Int { waterCups * cupSize }
+    var waterML: Int { waterCups * cupSize + waterExtraML }
     var waterTargetML: Int { waterTarget * cupSize }
 
     // 睡眠记录（新的在前）
@@ -297,6 +299,7 @@ final class TWStore: ObservableObject {
         static let wlogs = "tw.wlogs.v2"
         static let water = "tw.water.v2"
         static let waterDay = "tw.waterDay.v2"
+        static let wextra = "tw.wextra.v2"
         static let cupsize = "tw.cupsize.v2"
         static let cfoods = "tw.cfoods.v2"
         static let wgoal = "tw.wgoal.v2"
@@ -432,6 +435,17 @@ final class TWStore: ObservableObject {
         persistSoon()
     }
 
+    /// 直接记录任意毫升摄入：先凑整杯，余数记进零头
+    func addWaterML(_ ml: Int) {
+        guard ml != 0 else { return }
+        let cup = max(1, cupSize)
+        let cap = 30 * cup
+        let total = min(max(0, waterML + ml), cap)
+        waterCups = total / cup
+        waterExtraML = total % cup
+        persistSoon()
+    }
+
     // MARK: - 围度历史
 
     func addSleep(start: Date, end: Date, acts: [Double]) {
@@ -534,6 +548,7 @@ final class TWStore: ObservableObject {
         root["carb"] = carb
         root["fat"] = fat
         root["waterCups"] = waterCups
+        root["waterExtraML"] = waterExtraML
         root["cupSize"] = cupSize
         root["bodyWeight"] = bodyWeight
         root["heightCM"] = heightCM
@@ -622,6 +637,7 @@ final class TWStore: ObservableObject {
         sessions = []
         girthLogs = []
         waterCups = 0
+        waterExtraML = 0
         cupSize = 250
         customFoods = []
         planPick = 0
@@ -811,6 +827,7 @@ final class TWStore: ObservableObject {
         d.set(heightCM, forKey: Key.height)
         d.set(waistCM, forKey: Key.waist)
         d.set(waterCups, forKey: Key.water)
+        d.set(waterExtraML, forKey: Key.wextra)
         d.set(DateFormatter.twDay.string(from: Date()), forKey: Key.waterDay)
         d.set(cupSize, forKey: Key.cupsize)
 
@@ -884,8 +901,9 @@ final class TWStore: ObservableObject {
         heightCM = d.double(forKey: Key.height)
         waistCM = d.double(forKey: Key.waist)
         let savedWaterDay = d.string(forKey: Key.waterDay) ?? ""
-        waterCups = savedWaterDay == DateFormatter.twDay.string(from: Date())
-            ? d.integer(forKey: Key.water) : 0
+        let isToday = savedWaterDay == DateFormatter.twDay.string(from: Date())
+        waterCups = isToday ? d.integer(forKey: Key.water) : 0
+        waterExtraML = isToday ? d.integer(forKey: Key.wextra) : 0
         let savedCup = d.integer(forKey: Key.cupsize)
         cupSize = savedCup > 0 ? savedCup : 250
 

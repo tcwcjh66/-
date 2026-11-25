@@ -5,6 +5,7 @@ struct TodayPage: View {
     @EnvironmentObject var store: TWStore
     @State private var appeared = false
     @State private var showSettings = false
+    @State private var showWaterLog = false
     var onOpenFlow: () -> Void = {}
 
     private var dateText: String {
@@ -34,6 +35,11 @@ struct TodayPage: View {
         .sheet(isPresented: $showSettings) {
             SettingsSheet()
                 .presentationDetents([.large])
+                .presentationCornerRadius(28)
+        }
+        .sheet(isPresented: $showWaterLog) {
+            WaterLogSheet()
+                .presentationDetents([.medium, .large])
                 .presentationCornerRadius(28)
         }
     }
@@ -291,6 +297,18 @@ struct TodayPage: View {
             }
 
             Spacer(minLength: 0)
+
+            Button {
+                UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                showWaterLog = true
+            } label: {
+                Image(systemName: "square.and.pencil")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(TWColor.blue)
+                    .frame(width: 32, height: 32)
+                    .background { Circle().fill(TWColor.blue.opacity(0.12)) }
+            }
+            .buttonStyle(.plain)
 
             Button {
                 UIImpactFeedbackGenerator(style: .medium).impactOccurred()

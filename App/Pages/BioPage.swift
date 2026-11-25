@@ -23,6 +23,7 @@ struct BioPage: View {
     @State private var showSleep = false
     @State private var showWatch = false
     @State private var showWater = false
+    @State private var showWaterLog = false
 
     private let pedometer = CMPedometer()
 
@@ -89,6 +90,11 @@ struct BioPage: View {
             WatchSyncSheet()
                 .presentationDetents([.large])
                 .presentationCornerRadius(26)
+        }
+        .sheet(isPresented: $showWaterLog) {
+            WaterLogSheet()
+                .presentationDetents([.medium, .large])
+                .presentationCornerRadius(28)
         }
         .sheet(isPresented: $showWater) {
             WaterSheet()
@@ -605,10 +611,30 @@ struct BioPage: View {
                 .buttonStyle(.plain)
 
                 Button {
+                    UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                    showWaterLog = true
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "square.and.pencil")
+                            .font(.system(size: 12, weight: .bold))
+                        Text("自定义")
+                            .font(.system(size: 13, weight: .bold))
+                    }
+                    .foregroundStyle(TWColor.blue)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 11)
+                    .background {
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(TWColor.blue.opacity(0.1))
+                    }
+                }
+                .buttonStyle(.plain)
+
+                Button {
                     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                     withAnimation(.snappy(duration: 0.18)) { store.addWater() }
                 } label: {
-                    Text("+ 1 杯（250ml）")
+                    Text("+ 1 杯（\(store.cupSize)ml）")
                         .font(.system(size: 14, weight: .bold))
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
