@@ -70,16 +70,6 @@ struct TodayPage: View {
 
     private var heroDial: some View {
         ZStack {
-            BigDial()
-                .opacity(0.92)
-
-            RadialGradient(
-                colors: [TWColor.glass(0.45), .clear],
-                center: .center, startRadius: 10, endRadius: 155
-            )
-            .frame(width: 310, height: 310)
-            .blendMode(.plusLighter)
-
             LivingAvatar(asset: store.avatarAsset, mood: store.mood,
                          hour: Calendar.current.component(.hour, from: Date()))
                 .id(store.avatarAsset)

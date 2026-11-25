@@ -2,27 +2,39 @@ import SwiftUI
 import Combine
 
 enum TWTab: String, CaseIterable, Identifiable {
-    case today, bio, lib, flow, diet
+    // 顺序即底栏顺序：今天 → 训练 → 饮食 → 身体 → 动作库
+    case today, flow, diet, bio, lib
 
     var id: String { rawValue }
 
     var title: String {
         switch self {
         case .today: return "今天"
-        case .bio:   return "身体"
-        case .lib:   return "动作库"
         case .flow:  return "训练"
         case .diet:  return "饮食"
+        case .bio:   return "身体"
+        case .lib:   return "动作库"
+        }
+    }
+
+    /// 底栏用的彩色 emoji 图案
+    var emoji: String {
+        switch self {
+        case .today: return "🏠"
+        case .flow:  return "🏋️"
+        case .diet:  return "🥗"
+        case .bio:   return "❤️"
+        case .lib:   return "📚"
         }
     }
 
     var symbol: String {
         switch self {
         case .today: return "circle.dotted"
-        case .bio:   return "heart"
-        case .lib:   return "figure.strengthtraining.traditional"
         case .flow:  return "timer"
         case .diet:  return "fork.knife"
+        case .bio:   return "heart"
+        case .lib:   return "figure.strengthtraining.traditional"
         }
     }
 }

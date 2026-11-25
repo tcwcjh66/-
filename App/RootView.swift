@@ -139,8 +139,10 @@ struct GlassTabBar: View {
                     }
                 } label: {
                     VStack(spacing: 3) {
-                        Image(systemName: t.symbol)
-                            .font(.system(size: 20, weight: .semibold))
+                        Text(t.emoji)
+                            .font(.system(size: 23))
+                            .frame(height: 25)
+                            .scaleEffect(t == selected ? 1.08 : 1.0)
                         Text(t.title)
                             .font(.system(size: 12.5, weight: .semibold))
                     }

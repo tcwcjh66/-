@@ -68,21 +68,6 @@ struct LivingAvatar: View {
         let trailOpacity = min(trailCap, abs(sp) * trailGain)
 
         return ZStack {
-            // 地面光晕，随呼吸明暗起伏，色温跟随时段
-            Circle()
-                .fill(
-                    RadialGradient(
-                        colors: [lightTint.opacity(0.26 + 0.10 * breath), .clear],
-                        center: .center,
-                        startRadius: 12,
-                        endRadius: 172
-                    )
-                )
-                .frame(width: 344, height: 344)
-                .scaleEffect(1 + 0.035 * breath)
-                .offset(x: tx * 7, y: ty * 4)
-                .blendMode(.plusLighter)
-
             // 远景微粒（视差系数小，跟在立绘后面）
             particles(t: t, tint: lightTint, tx: tx, ty: ty, near: false)
 
@@ -99,7 +84,7 @@ struct LivingAvatar: View {
                 .scaledToFit()
                 .frame(height: 286)
                 .blur(radius: 15)
-                .opacity(0.28 + 0.07 * breath)
+                .opacity(0.12 + 0.04 * breath)
                 .scaleEffect(0.965)
                 .offset(x: -tx * 10, y: 13 + c.sink - ty * 4)
 
