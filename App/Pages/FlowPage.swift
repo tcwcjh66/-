@@ -11,6 +11,8 @@ struct FlowPage: View {
     @State private var tick = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     @State private var doneMoves: Set<String> = []
+    @State private var restFrom: String = ""
+    @State private var restNext: String = ""
     @State private var detailSession: SessionLog?
     @State private var pendingPlan: Int?
     @State private var showSwitchConfirm = false
@@ -201,6 +203,9 @@ struct FlowPage: View {
                                              moves: day.items.count,
                                              moveNames: day.items.map { $0.name })
                             doneMoves.removeAll()
+                            running = false
+                            restFrom = ""
+                            restNext = ""
                         }
                     } label: {
                         Text("结束")
@@ -250,7 +255,18 @@ struct FlowPage: View {
         return "\(s / 60) 分钟"
     }
 
-    private func toggleDone(_ name: String, key: String) {
+    /// 把 PlanItem.rest 的文案解析成秒（"45 秒" / "2 分钟" / "3–5 分钟" → 取区间下限）
+    private func restSeconds(_ text: String) -> Int {
+        let t = text.replacingOccurrences(of: " ", with: "")
+        let isMin = t.contains("分钟")
+        let raw = t.replacingOccurrences(of: "分钟", with: "").replacingOccurrences(of: "秒", with: "")
+        let head = raw.replacingOccurrences(of: "–", with: "-")
+            .split(separator: "-").first.map(String.init) ?? ""
+        let v = Double(head) ?? (isMin ? 2 : 45)
+        return max(10, Int((isMin ? v * 60 : v).rounded()))
+    }
+
+    private func toggleDone(_ name: String, key: String, rest: String, next: String) {
         if store.sessionStart == nil {
             store.startSession(moves: day.items.map { $0.name })
         }
@@ -259,6 +275,15 @@ struct FlowPage: View {
         } else {
             doneMoves.insert(key)
             store.addSet()
+            // 按这个动作自己的 rest 起休息倒计时，不用再手调
+            let sec = restSeconds(rest)
+            withAnimation(.snappy(duration: 0.25)) {
+                total = sec
+                remain = sec
+                running = true
+                restFrom = name
+                restNext = next
+            }
         }
     }
 
@@ -287,7 +312,9 @@ struct FlowPage: View {
                         Button {
                             UIImpactFeedbackGenerator(style: .rigid).impactOccurred()
                             withAnimation(.snappy(duration: 0.2)) {
-                                toggleDone(pair.element.name, key: key)
+                                toggleDone(pair.element.name, key: key,
+                                           rest: pair.element.rest,
+                                           next: pair.offset + 1 < day.items.count ? day.items[pair.offset + 1].name : "")
                             }
                         } label: {
                             ZStack {
@@ -345,9 +372,16 @@ struct FlowPage: View {
     private var timerCard: some View {
         VStack(spacing: 16) {
             HStack {
-                Text("组间休息")
-                    .font(.system(size: 14.5, weight: .semibold))
-                    .foregroundStyle(TWColor.ink2)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(restFrom.isEmpty ? "组间休息" : "\(restFrom) 之后的休息")
+                        .font(.system(size: 14.5, weight: .semibold))
+                        .foregroundStyle(TWColor.ink2)
+                    if !restNext.isEmpty {
+                        Text("下一个：\(restNext)")
+                            .font(.system(size: 11.5, weight: .regular))
+                            .foregroundStyle(TWColor.ink3)
+                    }
+                }
                 Spacer()
                 GlassPill(text: running ? "计时中" : "已暂停", tint: running ? TWColor.mint : TWColor.ink3)
             }
@@ -383,7 +417,7 @@ struct FlowPage: View {
                     HStack(spacing: 6) {
                         Image(systemName: running ? "pause.fill" : "play.fill")
                             .font(.system(size: 14, weight: .bold))
-                        Text(running ? "暂停" : (remain == 0 ? "再来一组" : "继续"))
+                        Text(running ? "暂停" : (remain == 0 ? (restNext.isEmpty ? "再来一组" : "开始下一组") : "继续"))
                             .font(.system(size: 15, weight: .bold))
                     }
                     .foregroundStyle(.white)
