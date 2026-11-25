@@ -11,6 +11,8 @@ struct DietPage: View {
     @State private var showResult = false
     @State private var showAI = false
     @State private var copiedCount: Int?
+    @State private var showFoodSearch = false
+    @State private var showScanSheet = false
 
     private let slots = ["早餐", "午餐", "晚餐", "加餐"]
 
@@ -60,6 +62,7 @@ struct DietPage: View {
             kcalCard
             macroCard
             addCard
+            searchCard
             slotSection
             trendCard
             weekCard
@@ -87,6 +90,18 @@ struct DietPage: View {
             }
             .presentationDetents([.large])
             .presentationCornerRadius(28)
+        }
+        .sheet(isPresented: $showFoodSearch) {
+            FoodSearchSheet(defaultSlot: autoSlot)
+                .environmentObject(store)
+                .presentationDetents([.large])
+                .presentationCornerRadius(28)
+        }
+        .sheet(isPresented: $showScanSheet) {
+            BarcodeScanSheet(slot: autoSlot)
+                .environmentObject(store)
+                .presentationDetents([.large])
+                .presentationCornerRadius(28)
         }
         .sheet(isPresented: $showAI) {
             AIChatSheet()
@@ -325,6 +340,63 @@ struct DietPage: View {
                             RoundedRectangle(cornerRadius: 14, style: .continuous)
                                 .strokeBorder(TWColor.purple.opacity(0.22), lineWidth: 0.7)
                         }
+                }
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    private var searchCard: some View {
+        HStack(spacing: 10) {
+            Button {
+                UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                showFoodSearch = true
+            } label: {
+                HStack(spacing: 9) {
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(TWColor.purple)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("搜食物")
+                            .font(.system(size: 14.5, weight: .bold))
+                            .foregroundStyle(TWColor.ink)
+                        Text("本地库 + 联网营养表")
+                            .font(.system(size: 10))
+                            .foregroundStyle(TWColor.ink3)
+                    }
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, 13)
+                .padding(.vertical, 11)
+                .background {
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .fill(TWColor.purple.opacity(0.10))
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .strokeBorder(TWColor.purple.opacity(0.22), lineWidth: 0.7)
+                        }
+                }
+            }
+            .buttonStyle(.plain)
+
+            Button {
+                UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                showScanSheet = true
+            } label: {
+                HStack(spacing: 7) {
+                    Image(systemName: "barcode.viewfinder")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(.white)
+                    Text("扫条码")
+                        .font(.system(size: 13.5, weight: .bold))
+                        .foregroundStyle(.white)
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 11)
+                .background {
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .fill(LinearGradient(colors: [TWColor.blue, TWColor.purple],
+                                             startPoint: .leading, endPoint: .trailing))
                 }
             }
             .buttonStyle(.plain)
@@ -725,6 +797,18 @@ struct ShotResultSheet: View {
                              : "共 \(hits.count) 项，勾选要记入的")
                             .font(.system(size: 13))
                             .foregroundStyle(TWColor.ink3)
+
+                        Text("拍照只能按颜色估个大概，别当准数。要精确就到「搜食物」按名称查，或「扫条码」读包装上厂商申报的营养表。")
+                            .font(.system(size: 11.5))
+                            .foregroundStyle(TWColor.amber)
+                            .lineSpacing(2.5)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(10)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background {
+                                RoundedRectangle(cornerRadius: 11, style: .continuous)
+                                    .fill(TWColor.amber.opacity(0.10))
+                            }
 
                         HStack(spacing: 7) {
                             ForEach(slots, id: \.self) { s in
