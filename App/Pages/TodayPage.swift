@@ -62,14 +62,12 @@ struct TodayPage: View {
             .frame(width: 310, height: 310)
             .blendMode(.plusLighter)
 
-            Image(store.avatarAsset)
-                .resizable()
-                .scaledToFit()
-                .frame(height: 286)
-                .offset(y: 8)
-                .shadow(color: TWColor.cardShadow, radius: 22, x: 0, y: 14)
+            LivingAvatar(asset: store.avatarAsset, mood: store.mood)
+                .id(store.avatarAsset)
+                .transition(.opacity)
         }
         .frame(height: 322)
+        .animation(.easeInOut(duration: 0.42), value: store.avatarAsset)
     }
 
     private var ringsCard: some View {
