@@ -159,30 +159,11 @@ struct TodayPage: View {
 
             HStack(spacing: 8) {
                 ForEach(moods) { m in
-                    Button {
-                        UIImpactFeedbackGenerator(style: .soft).impactOccurred()
-                        withAnimation(.snappy(duration: 0.28)) { store.mood = m.id }
-                    } label: {
-                        VStack(spacing: 4) {
-                            Text(m.emoji).font(.system(size: 21))
-                            Text(m.name)
-                                .font(.system(size: 9, weight: .medium, design: .rounded))
-                                .foregroundStyle(store.mood == m.id ? TWColor.ink : TWColor.ink3)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 9)
-                        .background {
-                            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .fill(store.mood == m.key ? Color.white.opacity(0.85) : Color.white.opacity(0.32))
-                        }
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .strokeBorder(store.mood == m.key
-                                              ? TWColor.purple.opacity(0.35)
-                                              : Color.white.opacity(0.5), lineWidth: 0.7)
-                        }
-                    }
-                    .buttonStyle(.plain)
+                    MoodChip(
+                        option: m,
+                        selected: store.mood == m.id,
+                        onTap: { store.mood = m.id }
+                    )
                 }
             }
         }
@@ -213,4 +194,47 @@ struct MoodOption: Identifiable {
     let id: String
     var name: String
     var emoji: String
+}
+
+struct MoodChip: View {
+    let option: MoodOption
+    let selected: Bool
+    let onTap: () -> Void
+
+    private var fill: Color {
+        selected ? Color.white.opacity(0.85) : Color.white.opacity(0.32)
+    }
+
+    private var stroke: Color {
+        selected ? TWColor.purple.opacity(0.35) : Color.white.opacity(0.5)
+    }
+
+    private var labelColor: Color {
+        selected ? TWColor.ink : TWColor.ink3
+    }
+
+    var body: some View {
+        Button {
+            UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+            withAnimation(.snappy(duration: 0.26)) { onTap() }
+        } label: {
+            VStack(spacing: 4) {
+                Text(option.emoji)
+                    .font(.system(size: 21))
+                Text(option.name)
+                    .font(.system(size: 9, weight: .medium, design: .rounded))
+                    .foregroundStyle(labelColor)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 9)
+            .background {
+                RoundedRectangle(cornerRadius: 14, style: .continuous).fill(fill)
+            }
+            .overlay {
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .strokeBorder(stroke, lineWidth: 0.7)
+            }
+        }
+        .buttonStyle(.plain)
+    }
 }
