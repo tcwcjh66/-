@@ -74,7 +74,7 @@ enum FoodVision {
         var hits: [FoodHit] = []
 
         if pw > 0.10 {
-            let grams = clamp(round(pw * 420 + 55), 60, 320)
+            let grams = clamp(roundTo5(pw * 420 + 55), 60, 320)
             hits.append(FoodHit(
                 name: "白米饭 / 主食",
                 grams: grams,
@@ -88,7 +88,7 @@ enum FoodVision {
         }
 
         if pg > 0.07 {
-            let grams = clamp(round(pg * 900 + 35), 40, 260)
+            let grams = clamp(roundTo5(pg * 900 + 35), 40, 260)
             hits.append(FoodHit(
                 name: "深色绿叶菜",
                 grams: grams,
@@ -102,7 +102,7 @@ enum FoodVision {
         }
 
         if pm > 0.08 {
-            let grams = clamp(round(pm * 620 + 40), 45, 260)
+            let grams = clamp(roundTo5(pm * 620 + 40), 45, 260)
             hits.append(FoodHit(
                 name: "肉类（猪/牛/鸡）",
                 grams: grams,
@@ -116,7 +116,7 @@ enum FoodVision {
         }
 
         if py > 0.08 && hits.count < 3 {
-            let grams = clamp(round(py * 520 + 30), 30, 200)
+            let grams = clamp(roundTo5(py * 520 + 30), 30, 200)
             hits.append(FoodHit(
                 name: "蛋 / 玉米 / 面点",
                 grams: grams,
@@ -136,7 +136,7 @@ enum FoodVision {
         min(max(v, lo), hi)
     }
 
-    private static func round(_ v: Double) -> Double {
+    private static func roundTo5(_ v: Double) -> Double {
         (v / 5).rounded() * 5
     }
 }
