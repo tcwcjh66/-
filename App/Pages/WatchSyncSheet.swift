@@ -18,6 +18,7 @@ struct WatchSyncSheet: View {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 16) {
                     header
+                    oneTapCard
                     statusCard
                     whyCard
                     stepsCard
@@ -360,6 +361,87 @@ struct WatchSyncSheet: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
         .twGlass()
+    }
+
+    // MARK: - 一键生成
+
+    private var oneTapCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 7) {
+                Image(systemName: "wand.and.stars")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(TWColor.purple)
+                Text("一键生成")
+                    .font(.system(size: 16.5, weight: .bold))
+                    .foregroundStyle(TWColor.ink)
+                Spacer(minLength: 0)
+                Image(systemName: "sparkles")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(TWColor.violet)
+            }
+
+            Text("点一下：整套 URL 模板立刻进剪贴板，同时直接跳进快捷指令的新建页。到那边粘贴一次，把 [xx] 换成健康变量就能跑。")
+                .font(.system(size: 12.5))
+                .foregroundStyle(TWColor.ink2)
+                .lineSpacing(3)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Button {
+                makeShortcut()
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "arrow.up.right.square.fill")
+                        .font(.system(size: 14, weight: .bold))
+                    Text(copied ? "已复制 · 正在跳转" : "一键打开快捷指令")
+                        .font(.system(size: 14.5, weight: .bold))
+                }
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 13)
+                .background {
+                    Capsule().fill(
+                        LinearGradient(
+                            colors: [TWColor.purple, TWColor.blue],
+                            startPoint: .leading, endPoint: .trailing
+                        )
+                    )
+                }
+                .shadow(color: TWColor.purple.opacity(0.28), radius: 12, y: 5)
+            }
+            .buttonStyle(.plain)
+
+            HStack(spacing: 6) {
+                Image(systemName: "info.circle")
+                    .font(.system(size: 10.5))
+                    .foregroundStyle(TWColor.ink3)
+                Text("iOS 不允许 App 直接写入快捷指令，所以跳过去粘一下是系统上限，不是偷懒。")
+                    .font(.system(size: 10.5))
+                    .foregroundStyle(TWColor.ink3)
+                    .lineSpacing(2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .twGlass()
+    }
+
+    private func makeShortcut() {
+        UIPasteboard.general.string = template
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
+        copied = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) { copied = false }
+
+        // 首选「新建空白快捷指令」，失败则退到快捷指令首页
+        let create = URL(string: "shortcuts://create-shortcut")
+        let root = URL(string: "shortcuts://")
+        guard let target = create else {
+            if let root { UIApplication.shared.open(root) }
+            return
+        }
+        UIApplication.shared.open(target, options: [:]) { ok in
+            if !ok, let root { UIApplication.shared.open(root) }
+        }
     }
 
     // MARK: - 复制
