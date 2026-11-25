@@ -24,6 +24,19 @@
 	<string>用于读取 Apple Watch 与健康 App 中的步数、心率、HRV、睡眠和训练记录，生成你的每日状态。</string>
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>用于把你的训练与体重记录写回 Apple 健康，方便与其它健身 App 汇总。</string>
+	<key>NSMotionUsageDescription</key>
+	<string>用于读取 iPhone 运动与健身芯片的实时步数、行走距离与爬楼层数。</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.tiancaiwei.live</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>twfit</string>
+			</array>
+		</dict>
+	</array>
 	<key>NSCameraUsageDescription</key>
 	<string>用于拍摄食物照片，识别其中的碳水、蛋白质和脂肪含量。</string>
 	<key>NSPhotoLibraryUsageDescription</key>

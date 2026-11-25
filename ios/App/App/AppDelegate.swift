@@ -1,6 +1,8 @@
 import UIKit
 import Capacitor
 import HealthKit
+import CoreMotion
+import WebKit
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -27,16 +29,23 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {
-        // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
+        // 每次回到前台都重新拉起步数监听，并补发冷启动时排队的健康数据
+        startPedometer()
+        flushPending()
+        tuneWebView()
     }
 
     func applicationWillTerminate(_ application: UIApplication) {
         // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
+        pedometer?.stopUpdates()
     }
 
     func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
-        // Called when the app was launched with a url. Feel free to add additional processing here,
-        // but if you want the App API to support tracking app url opens, make sure to keep this call
+        // twfit://sync?... 由快捷指令回传真实健康数据
+        if url.scheme == "twfit" {
+            handleSyncURL(url)
+            return true
+        }
         return ApplicationDelegateProxy.shared.application(app, open: url, options: options)
     }
 
@@ -45,6 +54,74 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // Feel free to add additional processing here, but if you want the App API to support
         // tracking app url opens, make sure to keep this call
         return ApplicationDelegateProxy.shared.application(application, continue: userActivity, restorationHandler: restorationHandler)
+    }
+
+    // MARK: - 实时步数（CoreMotion，不需要 HealthKit 权限）
+    private var pedometer: CMPedometer?
+    private var pendingPayload: [String: Any]?
+
+    private func bridgeWebView() -> WKWebView? {
+        return (window?.rootViewController as? CAPBridgeViewController)?.webView
+    }
+
+    private func eval(_ js: String) {
+        DispatchQueue.main.async {
+            self.bridgeWebView()?.evaluateJavaScript(js, completionHandler: nil)
+        }
+    }
+
+    /// 关掉 WebView 的“网页手感”：双击/捏合缩放、橡皮筋回弹、长按链接预览
+    private func tuneWebView() {
+        guard let wv = bridgeWebView() else { return }
+        wv.scrollView.pinchGestureRecognizer?.isEnabled = false
+        wv.scrollView.bouncesZoom = false
+        wv.scrollView.alwaysBounceVertical = false
+        wv.scrollView.alwaysBounceHorizontal = false
+        wv.scrollView.decelerationRate = .fast
+        wv.scrollView.showsVerticalScrollIndicator = false
+        wv.allowsLinkPreview = false
+    }
+
+    private func startPedometer() {
+        guard CMPedometer.isStepCountingAvailable() else { return }
+        if pedometer == nil { pedometer = CMPedometer() }
+        let from = Calendar.current.startOfDay(for: Date())
+        pedometer?.startUpdates(from: from) { [weak self] data, error in
+            guard let self = self, let d = data else { return }
+            var p: [String: Any] = [
+                "steps": d.numberOfSteps.intValue,
+                "distance": d.distance?.doubleValue ?? 0,
+                "floors": d.floorsAscended?.intValue ?? 0,
+                "ts": Date().timeIntervalSince1970
+            ]
+            if let pace = d.currentPace, pace.doubleValue > 0 { p["pace"] = pace.doubleValue }
+            if let cad = d.currentCadence, cad.doubleValue > 0 { p["cadence"] = cad.doubleValue }
+            if let json = try? JSONSerialization.data(withJSONObject: p),
+               let s = String(data: json, encoding: .utf8) {
+                self.eval("window.TWLive&&window.TWLive.onSteps(\(s))")
+            }
+        }
+    }
+
+    private func handleSyncURL(_ url: URL) {
+        var dict: [String: String] = [:]
+        if let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems {
+            for it in items { if let v = it.value { dict[it.name] = v } }
+        }
+        guard let data = try? JSONSerialization.data(withJSONObject: dict),
+              let s = String(data: data, encoding: .utf8) else { return }
+        pendingPayload = dict
+        eval("window.TWLive&&window.TWLive.onHealth(\(s))")
+    }
+
+    private func flushPending() {
+        guard let dict = pendingPayload,
+              let data = try? JSONSerialization.data(withJSONObject: dict),
+              let s = String(data: data, encoding: .utf8) else { return }
+        pendingPayload = nil
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+            self.eval("window.TWLive&&window.TWLive.onHealth(\(s))")
+        }
     }
 
 }
@@ -203,5 +280,3 @@ public class HealthBridgePlugin: CAPPlugin, CAPBridgedPlugin {
         store.execute(q)
     }
 }
-
-

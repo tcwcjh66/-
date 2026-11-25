@@ -2,7 +2,8 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="format-detection" content="telephone=no,email=no,address=no">
 <title>天才威 · 健康健身管理</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -30,15 +31,18 @@
   --radius:22px;
   --shadow:0 10px 30px rgba(60,40,110,.10);
 }
-*{box-sizing:border-box;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
-html,body{height:100%}
+*{box-sizing:border-box;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;-webkit-text-size-adjust:100%;overscroll-behavior:none}
 body{
   margin:0;
   font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
   color:var(--ink);
   background:#eef1f7;
   overflow-x:hidden;
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;
+  touch-action:manipulation;
 }
+input,textarea,select{-webkit-user-select:text;user-select:text}
 /* 背景光晕 */
 body::before{
   content:"";position:fixed;inset:-20%;z-index:-2;
@@ -1918,6 +1922,25 @@ button, .cand, .pk-step button, .icon-btn, .tab, .move-card{
   .timer-card{background:#16151f;-webkit-backdrop-filter:none;backdrop-filter:none}
 }
 
+/* ===== 触摸手感：按下去有回应、切页更顺 ===== */
+button, .sel-chip, .icon-btn, .tab, .move-card, .metric-row, .mp, .act{
+  transition:transform .16s cubic-bezier(.32,.72,.24,1), opacity .16s ease;
+}
+.is-pressed{transform:scale(.962);opacity:.86}
+
+@keyframes viewIn{
+  from{opacity:0;transform:translateY(9px) scale(.995)}
+  to{opacity:1;transform:none}
+}
+.view.on{animation:viewIn .26s cubic-bezier(.22,.8,.28,1) both}
+
+.screen-body{-webkit-overflow-scrolling:touch}
+
+@media (prefers-reduced-motion: reduce){
+  .view.on{animation:none}
+  .is-pressed{transform:none}
+}
+
 
 
 </style>
@@ -2019,23 +2042,23 @@ button, .cand, .pk-step button, .icon-btn, .tab, .move-card{
 
             <div class="metric-row">
               <div class="ico" style="background:#e8f0ff;color:#2f6bff">👣</div>
-              <div class="txt">步数<div class="bar"><i style="width:80%;background:linear-gradient(90deg,#7aa2ff,#2f6bff)"></i></div></div>
-              <div class="val">8,042</div>
+              <div class="txt">步数<div class="bar"><i id="barSteps" style="width:0%;background:linear-gradient(90deg,#7aa2ff,#2f6bff)"></i></div></div>
+              <div class="val" id="vSteps">--</div>
             </div>
             <div class="metric-row">
               <div class="ico" style="background:#efe9ff;color:#8b5cf6">🌙</div>
-              <div class="txt">睡眠<div class="bar"><i style="width:88%;background:linear-gradient(90deg,#c4b5fd,#8b5cf6)"></i></div></div>
-              <div class="val">7.7<span style="font-size:10px;color:#a5a1af">h</span></div>
+              <div class="txt">睡眠<div class="bar"><i id="barSleep" style="width:0%;background:linear-gradient(90deg,#c4b5fd,#8b5cf6)"></i></div></div>
+              <div class="val" id="vSleep">--<span style="font-size:10px;color:#a5a1af">h</span></div>
             </div>
             <div class="metric-row">
               <div class="ico" style="background:#e4fbf4;color:#12a37a">🏃</div>
-              <div class="txt">活动<div class="bar"><i style="width:66%;background:linear-gradient(90deg,#5eead4,#34d399)"></i></div></div>
-              <div class="val">30<span style="font-size:10px;color:#a5a1af">min</span></div>
+              <div class="txt">活动<div class="bar"><i id="barActive" style="width:0%;background:linear-gradient(90deg,#5eead4,#34d399)"></i></div></div>
+              <div class="val" id="vActive">--<span style="font-size:10px;color:#a5a1af">min</span></div>
             </div>
             <div class="metric-row">
               <div class="ico" style="background:#ffefef;color:#fb7185">💧</div>
-              <div class="txt">饮水<div class="bar"><i style="width:62%;background:linear-gradient(90deg,#fda4af,#fb7185)"></i></div></div>
-              <div class="val">1500<span style="font-size:10px;color:#a5a1af">ml</span></div>
+              <div class="txt">饮水<div class="bar"><i id="barWater" style="width:0%;background:linear-gradient(90deg,#fda4af,#fb7185)"></i></div></div>
+              <div class="val" id="vWater">--<span style="font-size:10px;color:#a5a1af">ml</span></div>
             </div>
 
             <div class="record-done" style="margin-top:18px"><span>身体</span><a class="lnk" href="#" onclick="return false">查看 ›</a></div>
@@ -2043,15 +2066,15 @@ button, .cand, .pk-step button, .icon-btn, .tab, .move-card{
               <div style="display:flex;gap:10px">
                 <div style="flex:1">
                   <div class="k" style="font-size:11px;color:#a5a1af;font-weight:600">静息心率</div>
-                  <div class="v" style="font-size:19px;font-weight:800">52<span style="font-size:11px;color:#a5a1af">bpm</span></div>
+                  <div class="v" id="vHr" style="font-size:19px;font-weight:800">--<span style="font-size:11px;color:#a5a1af">bpm</span></div>
                 </div>
                 <div style="flex:1">
                   <div class="k" style="font-size:11px;color:#a5a1af;font-weight:600">HRV</div>
-                  <div class="v" style="font-size:19px;font-weight:800">46<span style="font-size:11px;color:#a5a1af">ms</span></div>
+                  <div class="v" id="vHrv" style="font-size:19px;font-weight:800">--<span style="font-size:11px;color:#a5a1af">ms</span></div>
                 </div>
                 <div style="flex:1">
                   <div class="k" style="font-size:11px;color:#a5a1af;font-weight:600">本周训练</div>
-                  <div class="v" style="font-size:19px;font-weight:800">3<span style="font-size:11px;color:#a5a1af">次</span></div>
+                  <div class="v" id="vTrainWeek" style="font-size:19px;font-weight:800">0<span style="font-size:11px;color:#a5a1af">次</span></div>
                 </div>
               </div>
             </div>
@@ -2199,6 +2222,7 @@ button, .cand, .pk-step button, .icon-btn, .tab, .move-card{
                 <span class="sb soon" id="sbKeep">间接</span>
               </div>
               <button class="btn-ghost" id="btnHealth">连接 Apple 健康</button>
+              <button class="btn-ghost" id="btnShortcut" style="margin-top:8px">同步健康数据（快捷指令）</button>
               <div class="sync-tip" id="syncTip">正在检测运行环境…</div>
             </div>
           </section>
@@ -5053,6 +5077,205 @@ button, .cand, .pk-step button, .icon-btn, .tab, .move-card{
   } else {
     init();
   }
+})();
+
+</script>
+<script>
+// 丝滑触摸层：关掉浏览器式的缩放 / 长按 / 选中 / 拖拽，让它像原生 App 而不是网页
+(function () {
+  'use strict';
+  var doc = document;
+
+  // 1) 双击缩放（iOS 上双击 300ms 内第二下会放大整页）
+  var lastEnd = 0;
+  doc.addEventListener('touchend', function (e) {
+    var now = Date.now();
+    if (now - lastEnd <= 300) e.preventDefault();
+    lastEnd = now;
+  }, { passive: false });
+
+  // 2) 捏合缩放（iOS 专有的 gesture 事件，viewport 的 user-scalable 在 iOS 上会被忽略）
+  ['gesturestart', 'gesturechange', 'gestureend'].forEach(function (n) {
+    doc.addEventListener(n, function (e) { e.preventDefault(); }, { passive: false });
+  });
+
+  // 3) 长按弹菜单 / 文本选中 / 图片拖拽
+  doc.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+  doc.addEventListener('dragstart', function (e) { e.preventDefault(); });
+  doc.addEventListener('selectstart', function (e) {
+    var t = e.target, tag = t && t.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+    e.preventDefault();
+  });
+
+  // 4) 输入框聚焦时把键盘让出来（否则输入框会被键盘顶到看不见）
+  doc.addEventListener('focusin', function (e) {
+    var t = e.target;
+    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) {
+      setTimeout(function () {
+        try { t.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (err) { }
+      }, 300);
+    }
+  });
+
+  // 5) 轻触反馈：按下即缩小一点点，比“点了没反应”更像原生
+  doc.addEventListener('touchstart', function (e) {
+    var el = e.target.closest && e.target.closest('button, .sel-chip, .icon-btn, .tab, .move-card, .metric-row');
+    if (el) el.classList.add('is-pressed');
+  }, { passive: true });
+
+  function clearPressed() {
+    var list = doc.querySelectorAll('.is-pressed');
+    for (var i = 0; i < list.length; i++) list[i].classList.remove('is-pressed');
+  }
+  doc.addEventListener('touchend', clearPressed, { passive: true });
+  doc.addEventListener('touchcancel', clearPressed, { passive: true });
+})();
+
+</script>
+<script>
+// 实时数据层：原生 CoreMotion 步数 + 快捷指令回传的 Apple 健康数据
+// 与演示数据完全隔离：没有真实来源时显示 “--”，绝不再编造数字。
+(function () {
+  'use strict';
+
+  function pad(n) { return n < 10 ? '0' + n : '' + n; }
+  function ymd() {
+    var d = new Date();
+    return d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate());
+  }
+  var KEY = 'tw_live_' + ymd();
+  var state = {};
+  try { state = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { state = {}; }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { } }
+
+  function el(id) { return document.getElementById(id); }
+  function setHTML(id, html) { var n = el(id); if (n) n.innerHTML = html; }
+  function setBar(id, pct) { var n = el(id); if (n) n.style.width = Math.max(0, Math.min(100, pct)) + '%'; }
+
+  var S10 = 'style="font-size:10px;color:#a5a1af"';
+  var S11 = 'style="font-size:11px;color:#a5a1af"';
+  var S10b = 'style="font-size:10px;color:#a5a1af;font-weight:700"';
+
+  function hhmmss(ts) {
+    var d = new Date(ts);
+    return pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+  }
+
+  function render() {
+    if (typeof state.steps === 'number') {
+      setHTML('vSteps', Number(state.steps).toLocaleString());
+      setBar('barSteps', state.steps / 8000 * 100);
+    }
+    if (typeof state.sleep === 'number') {
+      setHTML('vSleep', state.sleep.toFixed(1) + '<span ' + S10 + '>h</span>');
+      setBar('barSleep', state.sleep / 8 * 100);
+    }
+    if (typeof state.active === 'number') {
+      setHTML('vActive', Math.round(state.active) + '<span ' + S10 + '>min</span>');
+      setBar('barActive', state.active / 30 * 100);
+    }
+    if (typeof state.water === 'number') {
+      setHTML('vWater', Math.round(state.water) + '<span ' + S10 + '>ml</span>');
+      setBar('barWater', state.water / 2000 * 100);
+    }
+    if (typeof state.hr === 'number' && state.hr > 0) {
+      setHTML('vHr', Math.round(state.hr) + '<span ' + S11 + '>bpm</span>');
+    }
+    if (typeof state.hrv === 'number' && state.hrv > 0) {
+      setHTML('vHrv', Math.round(state.hrv) + '<span ' + S11 + '>ms</span>');
+    }
+    if (typeof state.train === 'number') {
+      setHTML('vTrainWeek', state.train + '<span ' + S11 + '>次</span>');
+    }
+
+    // 步数来源状态
+    var st = el('syncState');
+    var sb = el('sbWatch');
+    if (sb) {
+      if (state.stepsTs) { sb.className = 'sb ok'; sb.textContent = '实时'; }
+      else if (state.steps) { sb.className = 'sb ok'; sb.textContent = '同步'; }
+    }
+    if (st) {
+      st.textContent = state.stepsTs ? '运动芯片 · 实时' : (state.healthTs ? '已同步' : '待连接');
+    }
+
+    var tip = el('syncTip');
+    if (tip) {
+      if (state.stepsTs) {
+        tip.innerHTML = '✅ 运动芯片已连接：<b>' + Number(state.steps).toLocaleString() + '</b> 步' +
+          (state.distance ? ' · ' + (state.distance / 1000).toFixed(2) + ' km' : '') +
+          (state.floors ? ' · ' + state.floors + ' 层' : '') +
+          '<br>更新于 ' + hhmmss(state.stepsTs * 1000);
+      } else if (!window.TW || !window.TW.native) {
+        tip.textContent = '这是网页预览，读不到手机传感器。装 iPhone 版后步数会实时跳动。';
+      } else {
+        tip.textContent = '正在等待运动芯片数据…（首次打开请在系统弹窗里允许“运动与健身”）';
+      }
+    }
+  }
+
+  // ---------- 原生 → 前端 ----------
+  window.TWLive = window.TWLive || {};
+
+  window.TWLive.onSteps = function (p) {
+    if (!p) return;
+    if (typeof p.steps === 'number') state.steps = p.steps;
+    if (typeof p.distance === 'number') state.distance = p.distance;
+    if (typeof p.floors === 'number') state.floors = p.floors;
+    state.stepsTs = p.ts || Math.floor(Date.now() / 1000);
+    state.src = 'motion';
+    save();
+    render();
+  };
+
+  window.TWLive.onHealth = function (p) {
+    if (!p) return;
+    var fields = ['steps', 'hr', 'hrv', 'sleep', 'active', 'train', 'water'];
+    var got = 0;
+    for (var i = 0; i < fields.length; i++) {
+      var k = fields[i];
+      if (p[k] != null && p[k] !== '') {
+        var v = parseFloat(p[k]);
+        if (!isNaN(v)) { state[k] = v; got++; }
+      }
+    }
+    if (got > 0) {
+      state.healthTs = Date.now();
+      save();
+      render();
+      var t = el('syncTip');
+      if (t) t.innerHTML = '✅ 已从「健康」回传 ' + got + ' 项真实数据 · ' + hhmmss(Date.now());
+    }
+  };
+
+  // ---------- 快捷指令同步 ----------
+  window.TWLive.sync = function () {
+    var url = 'shortcuts://run-shortcut?name=' + encodeURIComponent('天才威同步');
+    try { window.location.href = url; } catch (e) { }
+    setTimeout(function () { try { window.open(url, '_blank'); } catch (e) { } }, 700);
+  };
+
+  // ---------- 手动记录（饮水等属于本地真实操作） ----------
+  window.TWLive.addWater = function (ml) {
+    state.water = (state.water || 0) + ml;
+    save();
+    render();
+  };
+  window.TWLive.state = function () { return state; };
+
+  // ---------- 绑定按钮 ----------
+  var btn = el('btnShortcut');
+  if (btn) {
+    btn.addEventListener('click', function (e) {
+      e.preventDefault();
+      window.TWLive.sync();
+    });
+  }
+
+  render();
+  // 首帧后再渲染一次，防止其它脚本改写节点
+  setTimeout(render, 300);
 })();
 
 </script>
