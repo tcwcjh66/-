@@ -67,6 +67,7 @@ final class TWStore: ObservableObject {
     @Published var measuredHRV: Int = 0
     @Published var measuredAt: Date?
     @Published var hrSource: String = ""
+    @Published var watchSteps: Int = 0
 
     // 饮食
     @Published var dietKcal: Double = 250

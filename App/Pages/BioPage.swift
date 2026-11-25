@@ -28,6 +28,7 @@ struct BioPage: View {
                 store.hrSource = "指尖 PPG"
                 store.hr = bpm
                 store.hrv = hrv
+                PhoneLink.shared.pushToWatch()
             }
         }
         .sheet(isPresented: $showManual) {
@@ -36,6 +37,7 @@ struct BioPage: View {
                 store.measuredAt = Date()
                 store.hrSource = "手动录入"
                 store.hr = bpm
+                PhoneLink.shared.pushToWatch()
             }
             .presentationDetents([.height(320)])
             .presentationCornerRadius(26)

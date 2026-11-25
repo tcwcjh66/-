@@ -22,6 +22,8 @@ targets:
     platform: iOS
     sources:
       - path: App
+    dependencies:
+      - target: TianCaiWeiWatch
     info:
       path: App/Info.plist
       properties:
@@ -59,6 +61,7 @@ targets:
         CFBundleVersion: "1"
         WKApplication: true
         WKCompanionAppBundleIdentifier: com.tiancaiwei.app
+        NSMotionUsageDescription: 用于读取手表运动芯片的实时步数。
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.tiancaiwei.app.watchkitapp

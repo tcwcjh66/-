@@ -1,5 +1,6 @@
 import SwiftUI
 import Combine
+import CoreMotion
 
 @main
 struct TianCaiWeiWatchApp: App {
@@ -11,10 +12,14 @@ struct TianCaiWeiWatchApp: App {
 }
 
 struct WatchHome: View {
+    @StateObject private var link = WatchLink.shared
     @State private var now = Date()
+    @State private var steps = 0
+
+    private let pedometer = CMPedometer()
     private let tick = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
-    private var clockText: String {
+    private var clock: String {
         let f = DateFormatter()
         f.dateFormat = "HH:mm"
         return f.string(from: now)
@@ -34,62 +39,70 @@ struct WatchHome: View {
             .ignoresSafeArea()
 
             VStack(spacing: 5) {
-                Text(clockText)
-                    .font(.system(size: 44, weight: .heavy, design: .rounded))
+                Text(clock)
+                    .font(.system(size: 30, weight: .heavy))
                     .foregroundStyle(.white)
                     .monospacedDigit()
 
-                HStack(spacing: 12) {
-                    metric(value: "46", unit: "HRV", tint: Color(red: 0.20, green: 0.83, blue: 0.60))
-                    metric(value: "8,042", unit: "步数", tint: Color(red: 0.18, green: 0.42, blue: 1.0))
+                HStack(spacing: 6) {
+                    tile(value: link.hr > 0 ? "\(link.hr)" : "--",
+                         unit: "心率",
+                         tint: Color(red: 1.0, green: 0.42, blue: 0.52))
+                    tile(value: "\(steps)",
+                         unit: "步数",
+                         tint: Color(red: 0.35, green: 0.62, blue: 1.0))
                 }
-                .padding(.horizontal, 10)
+                .padding(.horizontal, 6)
 
-                HStack(spacing: 7) {
-                    tabChip(icon: "circle.dotted", text: "表盘", on: true)
-                    tabChip(icon: "heart", text: "HRV", on: false)
-                    tabChip(icon: "timer", text: "训练", on: false)
+                HStack(spacing: 4) {
+                    Circle()
+                        .fill(link.reachable ? Color(red: 0.20, green: 0.83, blue: 0.60) : Color.white.opacity(0.3))
+                        .frame(width: 5, height: 5)
+                    Text(link.reachable ? "手机已连" : (link.activated ? "等手机" : "未激活"))
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.55))
                 }
                 .padding(.top, 2)
             }
-            .padding(.vertical, 6)
         }
         .onReceive(tick) { now = $0 }
+        .onAppear { loadSteps() }
     }
 
-    private func metric(value: String, unit: String, tint: Color) -> some View {
-        VStack(spacing: 0) {
+    private func tile(value: String, unit: String, tint: Color) -> some View {
+        VStack(spacing: 1) {
             Text(value)
-                .font(.system(size: 17, weight: .bold, design: .rounded))
+                .font(.system(size: 19, weight: .bold))
                 .foregroundStyle(tint)
+                .monospacedDigit()
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
             Text(unit)
-                .font(.system(size: 8.5, weight: .semibold, design: .rounded))
-                .foregroundStyle(.white.opacity(0.55))
+                .font(.system(size: 9, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.5))
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 6)
         .background {
-            RoundedRectangle(cornerRadius: 11, style: .continuous)
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .fill(Color.white.opacity(0.08))
                 .overlay {
-                    RoundedRectangle(cornerRadius: 11, style: .continuous)
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
                         .strokeBorder(Color.white.opacity(0.16), lineWidth: 0.6)
                 }
         }
     }
 
-    private func tabChip(icon: String, text: String, on: Bool) -> some View {
-        HStack(spacing: 3) {
-            Image(systemName: icon)
-                .font(.system(size: 9, weight: .semibold))
-            Text(text)
-                .font(.system(size: 9, weight: .semibold, design: .rounded))
-        }
-        .foregroundStyle(on ? .white : .white.opacity(0.5))
-        .padding(.horizontal, 8)
-        .padding(.vertical, 3)
-        .background {
-            Capsule().fill(on ? Color.white.opacity(0.18) : Color.clear)
+    private func loadSteps() {
+        guard CMPedometer.isStepCountingAvailable() else { return }
+        let start = Calendar.current.startOfDay(for: Date())
+        pedometer.queryPedometerData(from: start, to: Date()) { data, _ in
+            DispatchQueue.main.async {
+                if let d = data {
+                    steps = d.numberOfSteps.intValue
+                    WatchLink.shared.sendSteps(steps)
+                }
+            }
         }
     }
 }
