@@ -922,7 +922,7 @@ struct BioPage: View {
                 }
 
                 HStack(spacing: 10) {
-                    achTile("连续", "\(store.streak) 天", TWColor.amber)
+                    achTile("连续", "\(store.trainingStreak) 天", TWColor.amber)
                     achTile("训练", "\(store.sessions.count) 次", TWColor.purple)
                     achTile("总容量", achTon, TWColor.mint)
                 }

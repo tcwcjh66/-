@@ -32,16 +32,16 @@ struct AchievementsSheet: View {
                             progress: min(1, Double(store.sessions.count) / 1)),
             AchievementItem(id: "streak3", title: "三日不断", note: "连续训练 3 天",
                             icon: "flame.fill", tint: TWColor.amber,
-                            done: store.streak >= 3,
-                            progress: min(1, Double(store.streak) / 3)),
+                            done: store.trainingStreak >= 3,
+                            progress: min(1, Double(store.trainingStreak) / 3)),
             AchievementItem(id: "streak7", title: "一周不歇", note: "连续训练 7 天",
                             icon: "flame", tint: TWColor.coral,
-                            done: store.streak >= 7,
-                            progress: min(1, Double(store.streak) / 7)),
+                            done: store.trainingStreak >= 7,
+                            progress: min(1, Double(store.trainingStreak) / 7)),
             AchievementItem(id: "streak15", title: "半月坚持", note: "连续训练 15 天",
                             icon: "crown.fill", tint: TWColor.purple,
-                            done: store.streak >= 15,
-                            progress: min(1, Double(store.streak) / 15)),
+                            done: store.trainingStreak >= 15,
+                            progress: min(1, Double(store.trainingStreak) / 15)),
             AchievementItem(id: "s10", title: "十炼", note: "累计 10 次训练",
                             icon: "dumbbell.fill", tint: TWColor.blue,
                             done: store.sessions.count >= 10,
@@ -103,7 +103,7 @@ struct AchievementsSheet: View {
                     }
 
                     HStack(spacing: 10) {
-                        statTile("连续天数", "\(store.streak)", TWColor.amber)
+                        statTile("连续天数", "\(store.trainingStreak)", TWColor.amber)
                         statTile("训练次数", "\(store.sessions.count)", TWColor.purple)
                         statTile("总容量", tonText(totalTonnage), TWColor.mint)
                     }
