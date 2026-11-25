@@ -60,7 +60,7 @@ struct AuroraBG: View {
 extension View {
     /// 统一大标题风格
     func twTitle() -> some View {
-        self.font(.system(size: 34, weight: .heavy, design: .rounded))
+        self.font(.system(size: 36, weight: .heavy))
     }
 }
 
@@ -70,7 +70,7 @@ struct TwGradientText: View {
 
     var body: some View {
         Text(text)
-            .font(.system(size: size, weight: .heavy, design: .rounded))
+            .font(.system(size: size, weight: .heavy))
             .foregroundStyle(
                 LinearGradient(
                     colors: [

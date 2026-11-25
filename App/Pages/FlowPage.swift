@@ -41,7 +41,7 @@ struct FlowPage: View {
         VStack(spacing: 16) {
             HStack {
                 Text("组间休息")
-                    .font(.system(size: 12.5, weight: .semibold, design: .rounded))
+                    .font(.system(size: 14.5, weight: .semibold))
                     .foregroundStyle(TWColor.ink2)
                 Spacer()
                 GlassPill(text: running ? "计时中" : "已暂停", tint: running ? TWColor.mint : TWColor.ink3)
@@ -58,12 +58,12 @@ struct FlowPage: View {
 
                 VStack(spacing: 2) {
                     Text(clock)
-                        .font(.system(size: 48, weight: .heavy, design: .rounded))
+                        .font(.system(size: 50, weight: .heavy))
                         .foregroundStyle(TWColor.ink)
                         .monospacedDigit()
                         .contentTransition(.numericText(countsDown: true))
                     Text("剩余")
-                        .font(.system(size: 10, weight: .semibold, design: .rounded))
+                        .font(.system(size: 12, weight: .semibold))
                         .tracking(2)
                         .foregroundStyle(TWColor.ink3)
                 }
@@ -77,9 +77,9 @@ struct FlowPage: View {
                 } label: {
                     HStack(spacing: 6) {
                         Image(systemName: running ? "pause.fill" : "play.fill")
-                            .font(.system(size: 12, weight: .bold))
+                            .font(.system(size: 14, weight: .bold))
                         Text(running ? "暂停" : (remain == 0 ? "再来一组" : "继续"))
-                            .font(.system(size: 13, weight: .bold, design: .rounded))
+                            .font(.system(size: 15, weight: .bold))
                     }
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
@@ -100,7 +100,7 @@ struct FlowPage: View {
                     }
                 } label: {
                     Image(systemName: "arrow.counterclockwise")
-                        .font(.system(size: 14, weight: .bold))
+                        .font(.system(size: 16, weight: .bold))
                         .foregroundStyle(TWColor.ink2)
                         .frame(width: 46)
                         .padding(.vertical, 12)
@@ -123,7 +123,7 @@ struct FlowPage: View {
                         }
                     } label: {
                         Text("\(s)s")
-                            .font(.system(size: 11, weight: total == s ? .bold : .medium, design: .rounded))
+                            .font(.system(size: 13, weight: total == s ? .bold : .medium))
                             .foregroundStyle(total == s ? TWColor.purple : TWColor.ink3)
                             .padding(.horizontal, 11)
                             .padding(.vertical, 6)
@@ -144,7 +144,7 @@ struct FlowPage: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text("上肢推 · 第 3 周")
-                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                    .font(.system(size: 15, weight: .bold))
                     .foregroundStyle(TWColor.ink)
                 Spacer()
                 GlassPill(text: "4 个动作", tint: TWColor.blue)
@@ -153,24 +153,24 @@ struct FlowPage: View {
             ForEach(Array(sessionItems.enumerated()), id: \.offset) { pair in
                 HStack(spacing: 10) {
                     Text("\(pair.offset + 1)")
-                        .font(.system(size: 10, weight: .bold, design: .rounded))
+                        .font(.system(size: 12, weight: .bold))
                         .foregroundStyle(.white)
                         .frame(width: 18, height: 18)
                         .background { Circle().fill(TWColor.purple.opacity(0.75)) }
 
                     VStack(alignment: .leading, spacing: 2) {
                         Text(pair.element.0)
-                            .font(.system(size: 12.5, weight: .semibold, design: .rounded))
+                            .font(.system(size: 14.5, weight: .semibold))
                             .foregroundStyle(TWColor.ink)
                         Text(pair.element.2)
-                            .font(.system(size: 9.5, weight: .regular))
+                            .font(.system(size: 11.5, weight: .regular))
                             .foregroundStyle(TWColor.ink3)
                     }
 
                     Spacer(minLength: 0)
 
                     Text(pair.element.1)
-                        .font(.system(size: 10.5, weight: .bold, design: .rounded))
+                        .font(.system(size: 12.5, weight: .bold))
                         .foregroundStyle(TWColor.purple)
                 }
             }
@@ -182,10 +182,10 @@ struct FlowPage: View {
     private var tipCard: some View {
         HStack(alignment: .top, spacing: 9) {
             Image(systemName: "lightbulb.fill")
-                .font(.system(size: 11, weight: .semibold))
+                .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(TWColor.amber)
             Text("每组的最后两次要到「再做一个就做不动」的程度，太轻只能练耐力。")
-                .font(.system(size: 10.5, weight: .regular))
+                .font(.system(size: 12.5, weight: .regular))
                 .foregroundStyle(TWColor.ink2)
                 .fixedSize(horizontal: false, vertical: true)
         }

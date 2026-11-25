@@ -31,7 +31,7 @@ struct TodayPage: View {
         HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(dateText)
-                    .font(.system(size: 11, weight: .semibold, design: .rounded))
+                    .font(.system(size: 13, weight: .semibold))
                     .tracking(1.2)
                     .foregroundStyle(TWColor.ink3)
                 TwGradientText(text: "今天", size: 31)
@@ -41,7 +41,7 @@ struct TodayPage: View {
                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
             } label: {
                 Image(systemName: "bell.badge")
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(TWColor.ink2)
                     .frame(width: 38, height: 38)
                     .twGlass(radius: 19)
@@ -103,13 +103,13 @@ struct TodayPage: View {
                 .frame(width: 7, height: 7)
                 .shadow(color: color.opacity(0.5), radius: 3)
             Text(label)
-                .font(.system(size: 11.5, weight: .semibold, design: .rounded))
+                .font(.system(size: 13.5, weight: .semibold))
                 .foregroundStyle(TWColor.ink2)
             Text(value)
-                .font(.system(size: 14, weight: .heavy, design: .rounded))
+                .font(.system(size: 16, weight: .heavy))
                 .foregroundStyle(TWColor.ink)
             Text(unit)
-                .font(.system(size: 10, weight: .medium, design: .rounded))
+                .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(TWColor.ink3)
         }
     }
@@ -126,14 +126,14 @@ struct TodayPage: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 4) {
                 Image(systemName: icon)
-                    .font(.system(size: 10, weight: .bold))
+                    .font(.system(size: 12, weight: .bold))
                     .foregroundStyle(tint)
                 Text(title)
-                    .font(.system(size: 10, weight: .semibold, design: .rounded))
+                    .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(TWColor.ink3)
             }
             Text(value)
-                .font(.system(size: 20, weight: .heavy, design: .rounded))
+                .font(.system(size: 22, weight: .heavy))
                 .foregroundStyle(TWColor.ink)
                 .contentTransition(.numericText())
         }
@@ -147,11 +147,11 @@ struct TodayPage: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text("今天感觉怎么样")
-                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(TWColor.ink2)
                 Spacer()
                 Text(moodLabel)
-                    .font(.system(size: 11, weight: .semibold, design: .rounded))
+                    .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(TWColor.purple)
             }
 
@@ -218,9 +218,9 @@ struct MoodChip: View {
         } label: {
             VStack(spacing: 4) {
                 Text(option.emoji)
-                    .font(.system(size: 21))
+                    .font(.system(size: 23))
                 Text(option.name)
-                    .font(.system(size: 9, weight: .medium, design: .rounded))
+                    .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(labelColor)
             }
             .frame(maxWidth: .infinity)

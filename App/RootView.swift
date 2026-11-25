@@ -48,13 +48,14 @@ struct GlassTabBar: View {
                 } label: {
                     VStack(spacing: 3) {
                         Image(systemName: t.symbol)
-                            .font(.system(size: 16.5, weight: .semibold))
+                            .font(.system(size: 20, weight: .semibold))
                         Text(t.title)
-                            .font(.system(size: 9.5, weight: .semibold, design: .rounded))
+                            .font(.system(size: 12.5, weight: .semibold))
                     }
                     .foregroundStyle(t == selected ? TWColor.ink : TWColor.ink3)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 9)
+                    .frame(minHeight: 48)
+                    .padding(.vertical, 8)
                     .background {
                         if t == selected {
                             Capsule(style: .continuous)

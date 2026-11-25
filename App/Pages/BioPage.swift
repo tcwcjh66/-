@@ -17,7 +17,7 @@ struct BioPage: View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
                 Text("实时心率")
-                    .font(.system(size: 13, weight: .semibold, design: .rounded))
+                    .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(TWColor.ink2)
                 Spacer()
                 GlassPill(text: "静息", tint: TWColor.coral)
@@ -25,19 +25,19 @@ struct BioPage: View {
 
             HStack(alignment: .firstTextBaseline, spacing: 6) {
                 Text("\(store.hr)")
-                    .font(.system(size: 58, weight: .heavy, design: .rounded))
+                    .font(.system(size: 56, weight: .heavy))
                     .foregroundStyle(TWColor.ink)
                     .contentTransition(.numericText())
                 Text("bpm")
-                    .font(.system(size: 13, weight: .semibold, design: .rounded))
+                    .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(TWColor.ink3)
                 Spacer()
                 VStack(alignment: .trailing, spacing: 2) {
                     Text("HRV")
-                        .font(.system(size: 10, weight: .semibold))
+                        .font(.system(size: 12, weight: .semibold))
                         .foregroundStyle(TWColor.ink3)
                     Text("\(store.hrv) ms")
-                        .font(.system(size: 16, weight: .bold, design: .rounded))
+                        .font(.system(size: 17, weight: .bold))
                         .foregroundStyle(TWColor.amber)
                 }
             }
@@ -59,14 +59,14 @@ struct BioPage: View {
     private func metric(title: String, value: String, unit: String, tint: Color) -> some View {
         VStack(alignment: .leading, spacing: 5) {
             Text(title)
-                .font(.system(size: 10.5, weight: .semibold, design: .rounded))
+                .font(.system(size: 12.5, weight: .semibold))
                 .foregroundStyle(TWColor.ink3)
             HStack(alignment: .firstTextBaseline, spacing: 3) {
                 Text(value)
-                    .font(.system(size: 24, weight: .heavy, design: .rounded))
+                    .font(.system(size: 26, weight: .heavy))
                     .foregroundStyle(tint)
                 Text(unit)
-                    .font(.system(size: 10, weight: .medium, design: .rounded))
+                    .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(TWColor.ink3)
             }
         }
@@ -79,10 +79,10 @@ struct BioPage: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Image(systemName: "applewatch")
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(TWColor.ink2)
                 Text("设备同步")
-                    .font(.system(size: 13, weight: .semibold, design: .rounded))
+                    .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(TWColor.ink2)
                 Spacer()
                 GlassPill(text: "已连接", tint: TWColor.mint)
@@ -91,17 +91,17 @@ struct BioPage: View {
             ForEach(syncItems) { item in
                 HStack {
                     Text(item.title)
-                        .font(.system(size: 12.5, weight: .medium, design: .rounded))
+                        .font(.system(size: 14.5, weight: .medium))
                         .foregroundStyle(TWColor.ink2)
                     Spacer()
                     Text(item.value)
-                        .font(.system(size: 10, weight: .semibold, design: .rounded))
+                        .font(.system(size: 12, weight: .semibold))
                         .foregroundStyle(TWColor.ink3)
                 }
             }
 
             Text("心率与 HRV 来自 Apple Watch 的传感器；iPhone 本身没有光学心率模组，所以必须戴表才有真实数据。")
-                .font(.system(size: 10.5, weight: .regular))
+                .font(.system(size: 12.5, weight: .regular))
                 .foregroundStyle(TWColor.ink3)
                 .padding(.top, 2)
         }
@@ -169,7 +169,7 @@ struct PageHeader: View {
             VStack(alignment: .leading, spacing: 3) {
                 if !subtitle.isEmpty {
                     Text(subtitle)
-                        .font(.system(size: 10.5, weight: .semibold, design: .rounded))
+                        .font(.system(size: 12.5, weight: .semibold))
                         .tracking(1.0)
                         .foregroundStyle(TWColor.ink3)
                 }
