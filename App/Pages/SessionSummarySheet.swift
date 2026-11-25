@@ -98,6 +98,10 @@ struct SessionSummarySheet: View {
                             divider
                             row("时长变化", m > 0 ? "多了 \(m) 分钟" : (m == 0 ? "持平" : "少了 \(abs(m)) 分钟"))
                         }
+                        if let t = entry.tonnage, t > 0 {
+                            divider
+                            row("总吨位", "\(Int(t)) kg（重量 × 次数累计）")
+                        }
                     }
                     .padding(16)
                     .twGlass()

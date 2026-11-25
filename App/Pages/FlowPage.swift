@@ -15,6 +15,8 @@ struct FlowPage: View {
     @State private var summaryEntry: SessionLog?
     @State private var summaryPrev: SessionLog?
     @State private var summaryStreak: Int = 1
+    @State private var setWeight: Double = 20
+    @State private var setReps: Int = 8
     @State private var restNext: String = ""
     @State private var detailSession: SessionLog?
     @State private var pendingPlan: Int?
@@ -176,12 +178,14 @@ struct FlowPage: View {
     private var sessionBar: some View {
         Group {
             if let start = store.sessionStart {
+                VStack(spacing: 11) {
                 HStack(spacing: 10) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("训练中")
                             .font(.system(size: 13, weight: .bold))
                             .foregroundStyle(TWColor.purple)
-                        Text("已 \(store.sessionSets) 组 · \(elapsed(from: start))")
+                        Text("已 \(store.sessionSets) 组 · \(elapsed(from: start))" +
+                             (store.sessionTonnage > 0 ? " · \(Int(store.sessionTonnage)) kg 总量" : ""))
                             .font(.system(size: 12.5, weight: .medium))
                             .foregroundStyle(TWColor.ink3)
                     }
@@ -189,7 +193,9 @@ struct FlowPage: View {
 
                     Button {
                         UIImpactFeedbackGenerator(style: .rigid).impactOccurred()
-                        withAnimation(.snappy(duration: 0.2)) { store.addSet() }
+                        withAnimation(.snappy(duration: 0.2)) {
+                            store.addSet(weight: setWeight, reps: setReps)
+                        }
                     } label: {
                         Text("记一组")
                             .font(.system(size: 14, weight: .bold))
@@ -232,6 +238,10 @@ struct FlowPage: View {
                             }
                     }
                     .buttonStyle(.plain)
+                }
+
+                loadRow
+
                 }
                 .padding(14)
                 .twGlass(radius: 18)
@@ -287,7 +297,7 @@ struct FlowPage: View {
             doneMoves.remove(key)
         } else {
             doneMoves.insert(key)
-            store.addSet()
+            store.addSet(weight: setWeight, reps: setReps)
             // 按这个动作自己的 rest 起休息倒计时，不用再手调
             let sec = restSeconds(rest)
             withAnimation(.snappy(duration: 0.25)) {
@@ -297,6 +307,59 @@ struct FlowPage: View {
                 restFrom = name
                 restNext = next
             }
+        }
+    }
+
+    private var loadRow: some View {
+        HStack(spacing: 9) {
+            loadChip("重量", String(format: "%g", setWeight) + " kg",
+                     minus: { setWeight = max(0, setWeight - 2.5) },
+                     plus: { setWeight = min(500, setWeight + 2.5) })
+            loadChip("次数", "\(setReps) 次",
+                     minus: { setReps = max(1, setReps - 1) },
+                     plus: { setReps = min(50, setReps + 1) })
+        }
+    }
+
+    private func loadChip(_ title: String, _ value: String,
+                          minus: @escaping () -> Void,
+                          plus: @escaping () -> Void) -> some View {
+        HStack(spacing: 6) {
+            Text(title)
+                .font(.system(size: 10.5, weight: .semibold))
+                .foregroundStyle(TWColor.ink3)
+            Button {
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                minus()
+            } label: {
+                Image(systemName: "minus")
+                    .font(.system(size: 10, weight: .heavy))
+                    .foregroundStyle(TWColor.ink2)
+                    .frame(width: 22, height: 22)
+                    .background { Circle().fill(Color.white.opacity(0.6)) }
+            }
+            .buttonStyle(.plain)
+            Text(value)
+                .font(.system(size: 12.5, weight: .bold))
+                .foregroundStyle(TWColor.ink)
+                .monospacedDigit()
+                .frame(minWidth: 44)
+            Button {
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                plus()
+            } label: {
+                Image(systemName: "plus")
+                    .font(.system(size: 10, weight: .heavy))
+                    .foregroundStyle(.white)
+                    .frame(width: 22, height: 22)
+                    .background { Circle().fill(TWColor.purple.opacity(0.85)) }
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 6)
+        .background {
+            Capsule().fill(Color.white.opacity(0.42))
         }
     }
 

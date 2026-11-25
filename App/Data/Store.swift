@@ -63,6 +63,7 @@ struct SessionLog: Codable, Identifiable, Hashable {
     var sets: Int
     var minutes: Int
     var moveNames: [String]? = nil
+    var tonnage: Double? = nil
 }
 
 struct GirthLog: Codable, Identifiable, Hashable {
@@ -214,6 +215,7 @@ final class TWStore: ObservableObject {
     // 饮食
     @Published var dietKcal: Double = 0
     @Published var dietTarget: Double = 2200
+    @Published var proteinGoal: Double = 120
     @Published var protein: Double = 0
     @Published var carb: Double = 0
     @Published var fat: Double = 0
@@ -227,6 +229,7 @@ final class TWStore: ObservableObject {
     @Published var sessionStart: Date?
     @Published var sessionSets: Int = 0
     @Published var sessionMoves: [String] = []
+    @Published var sessionTonnage: Double = 0
     @Published var logs: [DayLog] = []
 
     // 收藏
@@ -315,6 +318,9 @@ final class TWStore: ObservableObject {
         static let sleeps = "tw.sleeps.v2"
         static let wsleep = "tw.wsleep.v2"
         static let wdeep = "tw.wdeep.v2"
+        static let dt = "tw.dt.v2"
+        static let pgoal = "tw.pgoal.v2"
+        static let wt = "tw.wt.v2"
         static let wsync = "tw.wsync.v2"
         static let wcount = "tw.wcount.v2"
         static let mindmin = "tw.mindmin.v2"
@@ -554,6 +560,20 @@ final class TWStore: ObservableObject {
         persistSoon()
     }
 
+    /// 把导出的 JSON 落成一个真实的 .json 文件，交给系统分享面板存到「文件」或发给自己
+    func exportJSONFile() -> URL? {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        let name = "天才威-数据备份-\(f.string(from: Date())).json"
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(name)
+        do {
+            try exportJSON().data(using: .utf8)?.write(to: url, options: .atomic)
+            return url
+        } catch {
+            return nil
+        }
+    }
+
     /// 导出全部本机数据为 JSON 文本
     func exportJSON() -> String {
         let f = DateFormatter()
@@ -567,6 +587,8 @@ final class TWStore: ObservableObject {
         root["hrv"] = measuredHRV
         root["hrSource"] = hrSource
         root["mood"] = mood
+        root["dietTarget"] = dietTarget
+        root["proteinGoal"] = proteinGoal
         root["dietKcal"] = dietKcal
         root["protein"] = protein
         root["carb"] = carb
@@ -647,6 +669,9 @@ final class TWStore: ObservableObject {
         sessionStart = nil
         sessionSets = 0
         sessionMoves = []
+        sessionTonnage = 0
+        dietTarget = 2200
+        proteinGoal = 120
         logs = []
         favoriteMoves = []
         bodyWeight = 0
@@ -744,12 +769,16 @@ final class TWStore: ObservableObject {
         sessionStart = Date()
         sessionSets = 0
         sessionMoves = moves
+        sessionTonnage = 0
         mood = "train"
         persistSoon()
     }
 
-    func addSet() {
+    func addSet(weight: Double = 0, reps: Int = 0) {
         sessionSets += 1
+        if weight > 0, reps > 0 {
+            sessionTonnage += weight * Double(reps)
+        }
         exerciseMin += 2.5
         moveKcal += 22
         standHours = min(standHours + 0.15, standTarget)
@@ -769,7 +798,8 @@ final class TWStore: ObservableObject {
                 moves: moves,
                 sets: sessionSets,
                 minutes: mins,
-                moveNames: moveNames
+                moveNames: moveNames,
+                tonnage: sessionTonnage > 0 ? sessionTonnage : nil
             )
             sessions.insert(entry, at: 0)
             added = entry
@@ -778,6 +808,7 @@ final class TWStore: ObservableObject {
             }
         }
         sessionStart = nil
+        sessionTonnage = 0
         mood = "win"
         upsertToday()
         persistSoon()
@@ -874,6 +905,9 @@ final class TWStore: ObservableObject {
         }
         d.set(favoriteMoves, forKey: Key.fav)
 
+        d.set(dietTarget, forKey: Key.dt)
+        d.set(proteinGoal, forKey: Key.pgoal)
+        d.set(waterTarget, forKey: Key.wt)
         d.set(bodyWeight, forKey: Key.weight)
         d.set(heightCM, forKey: Key.height)
         d.set(waistCM, forKey: Key.waist)
@@ -922,6 +956,9 @@ final class TWStore: ObservableObject {
         pedometerSteps = d.integer(forKey: Key.steps)
         pedometerDistance = d.double(forKey: Key.dist)
         mood = d.string(forKey: Key.mood) ?? "ok"
+        if d.object(forKey: Key.dt) != nil { dietTarget = d.double(forKey: Key.dt) }
+        if d.object(forKey: Key.pgoal) != nil { proteinGoal = d.double(forKey: Key.pgoal) }
+        if d.object(forKey: Key.wt) != nil { waterTarget = max(1, d.integer(forKey: Key.wt)) }
         dietKcal = d.double(forKey: Key.kcal)
         protein = d.double(forKey: Key.protein)
         carb = d.double(forKey: Key.carb)

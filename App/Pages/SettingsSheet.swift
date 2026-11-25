@@ -7,6 +7,8 @@ struct SettingsSheet: View {
 
     @State private var showReset = false
     @State private var showCopied = false
+    @State private var showGoal = false
+    @State private var exportURL: URL?
 
     private var versionText: String {
         let v = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "3.0"
@@ -43,6 +45,7 @@ struct SettingsSheet: View {
                     }
 
                     overviewCard
+                    goalCard
                     dataCard
                     aboutCard
                 }
@@ -50,6 +53,12 @@ struct SettingsSheet: View {
                 .padding(.bottom, 30)
             }
         }
+        .sheet(isPresented: $showGoal) {
+            GoalSheet()
+                .presentationDetents([.large])
+                .presentationCornerRadius(28)
+        }
+        .onAppear { exportURL = store.exportJSONFile() }
         .confirmationDialog("确定清空全部数据？", isPresented: $showReset, titleVisibility: .visible) {
             Button("清空", role: .destructive) { store.resetAll() }
             Button("取消", role: .cancel) {}
@@ -78,13 +87,47 @@ struct SettingsSheet: View {
         .twGlass()
     }
 
+    private var goalCard: some View {
+        Button {
+            UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+            showGoal = true
+        } label: {
+            HStack(spacing: 11) {
+                Image(systemName: "target")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(TWColor.purple)
+                    .frame(width: 34, height: 34)
+                    .background {
+                        RoundedRectangle(cornerRadius: 9, style: .continuous)
+                            .fill(TWColor.purple.opacity(0.12))
+                    }
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("目标设置")
+                        .font(.system(size: 14.5, weight: .semibold))
+                        .foregroundStyle(TWColor.ink)
+                    Text("\(Int(store.dietTarget)) kcal · 蛋白 \(Int(store.proteinGoal)) g · 水 \(store.waterTarget) 杯")
+                        .font(.system(size: 11.5))
+                        .foregroundStyle(TWColor.ink3)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(TWColor.ink3)
+            }
+        }
+        .buttonStyle(.plain)
+        .padding(16)
+        .twGlass()
+    }
+
     private var dataCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("数据")
                 .font(.system(size: 15, weight: .bold))
                 .foregroundStyle(TWColor.ink)
 
-            ShareLink(item: store.exportJSON(), subject: Text("天才威数据导出")) {
+            ShareLink(item: exportURL ?? FileManager.default.temporaryDirectory,
+                      subject: Text("天才威数据备份")) {
                 HStack(spacing: 11) {
                     Image(systemName: "square.and.arrow.up")
                         .font(.system(size: 15, weight: .semibold))
@@ -98,7 +141,7 @@ struct SettingsSheet: View {
                         Text("导出全部数据")
                             .font(.system(size: 14.5, weight: .semibold))
                             .foregroundStyle(TWColor.ink)
-                        Text("JSON · 可直接发给自己留存")
+                        Text("JSON 文件 · 存到「文件」或发给自己")
                             .font(.system(size: 11.5))
                             .foregroundStyle(TWColor.ink3)
                     }

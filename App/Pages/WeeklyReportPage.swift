@@ -25,6 +25,10 @@ struct WeeklyReportPage: View {
     private var totalSets: Int { weekSessions.reduce(0) { $0 + $1.sets } }
     private var totalMins: Int { weekSessions.reduce(0) { $0 + $1.minutes } }
 
+    private var totalTonnage: Double {
+        weekSessions.reduce(0) { $0 + ($1.tonnage ?? 0) }
+    }
+
     private func sets(on key: String) -> Int {
         weekSessions.filter { $0.date == key }.reduce(0) { $0 + $1.sets }
     }
@@ -147,6 +151,8 @@ struct WeeklyReportPage: View {
                     .padding(.horizontal, 18)
 
                     VStack(spacing: 0) {
+                        row("总吨位", totalTonnage > 0 ? "\(Int(totalTonnage)) kg" : "无记录")
+                        divider
                         row("平均步数", avgSteps > 0 ? "\(avgSteps.formatted()) 步" : "无记录")
                         divider
                         row("平均蛋白", avgProtein > 0
