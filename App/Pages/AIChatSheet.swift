@@ -401,7 +401,8 @@ struct AIChatSheet: View {
         }
         if s.contains("水") || s.contains("喝") {
             let rest = max(0, store.waterTargetML - store.waterML)
-            return "今天喝了 \(store.waterML) ml，还差 \(rest) ml。按你设的每杯 \(store.cupSize) ml，大概 \(Int(ceil(Double(rest) / Double(max(1, store.cupSize)))) 杯。"
+            let cupsLeft = Int(ceil(Double(rest) / Double(max(1, store.cupSize))))
+            return "今天喝了 \(store.waterML) ml，还差 \(rest) ml。按你设的每杯 \(store.cupSize) ml，大概 \(cupsLeft) 杯。"
         }
         if s.contains("睡") || s.contains("补觉") || s.contains("困") {
             if let last = store.lastSleep {
