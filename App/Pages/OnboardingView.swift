@@ -14,6 +14,12 @@ struct OnboardingView: View {
     private var weightValue: Double? { Double(weightText) }
     private var heightValue: Double? { Double(heightText) }
 
+    /// 引导页的粗算：20 岁、男、一般活动量
+    private var roughMaintain: Int? {
+        guard let w = weightValue, let h = heightValue, w > 20, h > 100 else { return nil }
+        return Int((10 * w + 6.25 * h - 100 + 5) * 1.55)
+    }
+
     var body: some View {
         ZStack {
             AuroraBG()
@@ -95,9 +101,9 @@ struct OnboardingView: View {
                 .fixedSize(horizontal: false, vertical: true)
 
             permitRow(
-                icon: "figure.walk",
-                title: "运动与健身",
-                detail: "读步数、距离、爬楼层。iOS 会弹一次「允许」。",
+                "figure.walk",
+                "运动与健身",
+                "读步数、距离、爬楼层。iOS 会弹一次「允许」。",
                 state: askingSteps ? "已请求" : "点右边申请",
                 tint: TWColor.mint
             ) {
@@ -107,9 +113,9 @@ struct OnboardingView: View {
             }
 
             permitRow(
-                icon: "bell.badge.fill",
-                title: "通知",
-                detail: "组间休息到点、喝水、称重提醒。锁屏也能响。",
+                "bell.badge.fill",
+                "通知",
+                "组间休息到点、喝水、称重提醒。锁屏也能响。",
                 state: askingNotify ? "已请求" : "点右边申请",
                 tint: TWColor.amber
             ) {
@@ -188,8 +194,8 @@ struct OnboardingView: View {
                 numberBox("身高", unit: "cm", text: $heightText)
             }
 
-            if let w = weightValue, let h = heightValue, w > 20, h > 100 {
-                Text("按 20 岁、男、一般活动量粗算：维持 \(Int((10*w + 6.25*h - 5*20 + 5) * 1.55)) kcal 上下。年龄和性别可以进「目标」页再改。")
+            if let est = roughMaintain {
+                Text("按 20 岁、男、一般活动量粗算：维持 \(est) kcal 上下。年龄和性别可以进「目标」页再改。")
                     .font(.system(size: 11.5))
                     .foregroundStyle(TWColor.mint)
                     .lineSpacing(3)
