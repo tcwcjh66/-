@@ -4,8 +4,21 @@ import UIKit
 struct RootView: View {
     @EnvironmentObject var store: TWStore
     @State private var tab: TWTab = .today
+    @AppStorage("tw.onboarded.v3") private var onboarded = false
 
     var body: some View {
+        Group {
+            if onboarded {
+                content
+            } else {
+                OnboardingView {
+                    withAnimation(.easeInOut(duration: 0.35)) { onboarded = true }
+                }
+            }
+        }
+    }
+
+    private var content: some View {
         ZStack(alignment: .bottom) {
             AuroraBG()
 

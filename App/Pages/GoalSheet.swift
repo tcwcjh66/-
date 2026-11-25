@@ -57,6 +57,8 @@ struct GoalSheet: View {
                         .buttonStyle(.plain)
                     }
 
+                    smartCard
+
                     fieldBox("每日热量", unit: "kcal", text: $kcalText, index: 0,
                              note: "总消耗之外想吃到多少，减脂一般比维持低 15%")
 
@@ -109,6 +111,152 @@ struct GoalSheet: View {
             waterText = String(store.waterTarget)
             weightText = store.weightGoal > 0 ? String(format: "%g", store.weightGoal) : ""
         }
+    }
+
+    private var smartCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 7) {
+                Image(systemName: "function")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(TWColor.blue)
+                Text("按身体算一个")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundStyle(TWColor.ink)
+                Spacer()
+                Text("Mifflin-St Jeor")
+                    .font(.system(size: 10))
+                    .foregroundStyle(TWColor.ink3)
+            }
+
+            if store.bodyWeight <= 0 || store.heightCM <= 0 {
+                Text("先去「身体」页填体重和身高，这里才算得出来。粗算需要这两个数。")
+                    .font(.system(size: 12))
+                    .foregroundStyle(TWColor.amber)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else {
+                Text("基础代谢 \(Int(store.bmr)) kcal　·　\(store.activityLabel) ×\(String(format: "%.3f", store.activityFactor))　·　维持 \(store.maintainKcal) kcal")
+                    .font(.system(size: 11.5))
+                    .foregroundStyle(TWColor.ink3)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                HStack(spacing: 6) {
+                    ForEach(0..<3, id: \.self) { i in
+                        miniSeg(["减脂", "维持", "增肌"][i], on: store.goalMode == i,
+                                tint: [TWColor.coral, TWColor.mint, TWColor.blue][i]) {
+                            store.goalMode = i
+                            store.persistSoon()
+                        }
+                    }
+                }
+
+                HStack(spacing: 6) {
+                    ForEach(0..<3, id: \.self) { i in
+                        miniSeg(["少动", "一般", "常练"][i], on: store.activityLevel == i,
+                                tint: TWColor.purple) {
+                            store.activityLevel = i
+                            store.persistSoon()
+                        }
+                    }
+                }
+
+                HStack(spacing: 10) {
+                    HStack(spacing: 6) {
+                        Button {
+                            store.age = max(12, store.age - 1)
+                            store.persistSoon()
+                        } label: {
+                            Image(systemName: "minus")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundStyle(TWColor.ink2)
+                                .frame(width: 26, height: 26)
+                                .background { Circle().fill(TWColor.glass(0.5)) }
+                        }
+                        .buttonStyle(.plain)
+
+                        Text("\(store.age) 岁")
+                            .font(.system(size: 12.5, weight: .bold))
+                            .foregroundStyle(TWColor.ink)
+                            .monospacedDigit()
+                            .frame(minWidth: 48)
+
+                        Button {
+                            store.age = min(90, store.age + 1)
+                            store.persistSoon()
+                        } label: {
+                            Image(systemName: "plus")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundStyle(TWColor.ink2)
+                                .frame(width: 26, height: 26)
+                                .background { Circle().fill(TWColor.glass(0.5)) }
+                        }
+                        .buttonStyle(.plain)
+                    }
+
+                    Spacer(minLength: 0)
+
+                    HStack(spacing: 6) {
+                        miniSeg("男", on: store.sexMale, tint: TWColor.blue) {
+                            store.sexMale = true
+                            store.persistSoon()
+                        }
+                        miniSeg("女", on: !store.sexMale, tint: TWColor.pink) {
+                            store.sexMale = false
+                            store.persistSoon()
+                        }
+                    }
+                }
+
+                HStack(spacing: 8) {
+                    Text("建议 \(store.recommendedKcal) kcal")
+                        .font(.system(size: 15, weight: .heavy))
+                        .foregroundStyle(TWColor.ink)
+                        .monospacedDigit()
+
+                    Spacer(minLength: 0)
+
+                    Button {
+                        UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                        kcalText = "\(store.recommendedKcal)"
+                    } label: {
+                        Text("填进每日热量")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 7)
+                            .background {
+                                Capsule().fill(LinearGradient(colors: [TWColor.blue, TWColor.purple],
+                                                              startPoint: .leading, endPoint: .trailing))
+                            }
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                Text("减脂给维持 −400 kcal，增肌给维持 +300 kcal。这只是起点，真实消耗要看两周体重趋势再修。")
+                    .font(.system(size: 10.5))
+                    .foregroundStyle(TWColor.ink3)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(14)
+        .twGlass(radius: 16)
+    }
+
+    private func miniSeg(_ title: String, on: Bool, tint: Color, action: @escaping () -> Void) -> some View {
+        Button {
+            UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+            action()
+        } label: {
+            Text(title)
+                .font(.system(size: 12, weight: on ? .bold : .medium))
+                .foregroundStyle(on ? .white : TWColor.ink2)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 7)
+                .background {
+                    RoundedRectangle(cornerRadius: 9, style: .continuous)
+                        .fill(on ? AnyShapeStyle(tint) : AnyShapeStyle(TWColor.glass(0.45)))
+                }
+        }
+        .buttonStyle(.plain)
     }
 
     private func save() {

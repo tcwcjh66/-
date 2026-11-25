@@ -75,8 +75,14 @@ struct FlowPage: View {
                 remain -= 1
             } else {
                 running = false
-                UINotificationFeedbackGenerator().notificationOccurred(.success)
+                // 前台自己响（系统不会弹横幅），顺带撤掉还没触发的那条通知
+                TWNotify.cancelRest()
+                TWNotify.playRestAlert()
             }
+        }
+        .onAppear {
+            // 休息提醒要靠通知权限，第一次进来问一次，之后不再弹
+            Task { await TWNotify.requestPermission() }
         }
         .sheet(item: $summaryEntry) { e in
             SessionSummarySheet(entry: e, prev: summaryPrev, streak: summaryStreak)
@@ -391,6 +397,8 @@ struct FlowPage: View {
                 restFrom = name
                 restNext = next
             }
+            // 就算把手机揣兜里、切出去刷视频，到点也会响
+            TWNotify.scheduleRest(after: sec, move: name)
         }
     }
 
@@ -602,6 +610,12 @@ struct FlowPage: View {
                     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                     if remain == 0 { remain = total }
                     withAnimation(.snappy) { running.toggle() }
+                    // 暂停就撤通知，继续就按剩余秒数重约一条
+                    if running {
+                        TWNotify.scheduleRest(after: remain, move: restFrom)
+                    } else {
+                        TWNotify.cancelRest()
+                    }
                 } label: {
                     HStack(spacing: 6) {
                         Image(systemName: running ? "pause.fill" : "play.fill")
@@ -622,6 +636,7 @@ struct FlowPage: View {
 
                 Button {
                     UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                    TWNotify.cancelRest()
                     withAnimation(.snappy) {
                         running = false
                         remain = total
@@ -644,6 +659,7 @@ struct FlowPage: View {
                 ForEach([60, 90, 120, 180], id: \.self) { s in
                     Button {
                         UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                        TWNotify.cancelRest()
                         withAnimation(.snappy) {
                             total = s
                             remain = s

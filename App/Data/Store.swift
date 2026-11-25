@@ -317,6 +317,13 @@ final class TWStore: ObservableObject {
 
     // 身体数据
     @Published var bodyWeight: Double = 0
+    /// 算热量目标用的基础信息
+    @Published var age: Int = 20
+    @Published var sexMale: Bool = true
+    /// 0 少动 / 1 一般 / 2 常练
+    @Published var activityLevel: Int = 1
+    /// 0 减脂 / 1 维持 / 2 增肌
+    @Published var goalMode: Int = 1
     @Published var heightCM: Double = 0
     @Published var waistCM: Double = 0
     @Published var chestCM: Double = 0
@@ -463,6 +470,54 @@ final class TWStore: ObservableObject {
         planTemplates + customPlans.map { $0.template }
     }
 
+
+    // MARK: - 热量目标推算（Mifflin-St Jeor）
+
+    /// 基础代谢：10×kg + 6.25×cm − 5×年龄 +（男 +5 / 女 −161）
+    var bmr: Double {
+        guard bodyWeight > 0, heightCM > 0 else { return 0 }
+        let s: Double = sexMale ? 5 : -161
+        return 10 * bodyWeight + 6.25 * heightCM - 5 * Double(age) + s
+    }
+
+    var activityFactor: Double {
+        switch activityLevel {
+        case 0: return 1.375
+        case 2: return 1.725
+        default: return 1.55
+        }
+    }
+
+    /// 维持体重一天的总消耗
+    var maintainKcal: Int {
+        bmr > 0 ? Int((bmr * activityFactor).rounded()) : 0
+    }
+
+    /// 按“减脂 / 维持 / 增肌”给出的建议热量
+    var recommendedKcal: Int {
+        guard maintainKcal > 0 else { return 0 }
+        switch goalMode {
+        case 0: return max(1200, maintainKcal - 400)
+        case 2: return maintainKcal + 300
+        default: return maintainKcal
+        }
+    }
+
+    var goalModeLabel: String {
+        switch goalMode {
+        case 0: return "减脂"
+        case 2: return "增肌"
+        default: return "维持"
+        }
+    }
+
+    var activityLabel: String {
+        switch activityLevel {
+        case 0: return "少动"
+        case 2: return "常练"
+        default: return "一般"
+        }
+    }
 
     var stepsForDisplay: Int { max(pedometerSteps, max(watchSteps, steps)) }
     var watchStepsForDisplay: Int { watchSteps > 0 ? watchSteps : 0 }
@@ -1241,6 +1296,10 @@ final class TWStore: ObservableObject {
 
         d.set(dietTarget, forKey: Key.dt)
         d.set(proteinGoal, forKey: Key.pgoal)
+        d.set(age, forKey: "tw.age.v3")
+        d.set(sexMale, forKey: "tw.sexMale.v3")
+        d.set(activityLevel, forKey: "tw.activity.v3")
+        d.set(goalMode, forKey: "tw.goalMode.v3")
         d.set(waterTarget, forKey: Key.wt)
         d.set(bodyWeight, forKey: Key.weight)
         d.set(heightCM, forKey: Key.height)
@@ -1302,6 +1361,10 @@ final class TWStore: ObservableObject {
         mood = d.string(forKey: Key.mood) ?? "ok"
         if d.object(forKey: Key.dt) != nil { dietTarget = d.double(forKey: Key.dt) }
         if d.object(forKey: Key.pgoal) != nil { proteinGoal = d.double(forKey: Key.pgoal) }
+        if d.object(forKey: "tw.age.v3") != nil { age = d.integer(forKey: "tw.age.v3") }
+        if d.object(forKey: "tw.sexMale.v3") != nil { sexMale = d.bool(forKey: "tw.sexMale.v3") }
+        if d.object(forKey: "tw.activity.v3") != nil { activityLevel = d.integer(forKey: "tw.activity.v3") }
+        if d.object(forKey: "tw.goalMode.v3") != nil { goalMode = d.integer(forKey: "tw.goalMode.v3") }
         if d.object(forKey: Key.wt) != nil { waterTarget = max(1, d.integer(forKey: Key.wt)) }
         dietKcal = d.double(forKey: Key.kcal)
         protein = d.double(forKey: Key.protein)

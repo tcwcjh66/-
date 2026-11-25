@@ -1,5 +1,6 @@
 import Foundation
 import UserNotifications
+import AudioToolbox
 
 /// 本地提醒：喝水 / 训练 / 称重 / 睡前记录。
 /// 全部用 UNCalendarNotificationTrigger 每天重复，不联网、不需要任何 entitlement。
@@ -117,5 +118,37 @@ enum TWNotify {
         for i in 0..<4 { ids.append("tw.notif.req.water-\(i)") }
         ids += ["tw.notif.req.train", "tw.notif.req.weigh", "tw.notif.req.sleep"]
         return ids
+    }
+
+    // MARK: - 组间休息
+
+    private static let restID = "tw.notif.req.rest"
+
+    /// 开始休息时约一条一次性通知：锁屏、切后台、App 被杀都能响。
+    static func scheduleRest(after sec: Int, move: String) {
+        let c = UNUserNotificationCenter.current()
+        c.removePendingNotificationRequests(withIdentifiers: [restID])
+        guard sec > 0 else { return }
+
+        let content = UNMutableNotificationContent()
+        content.title = "休息结束"
+        content.body = move.isEmpty ? "该下一组了。" : "\(move) 的休息结束了，该下一组。"
+        content.sound = .default
+        content.interruptionLevel = .active
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: max(1, Double(sec)), repeats: false)
+        c.add(UNNotificationRequest(identifier: restID, content: content, trigger: trigger))
+    }
+
+    static func cancelRest() {
+        UNUserNotificationCenter.current()
+            .removePendingNotificationRequests(withIdentifiers: [restID])
+        UNUserNotificationCenter.current()
+            .removeDeliveredNotifications(withIdentifiers: [restID])
+    }
+
+    /// App 在前台时系统不弹横幅，自己响一声 + 震两下。
+    static func playRestAlert() {
+        AudioServicesPlaySystemSound(1005)
+        AudioServicesPlaySystemSound(kSystemSoundID_Vibrate)
     }
 }
