@@ -74,6 +74,87 @@ struct GirthLog: Codable, Identifiable, Hashable {
     var hip: Double
 }
 
+/// 一晚睡眠记录：acts 是每 30 秒一个的体动强度（0-100），报告全部由此现算。
+struct SleepLog: Codable, Identifiable, Hashable {
+    var id = UUID()
+    var date: String        // yyyy-MM-dd（入睡那天）
+    var start: Date
+    var end: Date
+    var acts: [Double]
+}
+
+extension SleepLog {
+    var totalEpochs: Int { acts.count }
+    var durationMinutes: Int { max(0, Int(end.timeIntervalSince(start) / 60)) }
+
+    /// 清醒阈值：取体动分布 65 分位以上 1.4 倍，保证夜里的安静基底不被误判成清醒
+    var threshold: Double {
+        guard acts.count >= 8 else { return 14 }
+        let sorted = acts.sorted()
+        let q = sorted[Int(Double(sorted.count - 1) * 0.65)]
+        return max(6, q * 1.4)
+    }
+
+    /// 每个 epoch 的分期：2 清醒 / 1 浅睡 / 0 深睡
+    var stageCodes: [Int] {
+        guard !acts.isEmpty else { return [] }
+        let th = threshold
+        var codes = acts.map { $0 >= th ? 2 : 1 }
+        // 连续静止超过 20 分钟（40 × 30s）判为深睡段
+        var i = 0
+        while i < codes.count {
+            if codes[i] == 1 {
+                var j = i
+                while j < codes.count && codes[j] == 1 { j += 1 }
+                if j - i >= 40 {
+                    for k in i..<j { codes[k] = 0 }
+                }
+                i = j
+            } else {
+                i += 1
+            }
+        }
+        return codes
+    }
+
+    var awakeEpochs: Int { stageCodes.filter { $0 == 2 }.count }
+    var deepEpochs: Int { stageCodes.filter { $0 == 0 }.count }
+    var lightEpochs: Int { stageCodes.filter { $0 == 1 }.count }
+
+    var awakeMinutes: Int { awakeEpochs / 2 }
+    var deepMinutes: Int { deepEpochs / 2 }
+    var lightMinutes: Int { lightEpochs / 2 }
+
+    /// 睡眠质量评分：有效率打底，体动与清醒扣分
+    var score: Int {
+        guard totalEpochs > 0 else { return 0 }
+        let eff = Double(totalEpochs - awakeEpochs) / Double(totalEpochs)
+        let base = eff * 100
+        let penalty = min(28, Double(awakeEpochs) / Double(totalEpochs) * 100 * 0.9)
+        return max(0, min(100, Int(base - penalty)))
+    }
+
+    var scoreLabel: String {
+        switch score {
+        case 85...: return "睡得很沉"
+        case 70..<85: return "质量不错"
+        case 55..<70: return "有点碎"
+        case 40..<55: return "翻来覆去"
+        default: return "几乎没睡好"
+        }
+    }
+
+    /// 入睡 / 起床时间文本
+    var startText: String { DateFormatter.twShort.string(from: start) }
+    var endText: String { DateFormatter.twShort.string(from: end) }
+
+    var durationText: String {
+        let h = durationMinutes / 60
+        let m = durationMinutes % 60
+        return h > 0 ? "\(h) 小时 \(m) 分" : "\(m) 分"
+    }
+}
+
 struct MoveItem: Identifiable, Hashable {
     let id = UUID()
     var name: String
@@ -170,6 +251,9 @@ final class TWStore: ObservableObject {
     @Published var waterCups: Int = 0
     @Published var waterTarget: Int = 8
 
+    // 睡眠记录（新的在前）
+    @Published var sleepLogs: [SleepLog] = []
+
     // 自定义食物
     @Published var customFoods: [CustomFood] = []
 
@@ -212,6 +296,7 @@ final class TWStore: ObservableObject {
         static let planpick = "tw.planpick.v2"
         static let daypick = "tw.daypick.v2"
         static let prs = "tw.prs.v2"
+        static let sleeps = "tw.sleeps.v2"
     }
 
     init() {
@@ -329,6 +414,17 @@ final class TWStore: ObservableObject {
     }
 
     // MARK: - 围度历史
+
+    func addSleep(start: Date, end: Date, acts: [Double]) {
+        guard !acts.isEmpty, end > start else { return }
+        let log = SleepLog(date: DateFormatter.twDay.string(from: start),
+                           start: start, end: end, acts: acts)
+        sleepLogs.insert(log, at: 0)
+        if sleepLogs.count > 60 { sleepLogs.removeLast(sleepLogs.count - 60) }
+        persist()
+    }
+
+    var lastSleep: SleepLog? { sleepLogs.first }
 
     func setPR(_ name: String, weight: Double, reps: Int) {
         guard reps > 0 else { return }
@@ -457,6 +553,8 @@ final class TWStore: ObservableObject {
         customFoods = []
         planPick = 0
         dayPick = 0
+        prs = [:]
+        sleepLogs = []
 
         persist()
     }
@@ -655,6 +753,9 @@ final class TWStore: ObservableObject {
         if let v = try? JSONEncoder().encode(prs) {
             d.set(v, forKey: Key.prs)
         }
+        if let v = try? JSONEncoder().encode(sleepLogs) {
+            d.set(v, forKey: Key.sleeps)
+        }
         if let v = try? JSONEncoder().encode(sessions) {
             d.set(v, forKey: Key.sess)
         }
@@ -722,6 +823,10 @@ final class TWStore: ObservableObject {
         if let v = d.data(forKey: Key.prs),
            let decoded = try? JSONDecoder().decode([String: String].self, from: v) {
             prs = decoded
+        }
+        if let v = d.data(forKey: Key.sleeps),
+           let decoded = try? JSONDecoder().decode([SleepLog].self, from: v) {
+            sleepLogs = decoded
         }
         if let v = d.data(forKey: Key.sess),
            let decoded = try? JSONDecoder().decode([SessionLog].self, from: v) {

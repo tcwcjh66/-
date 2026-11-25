@@ -20,6 +20,7 @@ struct BioPage: View {
     @State private var thighText = ""
     @State private var hipText = ""
     @State private var girthPick = 0
+    @State private var showSleep = false
 
     private let pedometer = CMPedometer()
 
@@ -29,6 +30,7 @@ struct BioPage: View {
 
             hrCard
             stepCard
+            sleepCard
             bodyCard
             girthCard
             waterCard
@@ -75,6 +77,11 @@ struct BioPage: View {
             .presentationDetents([.large])
             .presentationCornerRadius(26)
         }
+        .sheet(isPresented: $showSleep) {
+            SleepSheet()
+                .presentationDetents([.large])
+                .presentationCornerRadius(26)
+        }
     }
 
     // MARK: - 身体数据
@@ -100,6 +107,125 @@ struct BioPage: View {
         store.weightLogs.suffix(7).map { log in
             let p = log.id.split(separator: "-")
             return p.count == 3 ? "\(p[1])/\(p[2])" : log.id
+        }
+    }
+
+    private var sleepCard: some View {
+        Button {
+            UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+            showSleep = true
+        } label: {
+            VStack(alignment: .leading, spacing: 13) {
+                HStack(spacing: 8) {
+                    Image(systemName: "moon.stars.fill")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(TWColor.purple)
+                    Text("睡眠")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(TWColor.ink)
+                    Spacer()
+                    Text(store.lastSleep == nil ? "去记录" : "详情")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(TWColor.purple)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(TWColor.ink3)
+                }
+
+                if let s = store.lastSleep {
+                    HStack(spacing: 14) {
+                        VStack(spacing: 1) {
+                            Text("\(s.score)")
+                                .font(.system(size: 34, weight: .heavy, design: .rounded))
+                                .foregroundStyle(sleepScoreColor(s.score))
+                            Text(s.scoreLabel)
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundStyle(TWColor.ink3)
+                        }
+                        .frame(width: 84)
+
+                        VStack(alignment: .leading, spacing: 7) {
+                            Text("睡了 \(s.durationText)")
+                                .font(.system(size: 13.5, weight: .bold))
+                                .foregroundStyle(TWColor.ink)
+                            Text("深 \(s.deepMinutes) 分 · 浅 \(s.lightMinutes) 分 · 醒 \(s.awakeMinutes) 分")
+                                .font(.system(size: 11.5))
+                                .foregroundStyle(TWColor.ink3)
+                            sleepMiniBar(s)
+                        }
+                    }
+                } else {
+                    HStack(spacing: 10) {
+                        Image(systemName: "bed.double.fill")
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundStyle(TWColor.ink3)
+                            .frame(width: 40, height: 40)
+                            .background {
+                                RoundedRectangle(cornerRadius: 11, style: .continuous)
+                                    .fill(TWColor.purple.opacity(0.08))
+                            }
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("还没有睡眠记录")
+                                .font(.system(size: 13.5, weight: .bold))
+                                .foregroundStyle(TWColor.ink)
+                            Text("睡前点开始，手机放枕边整夜记体动")
+                                .font(.system(size: 11.5))
+                                .foregroundStyle(TWColor.ink3)
+                                .lineSpacing(2)
+                        }
+                        Spacer(minLength: 0)
+                    }
+                }
+            }
+            .padding(16)
+            .twGlass()
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func sleepMiniBar(_ log: SleepLog) -> some View {
+        let codes = log.stageCodes
+        let total = max(1, codes.count)
+        var segs: [(Int, Int)] = []
+        if let first = codes.first {
+            var cur = first
+            var cnt = 1
+            for c in codes.dropFirst() {
+                if c == cur { cnt += 1 }
+                else { segs.append((cur, cnt)); cur = c; cnt = 1 }
+            }
+            segs.append((cur, cnt))
+        }
+        return GeometryReader { geo in
+            HStack(spacing: 1) {
+                ForEach(Array(segs.enumerated()), id: \.offset) { pair in
+                    Rectangle()
+                        .fill(stageTint(pair.element.0))
+                        .frame(width: max(1, geo.size.width * CGFloat(pair.element.1) / CGFloat(total) - 1))
+                }
+            }
+        }
+        .frame(height: 8)
+        .clipShape(Capsule())
+        .background {
+            Capsule().fill(Color.white.opacity(0.35))
+        }
+    }
+
+    private func stageTint(_ code: Int) -> Color {
+        switch code {
+        case 0: return TWColor.purple
+        case 1: return TWColor.blue
+        default: return TWColor.amber
+        }
+    }
+
+    private func sleepScoreColor(_ s: Int) -> Color {
+        switch s {
+        case 80...: return TWColor.mint
+        case 65..<80: return TWColor.blue
+        case 50..<65: return TWColor.amber
+        default: return TWColor.coral
         }
     }
 
