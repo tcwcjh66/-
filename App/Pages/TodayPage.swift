@@ -18,6 +18,7 @@ struct TodayPage: View {
             heroDial
             ringsCard
             statsRow
+            trendCard
             moodRow
         }
         .opacity(appeared ? 1 : 0)
@@ -116,10 +117,41 @@ struct TodayPage: View {
 
     private var statsRow: some View {
         HStack(spacing: 10) {
-            statCard(icon: "shoeprints.fill", title: "步数", value: "\(store.steps)", tint: TWColor.blue)
-            statCard(icon: "heart.fill", title: "心率", value: "\(store.hr)", tint: TWColor.coral)
-            statCard(icon: "drop.fill", title: "饮水", value: "1.8", tint: TWColor.mint)
+            statCard(icon: "shoeprints.fill", title: "步数", value: "\(store.stepsForDisplay)", tint: TWColor.blue)
+            statCard(icon: "heart.fill", title: "心率",
+                     value: store.hr > 0 ? "\(store.hr)" : "—", tint: TWColor.coral)
+            statCard(icon: "waveform.path.ecg", title: "HRV",
+                     value: store.hrv > 0 ? "\(store.hrv)" : "—", tint: TWColor.mint)
         }
+    }
+
+    private var recentLogs: [DayLog] {
+        Array(store.logs.suffix(7))
+    }
+
+    private var dayLabels: [String] {
+        recentLogs.map { log in
+            let p = log.id.split(separator: "-")
+            if p.count == 3 { return "\(p[1])/\(p[2])" }
+            return log.id
+        }
+    }
+
+    private var trendCard: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            TrendChart(title: "步数 · 最近 7 天",
+                       values: recentLogs.map { Double($0.steps) },
+                       labels: dayLabels,
+                       tint: TWColor.blue,
+                       unit: "步")
+            TrendChart(title: "心率 · 最近 7 天",
+                       values: recentLogs.map { Double($0.hr) },
+                       labels: dayLabels,
+                       tint: TWColor.coral,
+                       unit: "bpm")
+        }
+        .padding(16)
+        .twGlass()
     }
 
     private func statCard(icon: String, title: String, value: String, tint: Color) -> some View {
