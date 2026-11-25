@@ -3,6 +3,7 @@ import UIKit
 
 struct TodayPage: View {
     @EnvironmentObject var store: TWStore
+    @EnvironmentObject var live: TWLive
     @State private var appeared = false
     @State private var showSettings = false
     @State private var showWaterLog = false
@@ -544,6 +545,7 @@ struct MoodChip: View {
 /// 点四环弹出来：每个数从哪来，说清楚，不做模糊表述。
 struct RingInfoSheet: View {
     @EnvironmentObject var store: TWStore
+    @EnvironmentObject var live: TWLive
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {

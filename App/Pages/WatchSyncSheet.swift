@@ -5,6 +5,7 @@ import UIKit
 /// 免费签名读不了 HealthKit；快捷指令是系统 App，能读，它把值拼进 URL 再交回这里。
 struct WatchSyncSheet: View {
     @EnvironmentObject var store: TWStore
+    @EnvironmentObject var live: TWLive
     @Environment(\.dismiss) private var dismiss
 
     @State private var copied = false

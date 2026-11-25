@@ -12,6 +12,7 @@ struct TianCaiWeiApp: App {
         WindowGroup {
             RootView()
                 .environmentObject(store)
+                .environmentObject(store.live)
                 .tint(TWColor.purple)
                 .onAppear {
                     PhoneLink.shared.store = store

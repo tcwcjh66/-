@@ -285,25 +285,65 @@ struct CustomPlan: Identifiable, Codable, Hashable {
 }
 
 final class TWStore: ObservableObject {
+    /// 高频数值挪到 TWLive，这里只做转发——Store 自己的 objectWillChange
+    /// 不再被步数、心率、三环的跳动牵动，其余四个页面就不会跟着重绘了。
+    let live = TWLive()
+
     // 环形
-    @Published var moveKcal: Double = 0
+    var moveKcal: Double {
+        get { live.moveKcal }
+        set { live.moveKcal = newValue }
+    }
     @Published var moveTarget: Double = 520
-    @Published var exerciseMin: Double = 0
+    var exerciseMin: Double {
+        get { live.exerciseMin }
+        set { live.exerciseMin = newValue }
+    }
     @Published var exerciseTarget: Double = 30
-    @Published var standHours: Double = 0
+    var standHours: Double {
+        get { live.standHours }
+        set { live.standHours = newValue }
+    }
     @Published var standTarget: Double = 10
-    @Published var hrv: Int = 0
+    var hrv: Int {
+        get { live.hrv }
+        set { live.hrv = newValue }
+    }
 
     // 身体
-    @Published var steps: Int = 0
-    @Published var hr: Int = 0
+    var steps: Int {
+        get { live.steps }
+        set { live.steps = newValue }
+    }
+    var hr: Int {
+        get { live.hr }
+        set { live.hr = newValue }
+    }
     @Published var restingHR: Int = 0
-    @Published var pedometerSteps: Int = 0
-    @Published var pedometerDistance: Double = 0
-    @Published var measuredHR: Int = 0
-    @Published var measuredHRV: Int = 0
-    @Published var measuredAt: Date?
-    @Published var hrSource: String = ""
+    var pedometerSteps: Int {
+        get { live.pedometerSteps }
+        set { live.pedometerSteps = newValue }
+    }
+    var pedometerDistance: Double {
+        get { live.pedometerDistance }
+        set { live.pedometerDistance = newValue }
+    }
+    var measuredHR: Int {
+        get { live.measuredHR }
+        set { live.measuredHR = newValue }
+    }
+    var measuredHRV: Int {
+        get { live.measuredHRV }
+        set { live.measuredHRV = newValue }
+    }
+    var measuredAt: Date? {
+        get { live.measuredAt }
+        set { live.measuredAt = newValue }
+    }
+    var hrSource: String {
+        get { live.hrSource }
+        set { live.hrSource = newValue }
+    }
     @Published var watchSteps: Int = 0
     /// 手表同步进来的睡眠数据（Quick 快捷指令通道）
     @Published var watchSleepMin: Int = 0

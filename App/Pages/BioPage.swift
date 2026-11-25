@@ -4,6 +4,7 @@ import CoreMotion
 
 struct BioPage: View {
     @EnvironmentObject var store: TWStore
+    @EnvironmentObject var live: TWLive
 
     @State private var showPulse = false
     @State private var showManual = false
