@@ -29,7 +29,7 @@ struct PlanTemplate: Identifiable, Hashable {
     var days: [PlanDay]
 }
 
-// MARK: - 动作库（78 个）
+// MARK: - 动作库（88 个）
 
 let allMoves: [MoveItem] = [
     // ========== 胸 13 ==========
@@ -178,7 +178,7 @@ let allMoves: [MoveItem] = [
     MoveItem(name: "反握弯举", group: "手臂", equipment: "杠铃", cue: "掌心向下，练前臂伸肌", pr: "20kg × 12",
              error: "甩动借力", alt: "锤式弯举", level: "中级"),
 
-    // ========== 核心 12 ==========
+    // ========== 核心 22 ==========
     MoveItem(name: "平板支撑", group: "核心", equipment: "自重", cue: "夹臀收肋，身体一条线", pr: "90 秒",
              error: "塌腰撅臀；憋气", alt: "侧平板", level: "初级"),
     MoveItem(name: "侧平板", group: "核心", equipment: "自重", cue: "髋不下沉，身体成直线", pr: "45 秒/侧",
@@ -202,7 +202,29 @@ let allMoves: [MoveItem] = [
     MoveItem(name: "Pallof 推", group: "核心", equipment: "器械", cue: "抗旋转，双手推出时身体不转", pr: "12 次/侧",
              error: "身体跟着转", alt: "俄罗斯转体", level: "中级"),
     MoveItem(name: "负重体前屈", group: "核心", equipment: "杠铃", cue: "轻重量，脊柱全程中立", pr: "20kg × 12",
-             error: "弓背；重量过大", alt: "山羊挺身", level: "高级")
+             error: "弓背；重量过大", alt: "山羊挺身", level: "高级"),
+
+    // ========== 腹部补全 10 ==========
+    MoveItem(name: "空中蹬自行车", group: "核心", equipment: "自重", cue: "仰卧双手抱头，对侧肘碰膝，腿伸直不落地，慢速画圈", pr: "20 次/侧",
+             error: "靠脖子发力拉扯颈椎；速度太快变甩腿；腰离地", alt: "俄罗斯转体", level: "中级"),
+    MoveItem(name: "反向卷腹", group: "核心", equipment: "自重", cue: "仰卧屈膝 90°，用下腹把骨盆卷离地，膝盖靠向胸口", pr: "15 次",
+             error: "用腿的惯性甩上去；腰代偿抬起整条背", alt: "仰卧举腿", level: "初级"),
+    MoveItem(name: "V 字两头起", group: "核心", equipment: "自重", cue: "仰卧伸展，手脚同时抬起在身体上方相触，形成 V 字", pr: "12 次",
+             error: "靠惯性甩起；落地时腰砸地；屈膝作弊", alt: "抱膝起坐", level: "高级"),
+    MoveItem(name: "仰卧起坐", group: "核心", equipment: "自重", cue: "屈膝固定双脚，卷起脊柱逐节离地，下巴微收", pr: "25 次",
+             error: "双手抱头猛拉颈椎；直腿靠惯性弹起", alt: "卷腹", level: "初级"),
+    MoveItem(name: "触踝卷腹", group: "核心", equipment: "自重", cue: "仰卧屈膝脚掌贴地，肩胛离地后左右手交替触踝", pr: "20 次/侧",
+             error: "整个背抬起；只伸手不转体", alt: "俄罗斯转体", level: "初级"),
+    MoveItem(name: "剪刀腿", group: "核心", equipment: "自重", cue: "仰卧腰贴地，双腿伸直离地 15cm 上下交替交叉", pr: "30 秒",
+             error: "腰离地形成反弓；腿抬过高省力", alt: "仰卧举腿", level: "中级"),
+    MoveItem(name: "悬垂抬膝", group: "核心", equipment: "自重", cue: "悬挂身体稳定，屈膝抬到胸口高度，慢放不晃", pr: "12 次",
+             error: "摆腿借力；身体前后荡", alt: "悬垂举腿", level: "中级"),
+    MoveItem(name: "绳索跪姿卷腹", group: "核心", equipment: "器械", cue: "跪在滑轮前，绳在头两侧，用腹肌把肘拉向膝盖", pr: "15kg × 15",
+             error: "手臂发力拉绳；髋部前后移动代偿", alt: "卷腹", level: "中级"),
+    MoveItem(name: "负重侧屈", group: "核心", equipment: "哑铃", cue: "单手执铃，只做侧向屈体，不前后倾", pr: "20kg × 15",
+             error: "身体前倾或旋转；幅度过大", alt: "俄罗斯转体", level: "初级"),
+    MoveItem(name: "龙旗", group: "核心", equipment: "自重", cue: "肩背固定长凳，身体绷直如板，靠核心控制缓慢下落", pr: "6 次",
+             error: "塌腰折断式下落；没控制直接砸下", alt: "V 字两头起", level: "高级")
 ]
 
 // MARK: - 训练方案（4 套）
