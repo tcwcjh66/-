@@ -848,8 +848,8 @@ final class TWStore: ObservableObject {
         watchSleepMin = d.integer(forKey: Key.wsleep)
         watchDeepMin = d.integer(forKey: Key.wdeep)
         watchSyncCount = d.integer(forKey: Key.wcount)
-        let ts = d.double(forKey: Key.wsync)
-        watchSyncAt = ts > 0 ? Date(timeIntervalSince1970: ts) : nil
+        let syncTs = d.double(forKey: Key.wsync)
+        watchSyncAt = syncTs > 0 ? Date(timeIntervalSince1970: syncTs) : nil
         if let v = d.data(forKey: Key.sess),
            let decoded = try? JSONDecoder().decode([SessionLog].self, from: v) {
             sessions = decoded
