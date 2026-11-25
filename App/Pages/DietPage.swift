@@ -13,6 +13,8 @@ struct DietPage: View {
     @State private var copiedCount: Int?
     @State private var showFoodSearch = false
     @State private var showScanSheet = false
+    @State private var previewPhoto = ""
+    @State private var showPhoto = false
 
     private let slots = ["早餐", "午餐", "晚餐", "加餐"]
 
@@ -63,6 +65,7 @@ struct DietPage: View {
             macroCard
             addCard
             searchCard
+            if !store.todayPhotos.isEmpty { photoCard }
             slotSection
             trendCard
             weekCard
@@ -103,6 +106,28 @@ struct DietPage: View {
                 .presentationDetents([.large])
                 .presentationCornerRadius(28)
         }
+        .sheet(isPresented: $showPhoto) {
+            ZStack {
+                Color.black.ignoresSafeArea()
+                if let img = UIImage(contentsOfFile: store.photoURL(previewPhoto).path) {
+                    Image(uiImage: img)
+                        .resizable()
+                        .scaledToFit()
+                }
+            }
+            .overlay(alignment: .topTrailing) {
+                Button { showPhoto = false } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(width: 36, height: 36)
+                        .background { Circle().fill(.white.opacity(0.18)) }
+                }
+                .buttonStyle(.plain)
+                .padding(16)
+            }
+            .presentationBackground(.black)
+        }
         .sheet(isPresented: $showAI) {
             AIChatSheet()
                 .presentationDetents([.large])
@@ -114,6 +139,10 @@ struct DietPage: View {
             Task {
                 if let data = try? await newValue.loadTransferable(type: Data.self),
                    let img = UIImage(data: data) {
+                    // 顺便把这张照片存进今天的餐食照片，不靠识别也能留个证据
+                    if let jpeg = img.jpegData(compressionQuality: 0.75) {
+                        await MainActor.run { _ = store.saveMealPhoto(data: jpeg) }
+                    }
                     let found = FoodVision.analyze(img)
                     await MainActor.run {
                         hits = found
@@ -344,6 +373,54 @@ struct DietPage: View {
             }
             .buttonStyle(.plain)
         }
+    }
+
+    private var photoCard: some View {
+        VStack(alignment: .leading, spacing: 11) {
+            HStack(spacing: 7) {
+                Image(systemName: "photo.on.rectangle.angled")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundStyle(TWColor.blue)
+                Text("今天的餐食照片")
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(TWColor.ink)
+                Spacer()
+                Text("\(store.todayPhotos.count) 张 · 只留 40 天")
+                    .font(.system(size: 11))
+                    .foregroundStyle(TWColor.ink3)
+            }
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 9) {
+                    ForEach(store.todayPhotos, id: \.self) { name in
+                        Button {
+                            UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                            previewPhoto = name
+                            showPhoto = true
+                        } label: {
+                            Group {
+                                if let img = UIImage(contentsOfFile: store.photoURL(name).path) {
+                                    Image(uiImage: img).resizable().scaledToFill()
+                                } else {
+                                    Rectangle().fill(TWColor.ink3.opacity(0.15))
+                                }
+                            }
+                            .frame(width: 92, height: 92)
+                            .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.vertical, 1)
+            }
+
+            Text("照片只当影像记录，不参与热量计算。要数营养走上面的「搜食物」或「扫条码」。")
+                .font(.system(size: 10.5))
+                .foregroundStyle(TWColor.ink3)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(16)
+        .twGlass()
     }
 
     private var searchCard: some View {

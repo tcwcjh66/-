@@ -66,6 +66,14 @@ struct CustomFood: Codable, Identifiable, Hashable {
     var fatPer100: Double
 }
 
+/// 一组的明细：哪个动作、多重、几次。有了它才能算出“上次 20kg×8 → 这次该加多少”。
+struct SetRecord: Codable, Hashable {
+    var move: String
+    var weight: Double
+    var reps: Int
+    var date: String   // yyyy-MM-dd
+}
+
 struct SessionLog: Codable, Identifiable, Hashable {
     var id = UUID()
     var date: String        // yyyy-MM-dd
@@ -76,6 +84,8 @@ struct SessionLog: Codable, Identifiable, Hashable {
     var minutes: Int
     var moveNames: [String]? = nil
     var tonnage: Double? = nil
+    /// 4.0 之后才有：每组的动作/重量/次数。老记录为 nil，渐进建议会跳过它们。
+    var records: [SetRecord]? = nil
 }
 
 struct GirthLog: Codable, Identifiable, Hashable {
@@ -287,6 +297,8 @@ final class TWStore: ObservableObject {
     @Published var fat: Double = 0
     @Published var veg: Double = 0
     @Published var meals: [MealEntry] = []
+    /// 餐食照片：日期 → 文件名（存在 Documents/mealPhotos 里，只留最近 40 天）
+    @Published var mealPhotos: [String: [String]] = [:]
 
     // 心情
     @Published var mood: String = "ok"
@@ -296,6 +308,8 @@ final class TWStore: ObservableObject {
     @Published var sessionSets: Int = 0
     @Published var sessionMoves: [String] = []
     @Published var sessionTonnage: Double = 0
+    /// 本次训练每一组的明细，结束训练时写进 SessionLog.records
+    @Published var sessionRecords: [SetRecord] = []
     @Published var logs: [DayLog] = []
 
     // 收藏
@@ -732,6 +746,65 @@ final class TWStore: ObservableObject {
         return text
     }
 
+    struct ImportError: LocalizedError {
+        var errorDescription: String? { "这不是天才威的备份文件，或者文件已经损坏" }
+    }
+
+    /// 把导出的 JSON 回灌进来。换手机、重装之后靠这个捡回历史。
+    @discardableResult
+    func importJSON(_ data: Data) throws -> Int {
+        guard let root = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+              (root["app"] as? String)?.contains("天才威") == true else {
+            throw ImportError()
+        }
+
+        func dec<T: Decodable>(_ key: String, _ type: T.Type) -> T? {
+            guard let v = root[key],
+                  let d = try? JSONSerialization.data(withJSONObject: v) else { return nil }
+            return try? JSONDecoder().decode(T.self, from: d)
+        }
+        func int(_ key: String) -> Int? { (root[key] as? NSNumber)?.intValue }
+        func dbl(_ key: String) -> Double? { (root[key] as? NSNumber)?.doubleValue }
+
+        var restored = 0
+
+        if let v = int("steps") { pedometerSteps = v; restored += 1 }
+        if let v = dbl("distanceM") { pedometerDistance = v }
+        if let v = int("hr") { measuredHR = v; hr = v }
+        if let v = int("hrv") { measuredHRV = v; hrv = v }
+        if let v = root["hrSource"] as? String { hrSource = v }
+        if let v = root["mood"] as? String { mood = v }
+        if let v = dbl("dietTarget") { dietTarget = v }
+        if let v = dbl("proteinGoal") { proteinGoal = v }
+        if let v = dbl("dietKcal") { dietKcal = v }
+        if let v = dbl("protein") { protein = v }
+        if let v = dbl("carb") { carb = v }
+        if let v = dbl("fat") { fat = v }
+        if let v = int("waterCups") { waterCups = v }
+        if let v = int("waterExtraML") { waterExtraML = v }
+        if let v = int("cupSize") { cupSize = v }
+        if let v = dbl("bodyWeight") { bodyWeight = v }
+        if let v = dbl("heightCM") { heightCM = v }
+        if let v = dbl("waistCM") { waistCM = v }
+        if let v = dbl("chestCM") { chestCM = v }
+        if let v = dbl("armCM") { armCM = v }
+        if let v = dbl("thighCM") { thighCM = v }
+        if let v = dbl("hipCM") { hipCM = v }
+        if let v = dbl("weightGoal") { weightGoal = v }
+        if let v = root["favoriteMoves"] as? [String] { favoriteMoves = v }
+
+        if let v = dec("meals", [MealEntry].self) { meals = v; restored += v.count }
+        if let v = dec("dailyLogs", [DayLog].self) { logs = v }
+        if let v = dec("weightLogs", [WeightLog].self) { weightLogs = v }
+        if let v = dec("girthLogs", [GirthLog].self) { girthLogs = v }
+        if let v = dec("sessions", [SessionLog].self) { sessions = v }
+        if let v = dec("customFoods", [CustomFood].self) { customFoods = v }
+
+        lastDayKey = DateFormatter.twDay.string(from: Date())
+        persist()
+        return restored
+    }
+
     /// 清空本机全部数据
     func resetAll() {
         for key in d.dictionaryRepresentation().keys where key.hasPrefix("tw.") {
@@ -764,6 +837,7 @@ final class TWStore: ObservableObject {
         sessionSets = 0
         sessionMoves = []
         sessionTonnage = 0
+        sessionRecords = []
         dietTarget = 2200
         proteinGoal = 120
         logs = []
@@ -955,14 +1029,22 @@ final class TWStore: ObservableObject {
         sessionSets = 0
         sessionMoves = moves
         sessionTonnage = 0
+        sessionRecords = []
         mood = "train"
         persistSoon()
     }
 
-    func addSet(weight: Double = 0, reps: Int = 0) {
+    func addSet(weight: Double = 0, reps: Int = 0, move: String = "") {
         sessionSets += 1
         if weight > 0, reps > 0 {
             sessionTonnage += weight * Double(reps)
+            // 动作名拿得到才记明细，拿不到就只算总量
+            if !move.isEmpty {
+                sessionRecords.append(SetRecord(move: move,
+                                                weight: weight,
+                                                reps: reps,
+                                                date: DateFormatter.twDay.string(from: Date())))
+            }
         }
         exerciseMin += 2.5
         moveKcal += 22
@@ -984,7 +1066,8 @@ final class TWStore: ObservableObject {
                 sets: sessionSets,
                 minutes: mins,
                 moveNames: moveNames,
-                tonnage: sessionTonnage > 0 ? sessionTonnage : nil
+                tonnage: sessionTonnage > 0 ? sessionTonnage : nil,
+                records: sessionRecords.isEmpty ? nil : sessionRecords
             )
             sessions.insert(entry, at: 0)
             added = entry
@@ -994,10 +1077,26 @@ final class TWStore: ObservableObject {
         }
         sessionStart = nil
         sessionTonnage = 0
+        sessionRecords = []
         mood = "win"
         upsertToday()
         persistSoon()
         return added
+    }
+
+    /// 某个动作最近一次练到的重量/次数。没有明细的老记录会跳过。
+    func lastRecord(move: String) -> SetRecord? {
+        for s in sessions {
+            guard let rs = s.records else { continue }
+            if let r = rs.last(where: { $0.move == move }) { return r }
+        }
+        return nil
+    }
+
+    /// 渐进超负荷：上次把目标次数做满就加 2.5kg；没做满就维持上次重量。
+    func suggestWeight(move: String, targetReps: Int) -> Double? {
+        guard let last = lastRecord(move: move), last.weight > 0 else { return nil }
+        return last.reps >= targetReps ? min(500, last.weight + 2.5) : last.weight
     }
 
     /// 从今天往前数，连续有训练记录的天数。今天还没练时允许从昨天起算。
@@ -1021,6 +1120,48 @@ final class TWStore: ObservableObject {
             day = prev
         }
         return streak
+    }
+
+    // MARK: - 餐食照片
+
+    var photoDir: URL {
+        FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("mealPhotos", isDirectory: true)
+    }
+
+    func photoURL(_ name: String) -> URL {
+        photoDir.appendingPathComponent(name)
+    }
+
+    var todayPhotos: [String] {
+        mealPhotos[DateFormatter.twDay.string(from: Date())] ?? []
+    }
+
+    @discardableResult
+    func saveMealPhoto(data: Data) -> String? {
+        let name = "\(UUID().uuidString).jpg"
+        let dir = photoDir
+        do {
+            try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+            try data.write(to: dir.appendingPathComponent(name), options: .atomic)
+        } catch {
+            return nil
+        }
+
+        let key = DateFormatter.twDay.string(from: Date())
+        mealPhotos[key, default: []].append(name)
+
+        // 只留最近 40 天，文件和索引一起删
+        if mealPhotos.count > 40 {
+            for k in mealPhotos.keys.sorted().prefix(mealPhotos.count - 40) {
+                for f in mealPhotos[k] ?? [] {
+                    try? FileManager.default.removeItem(at: dir.appendingPathComponent(f))
+                }
+                mealPhotos.removeValue(forKey: k)
+            }
+        }
+        persistSoon()
+        return name
     }
 
     // MARK: - 每日
@@ -1089,6 +1230,9 @@ final class TWStore: ObservableObject {
         }
         if let v = try? JSONEncoder().encode(meals) {
             d.set(v, forKey: Key.meals)
+        }
+        if let v = try? JSONEncoder().encode(mealPhotos) {
+            d.set(v, forKey: "tw.photos.v3")
         }
         if let v = try? JSONEncoder().encode(logs) {
             d.set(v, forKey: Key.logs)
@@ -1178,6 +1322,10 @@ final class TWStore: ObservableObject {
         if let v = d.data(forKey: Key.meals),
            let decoded = try? JSONDecoder().decode([MealEntry].self, from: v) {
             meals = decoded
+        }
+        if let v = d.data(forKey: "tw.photos.v3"),
+           let decoded = try? JSONDecoder().decode([String: [String]].self, from: v) {
+            mealPhotos = decoded
         }
         if let v = d.data(forKey: Key.mhist),
            let decoded = try? JSONDecoder().decode([String: [MealEntry]].self, from: v) {

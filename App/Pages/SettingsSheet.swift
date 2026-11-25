@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import UniformTypeIdentifiers
 
 struct SettingsSheet: View {
     @EnvironmentObject var store: TWStore
@@ -10,6 +11,9 @@ struct SettingsSheet: View {
     @State private var showGoal = false
     @State private var exportURL: URL?
     @State private var notifyDenied = false
+    @State private var showImporter = false
+    @State private var importAlert = false
+    @State private var importMsg = ""
 
     private var versionText: String {
         let v = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "3.0"
@@ -69,6 +73,32 @@ struct SettingsSheet: View {
             Button("取消", role: .cancel) {}
         } message: {
             Text("体重、围度、训练记录、饮食记录、收藏都会删掉，无法恢复。")
+        }
+        .fileImporter(isPresented: $showImporter,
+                      allowedContentTypes: [.json],
+                      allowsMultipleSelection: false) { result in
+            switch result {
+            case .success(let urls):
+                guard let url = urls.first else { return }
+                let scoped = url.startAccessingSecurityScopedResource()
+                defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+                do {
+                    let data = try Data(contentsOf: url)
+                    let n = try store.importJSON(data)
+                    importMsg = "恢复完成，共找回 \(n) 条记录"
+                } catch {
+                    importMsg = (error as? LocalizedError)?.errorDescription ?? "这个文件读不了"
+                }
+                importAlert = true
+            case .failure:
+                importMsg = "没有选中文件"
+                importAlert = true
+            }
+        }
+        .alert("恢复数据", isPresented: $importAlert) {
+            Button("好", role: .cancel) {}
+        } message: {
+            Text(importMsg)
         }
     }
 
@@ -224,6 +254,37 @@ struct SettingsSheet: View {
                             .font(.system(size: 14.5, weight: .semibold))
                             .foregroundStyle(TWColor.ink)
                         Text("JSON 文件 · 存到「文件」或发给自己")
+                            .font(.system(size: 11.5))
+                            .foregroundStyle(TWColor.ink3)
+                    }
+                    Spacer(minLength: 0)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(TWColor.ink3)
+                }
+            }
+            .buttonStyle(.plain)
+
+            Rectangle().fill(TWColor.ink3.opacity(0.12)).frame(height: 0.7)
+
+            Button {
+                UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                showImporter = true
+            } label: {
+                HStack(spacing: 11) {
+                    Image(systemName: "square.and.arrow.down")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(TWColor.mint)
+                        .frame(width: 34, height: 34)
+                        .background {
+                            RoundedRectangle(cornerRadius: 9, style: .continuous)
+                                .fill(TWColor.mint.opacity(0.12))
+                        }
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("从备份恢复")
+                            .font(.system(size: 14.5, weight: .semibold))
+                            .foregroundStyle(TWColor.ink)
+                        Text("选之前导出的 JSON，把历史捡回来")
                             .font(.system(size: 11.5))
                             .foregroundStyle(TWColor.ink3)
                     }

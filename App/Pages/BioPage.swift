@@ -25,6 +25,7 @@ struct BioPage: View {
     @State private var showWater = false
     @State private var showWaterLog = false
     @State private var showWeekly = false
+    @State private var showAch = false
 
 
     var body: some View {
@@ -39,6 +40,7 @@ struct BioPage: View {
             sleepCard
             bodyCard
             girthCard
+            achievementCard
             waterCard
             sourceCard
         }
@@ -92,6 +94,12 @@ struct BioPage: View {
             WatchSyncSheet()
                 .presentationDetents([.large])
                 .presentationCornerRadius(26)
+        }
+        .sheet(isPresented: $showAch) {
+            AchievementsSheet()
+                .environmentObject(store)
+                .presentationDetents([.large])
+                .presentationCornerRadius(28)
         }
         .sheet(isPresented: $showWaterLog) {
             WaterLogSheet()
@@ -890,6 +898,72 @@ struct BioPage: View {
     }
 
     // MARK: - 数据通路
+
+    private var achievementCard: some View {
+        Button {
+            UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+            showAch = true
+        } label: {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 7) {
+                    Image(systemName: "trophy.fill")
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundStyle(TWColor.amber)
+                    Text("成就")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(TWColor.ink)
+                    Spacer()
+                    Text("看进度")
+                        .font(.system(size: 11.5, weight: .semibold))
+                        .foregroundStyle(TWColor.ink3)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(TWColor.ink3)
+                }
+
+                HStack(spacing: 10) {
+                    achTile("连续", "\(store.streak) 天", TWColor.amber)
+                    achTile("训练", "\(store.sessions.count) 次", TWColor.purple)
+                    achTile("总容量", achTon, TWColor.mint)
+                }
+
+                Text("10 个徽章，做到就亮。全部按本机真实记录算，不写死。")
+                    .font(.system(size: 11))
+                    .foregroundStyle(TWColor.ink3)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(16)
+            .twGlass()
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var achTon: String {
+        let t = store.sessions.compactMap { $0.tonnage }.reduce(0, +)
+        if t >= 10000 { return String(format: "%.1f t", t / 1000) }
+        return String(format: "%.0f kg", t)
+    }
+
+    private func achTile(_ title: String, _ value: String, _ tint: Color) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(title)
+                .font(.system(size: 10.5, weight: .medium))
+                .foregroundStyle(TWColor.ink3)
+            Text(value)
+                .font(.system(size: 15, weight: .heavy))
+                .foregroundStyle(tint)
+                .monospacedDigit()
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 11)
+        .padding(.vertical, 10)
+        .background {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(tint.opacity(0.10))
+        }
+    }
 
     private var sourceCard: some View {
         VStack(alignment: .leading, spacing: 12) {

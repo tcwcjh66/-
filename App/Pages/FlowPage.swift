@@ -17,6 +17,8 @@ struct FlowPage: View {
     @State private var summaryStreak: Int = 1
     @State private var setWeight: Double = 20
     @State private var setReps: Int = 8
+    /// 最近点过的动作，用来知道“记一组”记的是哪个动作
+    @State private var activeMove: String = ""
     @State private var restNext: String = ""
     @State private var detailSession: SessionLog?
     @State private var pendingPlan: Int?
@@ -261,7 +263,7 @@ struct FlowPage: View {
                     Button {
                         UIImpactFeedbackGenerator(style: .rigid).impactOccurred()
                         withAnimation(.snappy(duration: 0.2)) {
-                            store.addSet(weight: setWeight, reps: setReps)
+                            store.addSet(weight: setWeight, reps: setReps, move: activeMove)
                         }
                     } label: {
                         Text("记一组")
@@ -340,6 +342,20 @@ struct FlowPage: View {
         }
     }
 
+    private func fmtKg(_ v: Double) -> String {
+        String(format: v == v.rounded() ? "%.0f" : "%.1f", v)
+    }
+
+    /// 把 "8–12" / "10 次" 这类文案里的第一个数字取出来当目标次数
+    private func firstInt(_ s: String) -> Int {
+        var digits = ""
+        for ch in s {
+            if ch.isNumber { digits.append(ch) }
+            else if !digits.isEmpty { break }
+        }
+        return Int(digits) ?? 8
+    }
+
     private func elapsed(from start: Date) -> String {
         let s = Int(Date().timeIntervalSince(start))
         return "\(s / 60) 分钟"
@@ -364,7 +380,8 @@ struct FlowPage: View {
             doneMoves.remove(key)
         } else {
             doneMoves.insert(key)
-            store.addSet(weight: setWeight, reps: setReps)
+            activeMove = name
+            store.addSet(weight: setWeight, reps: setReps, move: name)
             // 按这个动作自己的 rest 起休息倒计时，不用再手调
             let sec = store.restOverride > 0 ? store.restOverride : restSeconds(rest)
             withAnimation(.snappy(duration: 0.25)) {
@@ -483,13 +500,42 @@ struct FlowPage: View {
                         }
                         .buttonStyle(.plain)
 
-                        Text(pair.element.name)
-                            .font(.system(size: 14.5, weight: .semibold))
-                            .foregroundStyle(done ? TWColor.ink3 : TWColor.ink)
-                            .strikethrough(done, color: TWColor.ink3)
-                            .lineLimit(1)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(pair.element.name)
+                                .font(.system(size: 14.5, weight: .semibold))
+                                .foregroundStyle(done ? TWColor.ink3 : TWColor.ink)
+                                .strikethrough(done, color: TWColor.ink3)
+                                .lineLimit(1)
+                            if let last = store.lastRecord(move: pair.element.name) {
+                                Text("上次 \(fmtKg(last.weight))kg × \(last.reps) 次")
+                                    .font(.system(size: 10.5, weight: .medium))
+                                    .foregroundStyle(TWColor.ink3)
+                                    .lineLimit(1)
+                            }
+                        }
 
                         Spacer(minLength: 4)
+
+                        if !done, let sug = store.suggestWeight(move: pair.element.name,
+                                                               targetReps: firstInt(pair.element.reps)) {
+                            Button {
+                                UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                                withAnimation(.snappy(duration: 0.2)) {
+                                    setWeight = sug
+                                    activeMove = pair.element.name
+                                }
+                            } label: {
+                                Text("建议 \(fmtKg(sug))kg")
+                                    .font(.system(size: 10.5, weight: .bold))
+                                    .foregroundStyle(TWColor.mint)
+                                    .padding(.horizontal, 7)
+                                    .padding(.vertical, 3)
+                                    .background {
+                                        Capsule().fill(TWColor.mint.opacity(0.14))
+                                    }
+                            }
+                            .buttonStyle(.plain)
+                        }
 
                         Text("\(pair.element.sets) × \(pair.element.reps)")
                             .font(.system(size: 12.5, weight: .bold))
