@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 /// 心情立绘的"活图"实现。
 ///
@@ -13,6 +14,11 @@ struct LivingAvatar: View {
     var hour: Int = -1
 
     @StateObject private var gyro = Gyro3D()
+    /// 屏幕刷新能力：ProMotion（≥100Hz）与 60Hz 屏的拖影权重不同
+    @State private var proMotion = false
+
+    private var trailGain: CGFloat { proMotion ? 0.14 : 0.42 }
+    private var trailCap: CGFloat { proMotion ? 0.08 : 0.26 }
 
     private var cfg: MotionCfg { MotionCfg.of(mood) }
 
@@ -33,7 +39,13 @@ struct LivingAvatar: View {
             let t = CGFloat(context.date.timeIntervalSinceReferenceDate)
             canvas(t: t)
         }
-        .onAppear { gyro.start() }
+        .onAppear {
+            gyro.start()
+            let fps = UIApplication.shared.connectedScenes
+                .compactMap { $0 as? UIWindowScene }
+                .first?.screen.maximumFramesPerSecond ?? 60
+            proMotion = fps >= 100
+        }
         .onDisappear { gyro.stop() }
     }
 
@@ -53,7 +65,7 @@ struct LivingAvatar: View {
         let ty = CGFloat(gyro.pitch)
         // 倾斜角速度 → 拖影强度（60Hz 屏上补出"中间帧"的观感）
         let sp = CGFloat(gyro.rollSpeed)
-        let trailOpacity = min(0.26, abs(sp) * 0.42)
+        let trailOpacity = min(trailCap, abs(sp) * trailGain)
 
         return ZStack {
             // 地面光晕，随呼吸明暗起伏，色温跟随时段
