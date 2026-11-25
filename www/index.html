@@ -335,6 +335,13 @@ body::after{
   border:1px solid rgba(255,255,255,.85);box-shadow:0 3px 12px rgba(80,60,130,.05);
 }
 .searchbar .q{color:var(--ink-3);font-size:13px}
+.searchbar .sb-input{
+  flex:1;min-width:0;border:0;outline:0;background:transparent;
+  font-family:inherit;font-size:11.5px;font-weight:600;color:var(--ink);
+  -webkit-appearance:none;appearance:none;padding:0;
+}
+.searchbar .sb-input::-webkit-search-cancel-button{-webkit-appearance:none}
+.searchbar .sb-input::placeholder{color:var(--ink-3);font-weight:600}
 .searchbar span{font-size:11.5px;color:var(--ink-3);font-weight:600}
 .searchbar .cam{margin-left:auto;color:var(--blue);font-size:14px}
 .seg{display:flex;gap:5px;overflow-x:auto;padding-bottom:10px;scrollbar-width:none}
@@ -1929,13 +1936,14 @@ button, .sel-chip, .icon-btn, .tab, .move-card, .metric-row, .mp, .act{
 .is-pressed{transform:scale(.962);opacity:.86}
 
 @keyframes viewIn{
-  from{opacity:0;transform:translateY(9px) scale(.995)}
-  to{opacity:1;transform:none}
+  from{opacity:0;transform:translate3d(0,12px,0) scale(.992)}
+  to{opacity:1;transform:translate3d(0,0,0) scale(1)}
 }
-.view.on{animation:viewIn .26s cubic-bezier(.22,.8,.28,1) both}
+.view.on{animation:viewIn .34s cubic-bezier(.32,.72,0,1) both;will-change:transform,opacity}
 
 .screen-body{-webkit-overflow-scrolling:touch}
 
+/* 原生级按压：按下就缩，抬起弹回，不用等 click */
 @media (prefers-reduced-motion: reduce){
   .view.on{animation:none}
   .is-pressed{transform:none}
@@ -2236,7 +2244,7 @@ button, .sel-chip, .icon-btn, .tab, .move-card, .metric-row, .mp, .act{
 
             <div class="searchbar">
               <span class="q">⌕</span>
-              <span>输入动作名称、器械或肌群…</span>
+              <input class="sb-input" id="libSearch" type="search" placeholder="输入动作名称、器械或肌群…" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="search">
               <span class="cam">▣</span>
             </div>
 
@@ -3606,11 +3614,88 @@ button, .sel-chip, .icon-btn, .tab, .move-card, .metric-row, .mp, .act{
     });
   });
 
+  /* ---------------- 动作库：真实筛选（分类 / 肌纤维 / 部位 / 搜索） ---------------- */
+  var PART_KEYS = {
+    '腿': ['股四头', '臀', '腘绳', '竖脊', '腿'],
+    '胸': ['胸', '前锯'],
+    '背': ['背', '斜方', '竖脊', '阔背'],
+    '肩': ['肩', '三角', '斜方'],
+    '手臂': ['肱二', '肱三', '二头', '三头', '前臂'],
+    '全身': ['*']
+  };
+
+  function moveCards() { return $$('#moveGrid .move-card'); }
+
+  function currentFilter() {
+    var seg = $('.seg-item.on');
+    var fib = $('.fiber-item.on');
+    var rail = $('.muscle-rail .on');
+    var input = document.getElementById('libSearch');
+    return {
+      seg: seg ? seg.textContent.trim() : '',
+      fib: fib ? fib.textContent.trim() : '',
+      rail: rail ? rail.textContent.trim() : '',
+      kw: (input && input.value ? input.value : '').trim()
+    };
+  }
+
+  function matchMove(card, f) {
+    var part = (card.dataset.part || '') + ' ' + (card.dataset.name || '');
+    var badge = ((card.querySelector('.badge') || {}).textContent || '').trim();
+    var nm = ((card.querySelector('.nm') || {}).textContent || '') + ' ' +
+             ((card.querySelector('.sub') || {}).textContent || '');
+
+    if (f.fib && f.fib !== '全肌型' && badge !== f.fib) return false;
+    if (f.rail && f.rail !== '全部' && part.indexOf(f.rail) < 0) return false;
+    if (f.seg && f.seg !== '全身') {
+      var keys = PART_KEYS[f.seg] || [f.seg];
+      var hit = false;
+      for (var i = 0; i < keys.length; i++) {
+        if (keys[i] === '*' || part.indexOf(keys[i]) >= 0) { hit = true; break; }
+      }
+      if (!hit) return false;
+    }
+    if (f.kw && (nm + part).indexOf(f.kw) < 0) return false;
+    return true;
+  }
+
+  function applyMoveFilter(silent) {
+    var f = currentFilter();
+    var grid = document.getElementById('moveGrid');
+    if (!grid) return;
+    var shown = 0;
+    moveCards().forEach(function (c) {
+      var ok = matchMove(c, f);
+      c.style.display = ok ? '' : 'none';
+      if (ok) shown++;
+    });
+
+    var empty = document.getElementById('moveEmpty');
+    if (!empty) {
+      empty = document.createElement('div');
+      empty.id = 'moveEmpty';
+      empty.className = 'move-empty';
+      grid.appendChild(empty);
+    }
+    if (shown === 0) {
+      var bits = [];
+      if (f.seg) bits.push(f.seg);
+      if (f.fib) bits.push(f.fib);
+      if (f.kw) bits.push('“' + f.kw + '”');
+      empty.style.display = 'block';
+      empty.textContent = '「' + bits.join(' · ') + '」下暂时没有动作，换个分类试试';
+    } else {
+      empty.style.display = 'none';
+    }
+
+    if (!silent) toast(shown ? ('筛出 ' + shown + ' 个动作') : '这个组合下没有动作');
+  }
+
   $$('.seg-item').forEach(function (s) {
     s.addEventListener('click', function () {
       $$('.seg-item').forEach(function (x) { x.classList.remove('on'); });
       s.classList.add('on');
-      toast('已切换到「' + s.textContent + '」分类动作');
+      applyMoveFilter();
     });
   });
 
@@ -3618,9 +3703,28 @@ button, .sel-chip, .icon-btn, .tab, .move-card, .metric-row, .mp, .act{
     f.addEventListener('click', function () {
       $$('.fiber-item').forEach(function (x) { x.classList.remove('on'); });
       f.classList.add('on');
-      toast('已按「' + f.textContent + '」筛选');
+      applyMoveFilter();
     });
   });
+
+  $$('.muscle-rail span').forEach(function (m) {
+    m.addEventListener('click', function () {
+      $$('.muscle-rail span').forEach(function (x) { x.classList.remove('on'); });
+      m.classList.add('on');
+      applyMoveFilter();
+    });
+  });
+
+  var libSearch = document.getElementById('libSearch');
+  if (libSearch) {
+    var searchTimer = null;
+    libSearch.addEventListener('input', function () {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(function () { applyMoveFilter(true); }, 150);
+    });
+  }
+
+  applyMoveFilter(true);
 
   /* ---------------- 训练记录 ---------------- */
   var setDoneEl = $('#setDone');
@@ -5130,6 +5234,21 @@ button, .sel-chip, .icon-btn, .tab, .move-card, .metric-row, .mp, .act{
   }
   doc.addEventListener('touchend', clearPressed, { passive: true });
   doc.addEventListener('touchcancel', clearPressed, { passive: true });
+
+  // 6) 触感：底栏 / 打卡 / 主按钮按下给一下轻震（只有原生壳生效）
+  doc.addEventListener('click', function (e) {
+    var el = e.target.closest && e.target.closest('.tab, .mp, .btn-add, .btn-ghost, .tc-btn, .sel-chip');
+    if (el && window.TW && window.TW.haptic) {
+      try { window.TW.haptic('LIGHT'); } catch (err) { }
+    }
+  }, { passive: true });
+
+  // 7) 底栏：按下即切页，不等 click 的合成延迟
+  doc.addEventListener('touchstart', function (e) {
+    var tab = e.target.closest && e.target.closest('.tabbar .tab');
+    if (!tab) return;
+    tab.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+  }, { passive: true });
 })();
 
 </script>

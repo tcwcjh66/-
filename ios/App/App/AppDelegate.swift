@@ -3,6 +3,7 @@ import Capacitor
 import HealthKit
 import CoreMotion
 import WebKit
+import AVFoundation
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -79,6 +80,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         wv.scrollView.alwaysBounceHorizontal = false
         wv.scrollView.decelerationRate = .fast
         wv.scrollView.showsVerticalScrollIndicator = false
+        wv.scrollView.bounces = false
+        wv.scrollView.scrollsToTop = false
+        wv.scrollView.keyboardDismissMode = .interactive
         wv.allowsLinkPreview = false
     }
 
