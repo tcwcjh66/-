@@ -1,0 +1,65 @@
+name: TianCaiWei
+options:
+  bundleIdPrefix: com.tiancaiwei
+  createIntermediateGroups: true
+  deploymentTarget:
+    iOS: "17.0"
+    watchOS: "10.0"
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    CODE_SIGN_IDENTITY: ""
+    CODE_SIGNING_REQUIRED: "NO"
+    CODE_SIGNING_ALLOWED: "NO"
+    DEVELOPMENT_TEAM: ""
+    ENABLE_USER_SCRIPT_SANDBOXING: "NO"
+    SWIFT_OPTIMIZATION_LEVEL: "-O"
+
+targets:
+  TianCaiWei:
+    type: application
+    platform: iOS
+    sources:
+      - path: App
+    info:
+      path: App/Info.plist
+      properties:
+        CFBundleDisplayName: 天才威
+        CFBundleShortVersionString: "3.0"
+        CFBundleVersion: "1"
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        UIViewControllerBasedStatusBarAppearance: true
+        NSMotionUsageDescription: 用于读取 iPhone 运动芯片的实时步数、距离与爬楼层数。
+        NSCameraUsageDescription: 用于拍摄食物照片并识别其中的热量与营养。
+        NSPhotoLibraryUsageDescription: 用于从相册选择餐食照片进行识别。
+        NSHealthShareUsageDescription: 用于读取手表回传的心率、HRV、睡眠与训练记录。
+        CFBundleURLTypes:
+          - CFBundleURLName: com.tiancaiwei.live
+            CFBundleURLSchemes: [twfit]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.tiancaiwei.app
+        TARGETED_DEVICE_FAMILY: "1"
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: "YES"
+        INFOPLIST_KEY_UILaunchScreen_Generation: "YES"
+
+  TianCaiWeiWatch:
+    type: application
+    platform: watchOS
+    sources:
+      - path: WatchApp
+    info:
+      path: WatchApp/Info.plist
+      properties:
+        CFBundleDisplayName: 天才威
+        CFBundleShortVersionString: "3.0"
+        CFBundleVersion: "1"
+        WKApplication: true
+        WKCompanionAppBundleIdentifier: com.tiancaiwei.app
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.tiancaiwei.app.watchkitapp
+        INFOPLIST_KEY_WKCompanionAppBundleIdentifier: com.tiancaiwei.app

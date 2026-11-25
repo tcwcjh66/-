@@ -1,8 +1,8 @@
-﻿name: Build iPhone IPA
+name: build-ipa
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   workflow_dispatch:
 
 jobs:
@@ -10,52 +10,59 @@ jobs:
     runs-on: macos-15-intel
     timeout-minutes: 40
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install JS deps
-        run: npm install --no-audit --no-fund
-
-      - name: Sync Capacitor iOS
-        run: npx cap sync ios
-
-      - name: Register local Health plugin
-        run: python3 scripts/postsync.py
-
-      - name: Install CocoaPods deps
+      - name: Select newest Xcode
         run: |
-          cd ios/App
-          pod install --repo-update
+          ls -d /Applications/Xcode*.app || true
+          NEWEST=$(ls -d /Applications/Xcode*.app | sort -V | tail -1)
+          echo "using $NEWEST"
+          sudo xcode-select -s "$NEWEST/Contents/Developer"
+          xcodebuild -version
 
-      - name: Build unsigned archive
+      - name: Install XcodeGen
         run: |
-          cd ios/App
-          xcodebuild -workspace App.xcworkspace \
-            -scheme App \
-            -configuration Release \
+          if command -v xcodegen >/dev/null 2>&1; then xcodegen --version; else brew install xcodegen; fi
+
+      - name: Generate Xcode project
+        run: |
+          ls -la
+          xcodegen generate
+          ls -la
+
+      - name: Build iOS app
+        run: |
+          set -o pipefail
+          xcodebuild -project TianCaiWei.xcodeproj \
+            -target TianCaiWei \
             -sdk iphoneos \
-            -archivePath "$GITHUB_WORKSPACE/build/App.xcarchive" \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
+            -configuration Release \
+            SYMROOT="$(pwd)/out" \
             CODE_SIGNING_ALLOWED=NO \
-            ONLY_ACTIVE_ARCH=NO \
-            archive
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            build 2>&1 | tee build.log | tail -60
 
-      - name: Package IPA
+      - name: Package ipa
         run: |
-          mkdir -p "$GITHUB_WORKSPACE/build/Payload"
-          cp -R "$GITHUB_WORKSPACE/build/App.xcarchive/Products/Applications/App.app" "$GITHUB_WORKSPACE/build/Payload/"
-          cd "$GITHUB_WORKSPACE/build"
+          APP="out/Release-iphoneos/TianCaiWei.app"
+          ls -la "$APP" || (echo "no app bundle" && exit 1)
+          rm -rf Payload && mkdir Payload
+          cp -R "$APP" Payload/
           zip -qry TianCaiWei-unsigned.ipa Payload
+          ls -la TianCaiWei-unsigned.ipa
 
-      - name: Upload IPA
+      - name: Upload ipa
         uses: actions/upload-artifact@v4
         with:
           name: TianCaiWei-unsigned-ipa
-          path: build/TianCaiWei-unsigned.ipa
+          path: TianCaiWei-unsigned.ipa
           retention-days: 30
+
+      - name: Upload build log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build.log
+          retention-days: 7
