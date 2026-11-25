@@ -61,7 +61,7 @@ struct BigDial: View {
                 ForEach(0..<72, id: \.self) { i in
                     let major = (i % 6 == 0)
                     Capsule(style: .continuous)
-                        .fill(Color.white.opacity(major ? 0.92 : 0.46))
+                        .fill(TWColor.glass(major ? 0.92 : 0.46))
                         .frame(width: major ? 2.6 : 1.3, height: major ? 17 : 9)
                         .offset(y: -(r - 10))
                         .rotationEffect(.degrees(Double(i) * 5.0))

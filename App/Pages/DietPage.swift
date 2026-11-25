@@ -774,7 +774,7 @@ struct ShotResultSheet: View {
                                 .padding(14)
                                 .background {
                                     RoundedRectangle(cornerRadius: 15, style: .continuous)
-                                        .fill(Color.white.opacity(selected.contains(h.id) ? 0.85 : 0.42))
+                                        .fill(TWColor.glass(selected.contains(h.id) ? 0.85 : 0.42))
                                 }
                                 .contentShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
                             }
