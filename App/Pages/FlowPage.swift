@@ -10,6 +10,17 @@ struct FlowPage: View {
     @State private var running: Bool = false
     @State private var tick = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
+    @State private var planIndex: Int = 0
+    @State private var dayIndex: Int = 0
+
+    private var plan: PlanTemplate {
+        planTemplates[min(planIndex, planTemplates.count - 1)]
+    }
+
+    private var day: PlanDay {
+        plan.days[min(dayIndex, plan.days.count - 1)]
+    }
+
     private var progress: Double {
         total > 0 ? Double(remain) / Double(total) : 0
     }
@@ -20,11 +31,17 @@ struct FlowPage: View {
 
     var body: some View {
         VStack(spacing: 16) {
-            PageHeader(title: "训练", subtitle: "今日 · 上肢推")
+            PageHeader(title: "训练", subtitle: "\(plan.name) · \(day.title)")
 
-            timerCard
+            planPicker
+
+            if plan.days.count > 1 {
+                dayTabs
+            }
+
             sessionCard
-            tipCard
+            timerCard
+            progressionCard
         }
         .onReceive(tick) { _ in
             guard running else { return }
@@ -36,6 +53,127 @@ struct FlowPage: View {
             }
         }
     }
+
+    // MARK: - 方案选择
+
+    private var planPicker: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 9) {
+                ForEach(Array(planTemplates.enumerated()), id: \.element.id) { pair in
+                    Button {
+                        UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                        withAnimation(.snappy(duration: 0.22)) {
+                            planIndex = pair.offset
+                            dayIndex = 0
+                        }
+                    } label: {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(pair.element.name)
+                                .font(.system(size: 14, weight: planIndex == pair.offset ? .heavy : .bold))
+                                .foregroundStyle(planIndex == pair.offset ? .white : TWColor.ink)
+                            Text("\(pair.element.daysPerWeek) 天/周 · \(pair.element.level)")
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundStyle(planIndex == pair.offset ? .white.opacity(0.80) : TWColor.ink3)
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
+                        .background {
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .fill(planIndex == pair.offset
+                                      ? AnyShapeStyle(LinearGradient(colors: [TWColor.purple, TWColor.violet],
+                                                                     startPoint: .topLeading, endPoint: .bottomTrailing))
+                                      : AnyShapeStyle(Color.white.opacity(0.58)))
+                        }
+                        .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.vertical, 2)
+        }
+    }
+
+    // MARK: - 训练日切换
+
+    private var dayTabs: some View {
+        HStack(spacing: 7) {
+            ForEach(Array(plan.days.enumerated()), id: \.element.id) { pair in
+                Button {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    withAnimation(.snappy(duration: 0.2)) { dayIndex = pair.offset }
+                } label: {
+                    Text(pair.element.title)
+                        .font(.system(size: 13.5, weight: dayIndex == pair.offset ? .bold : .medium))
+                        .foregroundStyle(dayIndex == pair.offset ? TWColor.purple : TWColor.ink3)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 9)
+                        .background {
+                            RoundedRectangle(cornerRadius: 11, style: .continuous)
+                                .fill(dayIndex == pair.offset ? TWColor.purple.opacity(0.15) : Color.white.opacity(0.42))
+                        }
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    // MARK: - 今日动作
+
+    private var sessionCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(day.focus)
+                        .font(.system(size: 15.5, weight: .bold))
+                        .foregroundStyle(TWColor.ink)
+                    Text(plan.summary)
+                        .font(.system(size: 12, weight: .regular))
+                        .foregroundStyle(TWColor.ink3)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 8)
+                GlassPill(text: "\(day.items.count) 个动作", tint: TWColor.blue)
+            }
+
+            VStack(spacing: 0) {
+                ForEach(Array(day.items.enumerated()), id: \.element.id) { pair in
+                    HStack(spacing: 10) {
+                        Text("\(pair.offset + 1)")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundStyle(.white)
+                            .frame(width: 19, height: 19)
+                            .background { Circle().fill(TWColor.purple.opacity(0.78)) }
+
+                        Text(pair.element.name)
+                            .font(.system(size: 14.5, weight: .semibold))
+                            .foregroundStyle(TWColor.ink)
+                            .lineLimit(1)
+
+                        Spacer(minLength: 4)
+
+                        Text("\(pair.element.sets) × \(pair.element.reps)")
+                            .font(.system(size: 12.5, weight: .bold))
+                            .foregroundStyle(TWColor.purple)
+                            .lineLimit(1)
+                    }
+                    .padding(.vertical, 9)
+
+                    if pair.offset < day.items.count - 1 {
+                        Rectangle()
+                            .fill(TWColor.ink3.opacity(0.12))
+                            .frame(height: 0.7)
+                    }
+                }
+            }
+        }
+        .padding(16)
+        .twGlass()
+    }
+
+    // MARK: - 组间休息
 
     private var timerCard: some View {
         VStack(spacing: 16) {
@@ -52,13 +190,13 @@ struct FlowPage: View {
                     value: 1 - progress,
                     lineWidth: 13,
                     colors: [TWColor.purple, TWColor.pink, TWColor.violet],
-                    size: 186
+                    size: 176
                 )
                 .opacity(0.9)
 
                 VStack(spacing: 2) {
                     Text(clock)
-                        .font(.system(size: 50, weight: .heavy))
+                        .font(.system(size: 48, weight: .heavy))
                         .foregroundStyle(TWColor.ink)
                         .monospacedDigit()
                         .contentTransition(.numericText(countsDown: true))
@@ -83,7 +221,7 @@ struct FlowPage: View {
                     }
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
+                    .padding(.vertical, 13)
                     .background {
                         RoundedRectangle(cornerRadius: 14, style: .continuous)
                             .fill(LinearGradient(colors: [TWColor.purple, TWColor.violet],
@@ -102,8 +240,8 @@ struct FlowPage: View {
                     Image(systemName: "arrow.counterclockwise")
                         .font(.system(size: 16, weight: .bold))
                         .foregroundStyle(TWColor.ink2)
-                        .frame(width: 46)
-                        .padding(.vertical, 12)
+                        .frame(width: 48)
+                        .padding(.vertical, 13)
                         .background {
                             RoundedRectangle(cornerRadius: 14, style: .continuous)
                                 .fill(Color.white.opacity(0.55))
@@ -125,8 +263,8 @@ struct FlowPage: View {
                         Text("\(s)s")
                             .font(.system(size: 13, weight: total == s ? .bold : .medium))
                             .foregroundStyle(total == s ? TWColor.purple : TWColor.ink3)
-                            .padding(.horizontal, 11)
-                            .padding(.vertical, 6)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 7)
                             .background {
                                 Capsule().fill(total == s ? TWColor.purple.opacity(0.14) : Color.white.opacity(0.4))
                             }
@@ -140,65 +278,28 @@ struct FlowPage: View {
         .twGlass()
     }
 
-    private var sessionCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("上肢推 · 第 3 周")
+    // MARK: - 进阶规则
+
+    private var progressionCard: some View {
+        VStack(alignment: .leading, spacing: 9) {
+            HStack(spacing: 7) {
+                Image(systemName: "chart.line.uptrend.xyaxis")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(TWColor.mint)
+                Text("怎么加重量")
                     .font(.system(size: 15, weight: .bold))
                     .foregroundStyle(TWColor.ink)
                 Spacer()
-                GlassPill(text: "4 个动作", tint: TWColor.blue)
+                GlassPill(text: plan.cycle, tint: TWColor.mint)
             }
-
-            ForEach(Array(sessionItems.enumerated()), id: \.offset) { pair in
-                HStack(spacing: 10) {
-                    Text("\(pair.offset + 1)")
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundStyle(.white)
-                        .frame(width: 18, height: 18)
-                        .background { Circle().fill(TWColor.purple.opacity(0.75)) }
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(pair.element.0)
-                            .font(.system(size: 14.5, weight: .semibold))
-                            .foregroundStyle(TWColor.ink)
-                        Text(pair.element.2)
-                            .font(.system(size: 11.5, weight: .regular))
-                            .foregroundStyle(TWColor.ink3)
-                    }
-
-                    Spacer(minLength: 0)
-
-                    Text(pair.element.1)
-                        .font(.system(size: 12.5, weight: .bold))
-                        .foregroundStyle(TWColor.purple)
-                }
-            }
-        }
-        .padding(16)
-        .twGlass()
-    }
-
-    private var tipCard: some View {
-        HStack(alignment: .top, spacing: 9) {
-            Image(systemName: "lightbulb.fill")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(TWColor.amber)
-            Text("每组的最后两次要到「再做一个就做不动」的程度，太轻只能练耐力。")
-                .font(.system(size: 12.5, weight: .regular))
+            Text(plan.progression)
+                .font(.system(size: 13.5))
                 .foregroundStyle(TWColor.ink2)
+                .lineSpacing(3)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(14)
-        .twGlass(radius: 16, shadow: false)
-    }
-
-    private var sessionItems: [(String, String, String)] {
-        [
-            ("杠铃平板卧推", "65kg × 8", "肩胛收紧，别让杠弹胸"),
-            ("哑铃上斜卧推", "22kg × 10", "凳角 30°，控制下放 2 秒"),
-            ("哑铃肩上推举", "16kg × 10", "核心收紧，别塌腰"),
-            ("窄距俯卧撑", "自重 × 15", "肘贴身体，别外张")
-        ]
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .twGlass()
     }
 }

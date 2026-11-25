@@ -9,15 +9,15 @@ struct LibPage: View {
     private let groups = ["全部", "胸", "背", "腿", "肩", "手臂", "核心"]
 
     private var filtered: [MoveItem] {
-        demoMoves.filter { m in
+        allMoves.filter { m in
             (group == "全部" || m.group == group) &&
-            (query.isEmpty || m.name.contains(query))
+            (query.isEmpty || m.name.contains(query) || m.equipment.contains(query))
         }
     }
 
     var body: some View {
         VStack(spacing: 14) {
-            PageHeader(title: "动作库", subtitle: "按肌群筛选 · 点开看要点")
+            PageHeader(title: "动作库", subtitle: "\(allMoves.count) 个动作 · 要点 / 易错 / 替代")
 
             searchBar
 
@@ -63,7 +63,7 @@ struct LibPage: View {
         }
         .sheet(item: $detail) { m in
             MoveDetailSheet(move: m)
-                .presentationDetents([.medium, .large])
+                .presentationDetents([.large])
                 .presentationCornerRadius(28)
         }
     }
@@ -73,10 +73,20 @@ struct LibPage: View {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 15, weight: .semibold))
                 .foregroundStyle(TWColor.ink3)
-            TextField("搜索动作", text: $query)
+            TextField("搜索动作或器械", text: $query)
                 .font(.system(size: 15, weight: .medium))
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
+            if !query.isEmpty {
+                Button {
+                    query = ""
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 15))
+                        .foregroundStyle(TWColor.ink3)
+                }
+                .buttonStyle(.plain)
+            }
         }
         .padding(.horizontal, 15)
         .padding(.vertical, 12)
@@ -96,7 +106,7 @@ struct LibPage: View {
                     )
                     .frame(width: 52, height: 52)
                     .overlay {
-                        Image(systemName: "figure.strengthtraining.traditional")
+                        Image(systemName: iconFor(m.group))
                             .font(.system(size: 20, weight: .semibold))
                             .foregroundStyle(TWColor.purple)
                     }
@@ -105,9 +115,11 @@ struct LibPage: View {
                     Text(m.name)
                         .font(.system(size: 16, weight: .bold))
                         .foregroundStyle(TWColor.ink)
-                    Text("\(m.group) · \(m.equipment)")
+                        .lineLimit(1)
+                    Text("\(m.group) · \(m.equipment) · \(m.level)")
                         .font(.system(size: 12.5, weight: .medium))
                         .foregroundStyle(TWColor.ink3)
+                        .lineLimit(1)
                 }
 
                 Spacer(minLength: 0)
@@ -116,6 +128,7 @@ struct LibPage: View {
                     Text(m.pr)
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundStyle(TWColor.ink2)
+                        .lineLimit(1)
                     Image(systemName: "chevron.right")
                         .font(.system(size: 11, weight: .bold))
                         .foregroundStyle(TWColor.ink3)
@@ -127,6 +140,18 @@ struct LibPage: View {
             .contentShape(RoundedRectangle(cornerRadius: 17, style: .continuous))
         }
         .buttonStyle(.plain)
+    }
+
+    private func iconFor(_ g: String) -> String {
+        switch g {
+        case "胸": return "figure.strengthtraining.traditional"
+        case "背": return "figure.rower"
+        case "腿": return "figure.run"
+        case "肩": return "figure.dance"
+        case "手臂": return "figure.boxing"
+        case "核心": return "figure.core.training"
+        default: return "figure.mixed.cardio"
+        }
     }
 }
 
@@ -146,65 +171,66 @@ struct MoveDetailSheet: View {
                         .padding(.top, 8)
 
                     Text(move.name)
-                        .font(.system(size: 26, weight: .heavy))
+                        .font(.system(size: 27, weight: .heavy))
                         .foregroundStyle(TWColor.ink)
+                        .fixedSize(horizontal: false, vertical: true)
 
                     HStack(spacing: 8) {
                         GlassPill(text: move.group, tint: TWColor.purple)
                         GlassPill(text: move.equipment, tint: TWColor.blue)
-                        GlassPill(text: "当前 \(move.pr)", tint: TWColor.mint)
+                        GlassPill(text: move.level, tint: TWColor.amber)
                     }
 
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .fill(
-                            LinearGradient(colors: [TWColor.purple.opacity(0.16), TWColor.blue.opacity(0.08)],
-                                           startPoint: .topLeading, endPoint: .bottomTrailing)
-                        )
-                        .frame(height: 150)
-                        .overlay {
-                            VStack(spacing: 8) {
-                                Image(systemName: "figure.strengthtraining.traditional")
-                                    .font(.system(size: 44, weight: .semibold))
-                                    .foregroundStyle(TWColor.purple.opacity(0.75))
-                                Text("演示位")
-                                    .font(.system(size: 12))
-                                    .foregroundStyle(TWColor.ink3)
-                            }
-                        }
+                    videoBlock
 
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("动作要点")
-                            .font(.system(size: 16, weight: .bold))
-                            .foregroundStyle(TWColor.ink)
-                        Text(move.cue)
-                            .font(.system(size: 14))
-                            .foregroundStyle(TWColor.ink2)
-                            .fixedSize(horizontal: false, vertical: true)
+                    cardBlock(title: "动作要点", body: move.cue, tint: TWColor.mint, icon: "checkmark.seal.fill")
+
+                    if !move.error.isEmpty {
+                        cardBlock(title: "常见错误", body: move.error, tint: TWColor.amber, icon: "exclamationmark.triangle.fill")
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(16)
-                    .twGlass()
 
                     VStack(alignment: .leading, spacing: 10) {
                         Text("建议组次")
-                            .font(.system(size: 16, weight: .bold))
+                            .font(.system(size: 17, weight: .bold))
                             .foregroundStyle(TWColor.ink)
-                        ForEach(["增肌：4 组 × 8–12 次，休 90 秒",
-                                 "减脂：3 组 × 12–15 次，休 60 秒",
+                        ForEach(["增肌：4 组 × 8–12 次，组间休 90 秒",
+                                 "力量：5 组 × 3–5 次，组间休 3 分钟",
+                                 "减脂：3 组 × 15–20 次，组间休 45 秒",
                                  "热身：2 组 × 20 次，用一半重量"], id: \.self) { line in
                             HStack(alignment: .top, spacing: 8) {
                                 Circle().fill(TWColor.purple.opacity(0.55))
                                     .frame(width: 5, height: 5)
                                     .padding(.top, 7)
                                 Text(line)
-                                    .font(.system(size: 13.5))
+                                    .font(.system(size: 14))
                                     .foregroundStyle(TWColor.ink2)
+                                    .fixedSize(horizontal: false, vertical: true)
                             }
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(16)
                     .twGlass()
+
+                    if !move.alt.isEmpty {
+                        HStack(alignment: .top, spacing: 10) {
+                            Image(systemName: "arrow.triangle.2.circlepath")
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundStyle(TWColor.blue)
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("替代动作")
+                                    .font(.system(size: 15, weight: .bold))
+                                    .foregroundStyle(TWColor.ink)
+                                Text(move.alt)
+                                    .font(.system(size: 14))
+                                    .foregroundStyle(TWColor.ink2)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(16)
+                        .twGlass()
+                    }
 
                     Button {
                         dismiss()
@@ -213,7 +239,7 @@ struct MoveDetailSheet: View {
                             .font(.system(size: 16, weight: .bold))
                             .foregroundStyle(.white)
                             .frame(maxWidth: .infinity)
-                            .padding(.vertical, 14)
+                            .padding(.vertical, 15)
                             .background {
                                 RoundedRectangle(cornerRadius: 15, style: .continuous)
                                     .fill(LinearGradient(colors: [TWColor.purple, TWColor.violet],
@@ -221,11 +247,69 @@ struct MoveDetailSheet: View {
                             }
                     }
                     .buttonStyle(.plain)
-                    .padding(.bottom, 24)
+                    .padding(.bottom, 26)
                 }
                 .padding(.horizontal, 18)
             }
         }
-        .ignoresSafeArea(edges: .bottom)
+    }
+
+    private var videoBlock: some View {
+        Button {
+            let target = move.video.isEmpty ? moveSearchURL(move.name) : move.video
+            if let url = URL(string: target) {
+                UIApplication.shared.open(url)
+            }
+        } label: {
+            HStack(spacing: 12) {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(LinearGradient(colors: [TWColor.purple.opacity(0.20), TWColor.blue.opacity(0.12)],
+                                         startPoint: .topLeading, endPoint: .bottomTrailing))
+                    .frame(width: 54, height: 54)
+                    .overlay {
+                        Image(systemName: "play.fill")
+                            .font(.system(size: 19, weight: .bold))
+                            .foregroundStyle(TWColor.purple)
+                    }
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(move.video.isEmpty ? "看教学视频" : "看精讲视频")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(TWColor.ink)
+                    Text(move.video.isEmpty ? "在抖音搜这个动作的标准示范" : "已收录专业教学，点开直接看")
+                        .font(.system(size: 12.5, weight: .medium))
+                        .foregroundStyle(TWColor.ink3)
+                        .lineLimit(1)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "arrow.up.right")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(TWColor.ink3)
+            }
+            .padding(14)
+            .twGlass()
+            .contentShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func cardBlock(title: String, body: String, tint: Color, icon: String) -> some View {
+        VStack(alignment: .leading, spacing: 9) {
+            HStack(spacing: 6) {
+                Image(systemName: icon)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(tint)
+                Text(title)
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundStyle(TWColor.ink)
+            }
+            Text(body)
+                .font(.system(size: 14.5))
+                .foregroundStyle(TWColor.ink2)
+                .lineSpacing(3)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .twGlass()
     }
 }
