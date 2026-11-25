@@ -58,9 +58,15 @@ final class TWStore: ObservableObject {
     @Published var hrv: Int = 46
 
     // 身体
-    @Published var steps: Int = 8042
-    @Published var hr: Int = 52
-    @Published var restingHR: Int = 52
+    @Published var steps: Int = 0
+    @Published var hr: Int = 0
+    @Published var restingHR: Int = 0
+    @Published var pedometerSteps: Int = 0
+    @Published var pedometerDistance: Double = 0
+    @Published var measuredHR: Int = 0
+    @Published var measuredHRV: Int = 0
+    @Published var measuredAt: Date?
+    @Published var hrSource: String = ""
 
     // 饮食
     @Published var dietKcal: Double = 250
@@ -77,7 +83,10 @@ final class TWStore: ObservableObject {
     var ringMove: Double { moveTarget > 0 ? moveKcal / moveTarget : 0 }
     var ringExercise: Double { exerciseTarget > 0 ? exerciseMin / exerciseTarget : 0 }
     var ringStand: Double { standTarget > 0 ? standHours / standTarget : 0 }
-    var ringHrv: Double { 0.75 }
+    var ringHrv: Double {
+        guard hrv > 0 else { return 0.18 }
+        return min(Double(hrv) / 100.0, 1.0)
+    }
 
     var avatarAsset: String {
         switch mood {

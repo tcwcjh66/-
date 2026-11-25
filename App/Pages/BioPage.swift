@@ -1,128 +1,364 @@
 import SwiftUI
+import UIKit
+import CoreMotion
 
 struct BioPage: View {
     @EnvironmentObject var store: TWStore
 
+    @State private var showPulse = false
+    @State private var showManual = false
+    @State private var manualText = ""
+    @State private var motionStatus: String = "未查询"
+
+    private let pedometer = CMPedometer()
+
     var body: some View {
         VStack(spacing: 16) {
-            PageHeader(title: "身体", subtitle: "实时体征 · 手表回传")
+            PageHeader(title: "身体", subtitle: "本机实测 · 不含模拟数据")
 
             hrCard
-            bodyRow
-            syncCard
+            stepCard
+            sourceCard
         }
+        .sheet(isPresented: $showPulse) {
+            PulseView { bpm, hrv in
+                store.measuredHR = bpm
+                store.measuredHRV = hrv
+                store.measuredAt = Date()
+                store.hrSource = "指尖 PPG"
+                store.hr = bpm
+                store.hrv = hrv
+            }
+        }
+        .sheet(isPresented: $showManual) {
+            ManualHeartSheet(text: $manualText) { bpm in
+                store.measuredHR = bpm
+                store.measuredAt = Date()
+                store.hrSource = "手动录入"
+                store.hr = bpm
+            }
+            .presentationDetents([.height(320)])
+            .presentationCornerRadius(26)
+        }
+        .onAppear { loadSteps() }
     }
+
+    // MARK: - 心率
 
     private var hrCard: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Text("实时心率")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(TWColor.ink2)
+                Text("心率")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundStyle(TWColor.ink)
                 Spacer()
-                GlassPill(text: "静息", tint: TWColor.coral)
+                if !store.hrSource.isEmpty {
+                    GlassPill(text: store.hrSource, tint: TWColor.coral)
+                }
             }
 
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Text("\(store.hr)")
+            HStack(alignment: .firstTextBaseline, spacing: 7) {
+                Text(store.measuredHR > 0 ? "\(store.measuredHR)" : "--")
                     .font(.system(size: 56, weight: .heavy))
                     .foregroundStyle(TWColor.ink)
                     .contentTransition(.numericText())
                 Text("bpm")
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(TWColor.ink3)
+
                 Spacer()
-                VStack(alignment: .trailing, spacing: 2) {
+
+                VStack(alignment: .trailing, spacing: 3) {
                     Text("HRV")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(.system(size: 11, weight: .semibold))
                         .foregroundStyle(TWColor.ink3)
-                    Text("\(store.hrv) ms")
-                        .font(.system(size: 17, weight: .bold))
+                    Text(store.measuredHRV > 0 ? "\(store.measuredHRV) ms" : "--")
+                        .font(.system(size: 18, weight: .bold))
                         .foregroundStyle(TWColor.amber)
                 }
             }
 
-            SparkLine()
-                .frame(height: 62)
+            if let at = store.measuredAt {
+                Text("最近一次：" + timeText(at))
+                    .font(.system(size: 12))
+                    .foregroundStyle(TWColor.ink3)
+            } else {
+                Text("还没有测量记录")
+                    .font(.system(size: 12))
+                    .foregroundStyle(TWColor.ink3)
+            }
+
+            HStack(spacing: 10) {
+                Button {
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    showPulse = true
+                } label: {
+                    HStack(spacing: 7) {
+                        Image(systemName: "waveform.path.ecg")
+                            .font(.system(size: 14, weight: .bold))
+                        Text("指尖测 30 秒")
+                            .font(.system(size: 14.5, weight: .bold))
+                    }
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 13)
+                    .background {
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .fill(LinearGradient(colors: [TWColor.coral, TWColor.pink],
+                                                 startPoint: .leading, endPoint: .trailing))
+                    }
+                }
+                .buttonStyle(.plain)
+
+                Button {
+                    UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                    manualText = ""
+                    showManual = true
+                } label: {
+                    Text("手动")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(TWColor.ink2)
+                        .frame(width: 74)
+                        .padding(.vertical, 13)
+                        .background {
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .fill(Color.white.opacity(0.55))
+                        }
+                }
+                .buttonStyle(.plain)
+            }
         }
         .padding(18)
         .twGlass()
     }
 
-    private var bodyRow: some View {
-        HStack(spacing: 10) {
-            metric(title: "步数", value: "\(store.steps)", unit: "步", tint: TWColor.blue)
-            metric(title: "活动", value: "\(Int(store.moveKcal))", unit: "kcal", tint: TWColor.purple)
-        }
-    }
+    // MARK: - 步数
 
-    private func metric(title: String, value: String, unit: String, tint: Color) -> some View {
-        VStack(alignment: .leading, spacing: 5) {
-            Text(title)
-                .font(.system(size: 12.5, weight: .semibold))
-                .foregroundStyle(TWColor.ink3)
-            HStack(alignment: .firstTextBaseline, spacing: 3) {
-                Text(value)
-                    .font(.system(size: 26, weight: .heavy))
-                    .foregroundStyle(tint)
-                Text(unit)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(TWColor.ink3)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(14)
-        .twGlass(radius: 18)
-    }
-
-    private var syncCard: some View {
+    private var stepCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Image(systemName: "applewatch")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(TWColor.ink2)
-                Text("设备同步")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(TWColor.ink2)
+                Text("今日步数")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundStyle(TWColor.ink)
                 Spacer()
-                GlassPill(text: "已连接", tint: TWColor.mint)
+                GlassPill(text: motionStatus, tint: TWColor.blue)
             }
 
-            ForEach(syncItems) { item in
-                HStack {
-                    Text(item.title)
-                        .font(.system(size: 14.5, weight: .medium))
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text("\(store.pedometerSteps)")
+                    .font(.system(size: 40, weight: .heavy))
+                    .foregroundStyle(TWColor.blue)
+                    .contentTransition(.numericText())
+                Text("步")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(TWColor.ink3)
+                Spacer()
+                if store.pedometerDistance > 0 {
+                    Text(String(format: "%.2f 公里", store.pedometerDistance / 1000))
+                        .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(TWColor.ink2)
-                    Spacer()
-                    Text(item.value)
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(TWColor.ink3)
                 }
             }
 
-            Text("心率与 HRV 来自 Apple Watch 的传感器；iPhone 本身没有光学心率模组，所以必须戴表才有真实数据。")
-                .font(.system(size: 12.5, weight: .regular))
+            Text("来自 iPhone 运动协处理器，不需要 HealthKit，免费签名也能读")
+                .font(.system(size: 11.5))
                 .foregroundStyle(TWColor.ink3)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Button {
+                loadSteps()
+                UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+            } label: {
+                Text("刷新")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(TWColor.blue)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                    .background {
+                        Capsule().fill(TWColor.blue.opacity(0.10))
+                    }
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(18)
+        .twGlass()
+    }
+
+    // MARK: - 数据通路
+
+    private var sourceCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("数据通路")
+                .font(.system(size: 16, weight: .bold))
+                .foregroundStyle(TWColor.ink)
+
+            sourceRow(
+                icon: "iphone.gen3",
+                title: "指尖 PPG",
+                detail: "摄像头 + 闪光灯，本机物理测量",
+                state: "可用",
+                tint: TWColor.mint
+            )
+            sourceRow(
+                icon: "figure.walk",
+                title: "步数 / 距离",
+                detail: "CoreMotion 运动协处理器",
+                state: "可用",
+                tint: TWColor.mint
+            )
+            sourceRow(
+                icon: "applewatch",
+                title: "手表心率直连",
+                detail: "需要 com.apple.developer.healthkit",
+                state: "需要付费签名",
+                tint: TWColor.amber
+            )
+            sourceRow(
+                icon: "arrow.triangle.branch",
+                title: "快捷指令回传",
+                detail: "twfit://hr?bpm=72&hrv=45",
+                state: "需手动建一次",
+                tint: TWColor.amber
+            )
+
+            Text("手表的数据只能经 HealthKit 或 WatchConnectivity 进入第三方 App，这两项都不在免费 Apple ID 的可签能力里。免费方案里最接近实时的是快捷指令定时读取健康数据再回传，延迟取决于自动化间隔。")
+                .font(.system(size: 11.5))
+                .foregroundStyle(TWColor.ink3)
+                .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, 2)
         }
         .padding(16)
         .twGlass()
     }
 
-    private var syncItems: [SyncRow] {
-        [
-            SyncRow(title: "Apple Watch · Xs 配对手表", value: "刚刚"),
-            SyncRow(title: "心率 / HRV", value: "实时"),
-            SyncRow(title: "步数 / 爬楼", value: "实时"),
-            SyncRow(title: "睡眠分期", value: "今晨 07:12")
-        ]
+    private func sourceRow(icon: String, title: String, detail: String, state: String, tint: Color) -> some View {
+        HStack(spacing: 11) {
+            Image(systemName: icon)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(tint)
+                .frame(width: 34, height: 34)
+                .background {
+                    RoundedRectangle(cornerRadius: 9, style: .continuous)
+                        .fill(tint.opacity(0.12))
+                }
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(TWColor.ink)
+                Text(detail)
+                    .font(.system(size: 11))
+                    .foregroundStyle(TWColor.ink3)
+                    .lineLimit(1)
+            }
+
+            Spacer(minLength: 4)
+
+            Text(state)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(tint)
+        }
+    }
+
+    // MARK: - 动作
+
+    private func loadSteps() {
+        guard CMPedometer.isStepCountingAvailable() else {
+            motionStatus = "此设备不支持"
+            return
+        }
+
+        switch CMPedometer.authorizationStatus() {
+        case .authorized: motionStatus = "已授权"
+        case .denied: motionStatus = "被拒绝"
+        case .restricted: motionStatus = "受限"
+        default: motionStatus = "待授权"
+        }
+
+        let start = Calendar.current.startOfDay(for: Date())
+        pedometer.queryPedometerData(from: start, to: Date()) { data, error in
+            DispatchQueue.main.async {
+                if error != nil {
+                    motionStatus = "读取失败"
+                    return
+                }
+                if let d = data {
+                    store.pedometerSteps = d.numberOfSteps.intValue
+                    if let dist = d.distance {
+                        store.pedometerDistance = dist.doubleValue
+                    }
+                    if motionStatus == "待授权" { motionStatus = "已授权" }
+                }
+            }
+        }
+    }
+
+    private func timeText(_ d: Date) -> String {
+        let f = DateFormatter()
+        f.dateFormat = "HH:mm"
+        return f.string(from: d)
     }
 }
 
-struct SyncRow: Identifiable {
-    let id = UUID()
-    var title: String
-    var value: String
+struct ManualHeartSheet: View {
+    @Binding var text: String
+    var onOK: (Int) -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        ZStack {
+            AuroraBG()
+            VStack(spacing: 16) {
+                Capsule()
+                    .fill(TWColor.ink3.opacity(0.4))
+                    .frame(width: 34, height: 4)
+                    .padding(.top, 10)
+
+                Text("手动录入心率")
+                    .font(.system(size: 19, weight: .heavy))
+                    .foregroundStyle(TWColor.ink)
+
+                Text("用脉搏计数（数 30 秒 × 2），或直接读手表上的数")
+                    .font(.system(size: 12.5))
+                    .foregroundStyle(TWColor.ink3)
+                    .multilineTextAlignment(.center)
+
+                TextField("例如 72", text: $text)
+                    .keyboardType(.numberPad)
+                    .font(.system(size: 24, weight: .bold))
+                    .multilineTextAlignment(.center)
+                    .padding(.vertical, 14)
+                    .background {
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .fill(Color.white.opacity(0.6))
+                    }
+                    .padding(.horizontal, 26)
+
+                Button {
+                    if let v = Int(text), v >= 30, v <= 220 {
+                        onOK(v)
+                        dismiss()
+                    }
+                } label: {
+                    Text("保存")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .background {
+                            RoundedRectangle(cornerRadius: 15, style: .continuous)
+                                .fill(LinearGradient(colors: [TWColor.coral, TWColor.pink],
+                                                     startPoint: .leading, endPoint: .trailing))
+                        }
+                }
+                .buttonStyle(.plain)
+                .padding(.horizontal, 26)
+
+                Spacer()
+            }
+        }
+        .ignoresSafeArea(edges: .bottom)
+    }
 }
 
 struct SparkLine: View {
@@ -145,17 +381,6 @@ struct SparkLine: View {
                                startPoint: .leading, endPoint: .trailing),
                 style: StrokeStyle(lineWidth: 1.8, lineCap: .round)
             )
-            .overlay {
-                Path { p in
-                    for (i, v) in points.enumerated() {
-                        let x = w * CGFloat(i) / CGFloat(points.count - 1)
-                        let y = h * (1 - v)
-                        if i == 0 { p.move(to: CGPoint(x: x, y: y)) }
-                        else { p.addLine(to: CGPoint(x: x, y: y)) }
-                    }
-                }
-                .stroke(TWColor.coral.opacity(0.14), lineWidth: 6)
-            }
         }
     }
 }
@@ -169,11 +394,11 @@ struct PageHeader: View {
             VStack(alignment: .leading, spacing: 3) {
                 if !subtitle.isEmpty {
                     Text(subtitle)
-                        .font(.system(size: 12.5, weight: .semibold))
+                        .font(.system(size: 11.5, weight: .semibold))
                         .tracking(1.0)
                         .foregroundStyle(TWColor.ink3)
                 }
-                TwGradientText(text: title, size: 29)
+                TwGradientText(text: title, size: 30)
             }
             Spacer()
         }

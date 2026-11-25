@@ -31,6 +31,32 @@ struct RootView: View {
         }
         .background(AuroraBG())
         .ignoresSafeArea(edges: .bottom)
+        .onOpenURL { url in
+            handleIncoming(url)
+        }
+    }
+
+    /// 快捷指令回传入口：twfit://hr?bpm=72&hrv=45
+    private func handleIncoming(_ url: URL) {
+        guard url.scheme == "twfit" else { return }
+        let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
+
+        if let raw = items.first(where: { $0.name == "bpm" })?.value,
+           let bpm = Int(raw), bpm >= 30, bpm <= 220 {
+            store.measuredHR = bpm
+            store.hr = bpm
+            store.measuredAt = Date()
+            store.hrSource = "快捷指令"
+        }
+
+        if let raw = items.first(where: { $0.name == "hrv" })?.value,
+           let hrv = Int(raw), hrv >= 0, hrv <= 300 {
+            store.measuredHRV = hrv
+            store.hrv = hrv
+        }
+
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
+        withAnimation(.snappy(duration: 0.28)) { tab = .bio }
     }
 }
 
