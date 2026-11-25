@@ -130,9 +130,9 @@ struct LibPage: View {
 
             Spacer(minLength: 0)
 
-            Text(m.pr)
-                .font(.system(size: 11.5, weight: .semibold))
-                .foregroundStyle(TWColor.ink2)
+            Text(store.prs[m.name] ?? "未记录")
+                .font(.system(size: 11.5, weight: store.prs[m.name] == nil ? .medium : .semibold))
+                .foregroundStyle(store.prs[m.name] == nil ? TWColor.ink3 : TWColor.ink2)
                 .lineLimit(1)
 
             Button {
@@ -174,6 +174,7 @@ struct MoveDetailSheet: View {
     let move: MoveItem
     @EnvironmentObject var store: TWStore
     @Environment(\.dismiss) private var dismiss
+    @State private var showPR = false
 
     private var fav: Bool {
         store.favoriteMoves.contains(move.name)
@@ -216,6 +217,45 @@ struct MoveDetailSheet: View {
                         GlassPill(text: move.equipment, tint: TWColor.blue)
                         GlassPill(text: move.level, tint: TWColor.amber)
                     }
+
+                    HStack(spacing: 11) {
+                        Image(systemName: "trophy.fill")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(TWColor.amber)
+                            .frame(width: 34, height: 34)
+                            .background {
+                                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                                    .fill(TWColor.amber.opacity(0.12))
+                            }
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("我的最好成绩")
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundStyle(TWColor.ink)
+                            Text(store.prs[move.name] ?? "还没记录")
+                                .font(.system(size: 12))
+                                .foregroundStyle(store.prs[move.name] == nil ? TWColor.ink3 : TWColor.ink2)
+                        }
+
+                        Spacer(minLength: 0)
+
+                        Button {
+                            UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                            showPR = true
+                        } label: {
+                            Text(store.prs[move.name] == nil ? "记录" : "更新")
+                                .font(.system(size: 12.5, weight: .bold))
+                                .foregroundStyle(TWColor.amber)
+                                .padding(.horizontal, 13)
+                                .padding(.vertical, 7)
+                                .background {
+                                    Capsule().fill(TWColor.amber.opacity(0.13))
+                                }
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .padding(14)
+                    .twGlass()
 
                     videoBlock
 
@@ -287,6 +327,14 @@ struct MoveDetailSheet: View {
                 }
                 .padding(.horizontal, 18)
             }
+        }
+        .sheet(isPresented: $showPR) {
+            PRSheet(moveName: move.name,
+                    current: store.prs[move.name]) { weight, reps in
+                store.setPR(move.name, weight: weight, reps: reps)
+            }
+            .presentationDetents([.height(330)])
+            .presentationCornerRadius(26)
         }
     }
 

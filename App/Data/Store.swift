@@ -163,6 +163,9 @@ final class TWStore: ObservableObject {
     @Published var planPick: Int = 0
     @Published var dayPick: Int = 0
 
+    /// 动作名 → 自己的最好成绩，如 "70kg × 5"
+    @Published var prs: [String: String] = [:]
+
     // 饮水
     @Published var waterCups: Int = 0
     @Published var waterTarget: Int = 8
@@ -208,6 +211,7 @@ final class TWStore: ObservableObject {
         static let glogs = "tw.glogs.v2"
         static let planpick = "tw.planpick.v2"
         static let daypick = "tw.daypick.v2"
+        static let prs = "tw.prs.v2"
     }
 
     init() {
@@ -325,6 +329,25 @@ final class TWStore: ObservableObject {
     }
 
     // MARK: - 围度历史
+
+    func setPR(_ name: String, weight: Double, reps: Int) {
+        guard reps > 0 else { return }
+        let text: String
+        if weight <= 0 {
+            text = "自重 × \(reps)"
+        } else if weight.truncatingRemainder(dividingBy: 1) == 0 {
+            text = "\(Int(weight))kg × \(reps)"
+        } else {
+            text = String(format: "%.1fkg × %d", weight, reps)
+        }
+        prs[name] = text
+        persistSoon()
+    }
+
+    func clearPR(_ name: String) {
+        prs.removeValue(forKey: name)
+        persistSoon()
+    }
 
     /// 导出全部本机数据为 JSON 文本
     func exportJSON() -> String {
@@ -629,6 +652,9 @@ final class TWStore: ObservableObject {
         }
         d.set(planPick, forKey: Key.planpick)
         d.set(dayPick, forKey: Key.daypick)
+        if let v = try? JSONEncoder().encode(prs) {
+            d.set(v, forKey: Key.prs)
+        }
         if let v = try? JSONEncoder().encode(sessions) {
             d.set(v, forKey: Key.sess)
         }
@@ -693,6 +719,10 @@ final class TWStore: ObservableObject {
         }
         planPick = d.integer(forKey: Key.planpick)
         dayPick = d.integer(forKey: Key.daypick)
+        if let v = d.data(forKey: Key.prs),
+           let decoded = try? JSONDecoder().decode([String: String].self, from: v) {
+            prs = decoded
+        }
         if let v = d.data(forKey: Key.sess),
            let decoded = try? JSONDecoder().decode([SessionLog].self, from: v) {
             sessions = decoded
