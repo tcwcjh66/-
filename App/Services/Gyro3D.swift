@@ -7,6 +7,8 @@ final class Gyro3D: ObservableObject {
     @Published var roll: Double = 0      // 左右倾斜 -1…1（弧度归一化）
     @Published var pitch: Double = 0     // 前后倾斜
     @Published var active = false
+    /// 倾斜角速度（归一化后放大），用于运动拖影
+    @Published var rollSpeed: Double = 0
 
     private let mm = CMMotionManager()
     private let queue = OperationQueue()
@@ -25,8 +27,10 @@ final class Gyro3D: ObservableObject {
             let rawPitch = max(-1.0, min(1.0, m.attitude.pitch / 1.2))
             DispatchQueue.main.async {
                 // 一阶低通：0.18 系数，稳但不迟钝
+                let prev = self.roll
                 self.roll = self.roll * 0.82 + rawRoll * 0.18
                 self.pitch = self.pitch * 0.82 + rawPitch * 0.18
+                self.rollSpeed = (self.roll - prev) * 9.0
                 self.active = true
             }
         }

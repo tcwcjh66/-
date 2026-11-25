@@ -51,6 +51,9 @@ struct LivingAvatar: View {
         // 陀螺仪倾角：±1，低通后已经平滑
         let tx = CGFloat(gyro.roll)
         let ty = CGFloat(gyro.pitch)
+        // 倾斜角速度 → 拖影强度（60Hz 屏上补出"中间帧"的观感）
+        let sp = CGFloat(gyro.rollSpeed)
+        let trailOpacity = min(0.26, abs(sp) * 0.42)
 
         return ZStack {
             // 地面光晕，随呼吸明暗起伏，色温跟随时段
@@ -65,17 +68,18 @@ struct LivingAvatar: View {
                 )
                 .frame(width: 344, height: 344)
                 .scaleEffect(1 + 0.035 * breath)
+                .offset(x: tx * 7, y: ty * 4)
                 .blendMode(.plusLighter)
 
-            // 悬浮微粒
-            particles(t: t, tint: lightTint)
+            // 远景微粒（视差系数小，跟在立绘后面）
+            particles(t: t, tint: lightTint, tx: tx, ty: ty, near: false)
 
             // 落影，吸气时略收
             Ellipse()
                 .fill(Color(red: 0.34, green: 0.27, blue: 0.50).opacity(0.14))
                 .frame(width: 132 - 7 * breath, height: 17 + 1.5 * breath)
                 .blur(radius: 9)
-                .offset(y: 140 + c.sink)
+                .offset(x: -tx * 6, y: 140 + c.sink)
 
             // 第 1 层：背衬厚度影 —— 与主图反向偏移，倾斜时露出"厚度"
             Image(asset)
@@ -139,32 +143,60 @@ struct LivingAvatar: View {
                     x: tx * 5,
                     y: 8 - 2.6 * breath + 1.6 * drift + c.sink + ty * 3
                 )
+
+            // 第 4 层：运动拖影 —— 倾得越快越明显，60Hz 屏上也能读出"顺"
+            Image(asset)
+                .resizable()
+                .scaledToFit()
+                .frame(height: 286)
+                .blur(radius: 4)
+                .opacity(trailOpacity)
+                .rotation3DEffect(
+                    .degrees(1.4 * sway + tx * 9),
+                    axis: (x: 0, y: 1, z: 0),
+                    anchor: .bottom,
+                    perspective: 0.62
+                )
+                .offset(
+                    x: tx * 5 - sp * 26,
+                    y: 8 - 2.6 * breath + 1.6 * drift + c.sink + ty * 3
+                )
+
+            // 第 5 层：近景微粒 —— 视差最大，压在人物前景，做出"镜头穿过粒子"的纵深
+            particles(t: t, tint: lightTint, tx: tx, ty: ty, near: true)
         }
         .frame(height: 322, alignment: .center)
     }
 
-    private func particles(t: CGFloat, tint: Color) -> some View {
+    private func particles(t: CGFloat, tint: Color, tx: CGFloat, ty: CGFloat, near: Bool) -> some View {
         ZStack {
-            ForEach(0..<6, id: \.self) { i in
-                let seed = CGFloat(i)
-                let speed = 0.10 + 0.02 * seed
-                let p = (t * speed + seed * 0.31).truncatingRemainder(dividingBy: 1.0)
-                let baseX = ParticleSpec.x[i]
+            ForEach(0..<4, id: \.self) { k in
+                let idx = (near ? 4 : 0) + k
+                let seed = CGFloat(idx)
+                let depth = ParticleSpec.depth[idx]
+                let speed = 0.10 + 0.018 * seed
+                let p = (t * speed + seed * 0.29).truncatingRemainder(dividingBy: 1.0)
+                let baseX = ParticleSpec.x[idx]
                 let wobble = sin(t * (0.6 + 0.1 * seed) * CGFloat.pi * 2 + seed) * 6
 
                 Circle()
-                    .fill(tint.opacity(0.42 * (1 - p) * (1 - p)))
-                    .frame(width: ParticleSpec.size[i])
-                    .offset(x: baseX + wobble, y: 118 - p * 236)
-                    .blur(radius: 0.5)
+                    .fill(tint.opacity((near ? 0.30 : 0.42) * (1 - p) * (1 - p)))
+                    .frame(width: ParticleSpec.size[idx])
+                    .offset(
+                        x: baseX + wobble + tx * 30 * depth,
+                        y: 118 - p * 236 + ty * 12 * depth
+                    )
+                    .blur(radius: near ? 1.6 : 0.5)
             }
         }
     }
 }
 
 private enum ParticleSpec {
-    static let x: [CGFloat] = [-86, 74, -52, 92, -18, 44]
-    static let size: [CGFloat] = [2.6, 2.0, 3.2, 2.2, 1.8, 2.8]
+    // 前 4 个是远景（视差弱），后 4 个是近景（视差强，压在前景）
+    static let x: [CGFloat] = [-86, 74, -52, 92, -110, 58, -30, 104]
+    static let size: [CGFloat] = [2.0, 1.8, 2.4, 2.0, 4.2, 3.6, 4.6, 3.2]
+    static let depth: [CGFloat] = [0.28, 0.36, 0.42, 0.34, 0.92, 1.0, 0.86, 0.78]
 }
 
 struct MotionCfg {
