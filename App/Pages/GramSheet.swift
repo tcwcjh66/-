@@ -33,7 +33,7 @@ struct GramSheet: View {
                 .padding(.horizontal, 16)
                 .padding(.bottom, 24)
             }
-            .background(AuroraBG())
+            .background { AuroraBG() }
             .navigationTitle("加到\(slot)")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -408,7 +408,7 @@ struct BarcodeScanSheet: View {
                 Spacer(minLength: 0)
             }
             .padding(.horizontal, 16)
-            .background(AuroraBG())
+            .background { AuroraBG() }
             .navigationTitle("扫条码")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -430,7 +430,7 @@ struct BarcodeScanSheet: View {
                                         carb100: note.carb100, fat100: note.fat100,
                                         fiber100: 0, sugar100: 0, salt100: 0,
                                         ingredients: "", imageURL: "",
-                                        servingGrams: note.servingGrams)
+                                        servingGrams: note.servingGrams, quantity: "")
                     errorText = nil
                 }
                 .environmentObject(store)
@@ -578,7 +578,7 @@ struct BarcodeScanSheet: View {
                                 carb100: n.carb100, fat100: n.fat100,
                                 fiber100: 0, sugar100: 0, salt100: 0,
                                 ingredients: "", imageURL: "",
-                                servingGrams: n.servingGrams)
+                                servingGrams: n.servingGrams, quantity: "")
             return
         }
 

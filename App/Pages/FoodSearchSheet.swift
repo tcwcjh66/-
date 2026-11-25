@@ -106,7 +106,7 @@ struct FoodSearchSheet: View {
                 .padding(.horizontal, 16)
                 .padding(.bottom, 26)
             }
-            .background(AuroraBG())
+            .background { AuroraBG() }
             .navigationTitle("找食物")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
