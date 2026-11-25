@@ -195,6 +195,60 @@ struct DayLog: Codable, Identifiable, Hashable {
     var fat: Double? = nil
 }
 
+
+// MARK: - 自定义训练方案
+
+struct CustomSet: Identifiable, Codable, Hashable {
+    var id = UUID()
+    var name: String = ""
+    var sets: Int = 3
+    var reps: String = "10"
+    var weight: String = ""
+    var restSec: Int = 45
+    var note: String = ""
+}
+
+struct CustomDay: Identifiable, Codable, Hashable {
+    var id = UUID()
+    var title: String = "第 1 天"
+    var sets: [CustomSet] = []
+}
+
+struct CustomPlan: Identifiable, Codable, Hashable {
+    var id = UUID()
+    var name: String = "我的方案"
+    var tag: String = "自定义"
+    var cycle: String = "每周 3 次"
+    var days: [CustomDay] = [CustomDay(title: "第 1 天")]
+
+    /// 转成 FlowPage 直接能用的 PlanTemplate
+    var template: PlanTemplate {
+        PlanTemplate(
+            name: name,
+            tag: tag,
+            level: "自定义",
+            daysPerWeek: 3,
+            cycle: cycle,
+            summary: "自己排的方案，动作、组数、次数、重量、休息都可改。",
+            progression: "按感觉调整重量，做不满次数就减 5%。",
+            days: days.map { d in
+                PlanDay(
+                    title: d.title,
+                    focus: "\(d.sets.count) 个动作",
+                    items: d.sets.map { it in
+                        PlanItem(
+                            name: it.name,
+                            sets: "\(it.sets) 组",
+                            reps: it.reps,
+                            rest: it.restSec > 0 ? "\(it.restSec) 秒" : "60 秒"
+                        )
+                    }
+                )
+            }
+        )
+    }
+}
+
 final class TWStore: ObservableObject {
     // 环形
     @Published var moveKcal: Double = 0
@@ -283,6 +337,17 @@ final class TWStore: ObservableObject {
     // 睡眠记录（新的在前）
     @Published var sleepLogs: [SleepLog] = []
 
+    /// 血氧（%），来自手表 / 快捷指令
+    @Published var watchSpO2: Int = 0
+    @Published var watchSpO2At: Date?
+
+    // 自定义训练方案
+    @Published var customPlans: [CustomPlan] = []
+    /// 休息秒数覆盖：0 = 用动作自带，>0 = 全局强制这个数
+    @Published var restOverride: Int = 0
+    /// 跨天游标（yyyy-MM-dd），用于每日自动归零
+    @Published var lastDayKey: String = ""
+
     // 自定义食物
     @Published var customFoods: [CustomFood] = []
     /// 按日期存的历史餐食明细（保留最近 40 天），供「复制昨天」用
@@ -316,6 +381,11 @@ final class TWStore: ObservableObject {
         static let wlogs = "tw.wlogs.v2"
         static let water = "tw.water.v2"
         static let waterDay = "tw.waterDay.v2"
+        static let spo2 = "tw.spo2.v3"
+        static let spo2At = "tw.spo2At.v3"
+        static let cplans = "tw.cplans.v3"
+        static let restOv = "tw.restOv.v3"
+        static let dayKey = "tw.dayKey.v3"
         static let wextra = "tw.wextra.v2"
         static let cupsize = "tw.cupsize.v2"
         static let cfoods = "tw.cfoods.v2"
@@ -374,7 +444,13 @@ final class TWStore: ObservableObject {
 
     var dietLeft: Double { max(dietTarget - dietKcal, 0) }
 
-    var stepsForDisplay: Int { pedometerSteps > 0 ? pedometerSteps : steps }
+    /// 预设方案 + 自建方案，训练页统一从这里取
+    var allPlans: [PlanTemplate] {
+        planTemplates + customPlans.map { $0.template }
+    }
+
+
+    var stepsForDisplay: Int { max(pedometerSteps, max(watchSteps, steps)) }
     var watchStepsForDisplay: Int { watchSteps > 0 ? watchSteps : 0 }
 
     // MARK: - 变更
@@ -758,6 +834,43 @@ final class TWStore: ObservableObject {
         persistSoon()
     }
 
+    /// 跨天自动归零：饮食、步数、锻炼、站立、活动能量、饮水全部回到当天起点，
+    /// 昨天的餐食先归档进 mealHistory（可在「历史」里翻）。
+    func rollIfNewDay() {
+        let today = todayKey()
+        guard lastDayKey != today else { return }
+
+        // 归档昨天的饮食明细
+        if !meals.isEmpty {
+            mealHistory[lastDayKey.isEmpty ? today : lastDayKey] = meals
+            if mealHistory.count > 40 {
+                for k in mealHistory.keys.sorted().prefix(mealHistory.count - 40) {
+                    mealHistory.removeValue(forKey: k)
+                }
+            }
+        }
+
+        meals.removeAll()
+        dietKcal = 0
+        protein = 0
+        carb = 0
+        fat = 0
+        veg = 0
+
+        pedometerSteps = 0
+        pedometerDistance = 0
+        watchSteps = 0
+        exerciseMin = 0
+        moveKcal = 0
+        standHours = 0
+
+        waterCups = 0
+        waterExtraML = 0
+
+        lastDayKey = today
+        persist()
+    }
+
     func resetToday() {
         meals.removeAll()
         dietKcal = 0
@@ -991,6 +1104,13 @@ final class TWStore: ObservableObject {
         if let v = try? JSONEncoder().encode(customFoods) {
             d.set(v, forKey: Key.cfoods)
         }
+        d.set(watchSpO2, forKey: Key.spo2)
+        if let at = watchSpO2At { d.set(at.timeIntervalSince1970, forKey: Key.spo2At) }
+        if let v = try? JSONEncoder().encode(customPlans) {
+            d.set(v, forKey: Key.cplans)
+        }
+        d.set(restOverride, forKey: Key.restOv)
+        d.set(lastDayKey, forKey: Key.dayKey)
         if let v = try? JSONEncoder().encode(mealHistory) {
             d.set(v, forKey: Key.mhist)
         }
@@ -1103,6 +1223,15 @@ final class TWStore: ObservableObject {
         watchSyncCount = d.integer(forKey: Key.wcount)
         let syncTs = d.double(forKey: Key.wsync)
         watchSyncAt = syncTs > 0 ? Date(timeIntervalSince1970: syncTs) : nil
+        watchSpO2 = d.integer(forKey: Key.spo2)
+        let spo2Ts = d.double(forKey: Key.spo2At)
+        watchSpO2At = spo2Ts > 0 ? Date(timeIntervalSince1970: spo2Ts) : nil
+        if let v = d.data(forKey: Key.cplans),
+           let decoded = try? JSONDecoder().decode([CustomPlan].self, from: v) {
+            customPlans = decoded
+        }
+        restOverride = d.integer(forKey: Key.restOv)
+        lastDayKey = d.string(forKey: Key.dayKey) ?? ""
         mindfulMin = d.integer(forKey: Key.mindmin)
         let mindTs = d.double(forKey: Key.mindat)
         mindfulAt = mindTs > 0 ? Date(timeIntervalSince1970: mindTs) : nil

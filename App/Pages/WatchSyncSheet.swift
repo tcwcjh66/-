@@ -1,15 +1,22 @@
 import SwiftUI
 import UIKit
 
+/// 手表同步：把 Apple Watch 的健康数据通过「快捷指令」带进天才威。
+/// 免费签名读不了 HealthKit；快捷指令是系统 App，能读，它把值拼进 URL 再交回这里。
 struct WatchSyncSheet: View {
     @EnvironmentObject var store: TWStore
     @Environment(\.dismiss) private var dismiss
+
     @State private var copied = false
     @State private var copiedSteps = false
+    @State private var copiedFull = false
 
-    /// 快捷指令「文本」动作里粘贴的完整模板，方括号处换成对应的魔法变量
+    /// 最快能用的一条：心率 + 步数 + 活动能量 + 睡眠 + 血氧
+    private let quickTemplate = "twfit://sync?hr=[心率]&steps=[步数]&kcal=[活动能量]&sleep=[睡眠分钟]&spo2=[血氧]"
+
+    /// 全量 11 项
     private let template = """
-    twfit://sync?hr=[心率]&hrv=[HRV]&rhr=[静息心率]&steps=[步数]&dist=[距离]&kcal=[活动能量]&exercise=[锻炼分钟]&stand=[站立小时]&sleep=[睡眠分钟]&deep=[深睡分钟]
+    twfit://sync?hr=[心率]&hrv=[HRV]&rhr=[静息心率]&steps=[步数]&dist=[距离]&kcal=[活动能量]&exercise=[锻炼分钟]&stand=[站立小时]&sleep=[睡眠分钟]&deep=[深睡分钟]&spo2=[血氧]
     """
 
     var body: some View {
@@ -20,11 +27,12 @@ struct WatchSyncSheet: View {
                     header
                     oneTapCard
                     statusCard
-                    whyCard
-                    stepsCard
+                    quickCard
+                    paramCard
                     templateCard
+                    troubleCard
                     mindfulCard
-                    fallbackCard
+                    whyCard
                 }
                 .padding(.horizontal, 18)
                 .padding(.bottom, 34)
@@ -40,15 +48,12 @@ struct WatchSyncSheet: View {
                 Text("手表同步")
                     .font(.system(size: 30, weight: .heavy, design: .rounded))
                     .foregroundStyle(TWColor.ink)
-                Text("快捷指令自动化 · 打开 App 就自动把健康数据灌进来")
+                Text("五步配一次，之后打开 App 自动灌数据")
                     .font(.system(size: 12.5))
                     .foregroundStyle(TWColor.ink3)
-                    .lineSpacing(2)
             }
             Spacer(minLength: 0)
-            Button {
-                dismiss()
-            } label: {
+            Button { dismiss() } label: {
                 Image(systemName: "xmark")
                     .font(.system(size: 13, weight: .bold))
                     .foregroundStyle(TWColor.ink2)
@@ -75,93 +80,109 @@ struct WatchSyncSheet: View {
                     .font(.system(size: 16, weight: .bold))
                     .foregroundStyle(TWColor.ink)
                 Spacer()
-                if let t = store.watchSyncAt {
-                    Text("已连通")
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundStyle(TWColor.mint)
-                        .padding(.horizontal, 9)
-                        .padding(.vertical, 4)
-                        .background {
-                            Capsule().fill(TWColor.mint.opacity(0.13))
-                        }
-                } else {
-                    Text("未连通")
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundStyle(TWColor.amber)
-                        .padding(.horizontal, 9)
-                        .padding(.vertical, 4)
-                        .background {
-                            Capsule().fill(TWColor.amber.opacity(0.14))
-                        }
-                }
+                Text(store.watchSyncAt == nil ? "未连通" : "已连通")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(store.watchSyncAt == nil ? TWColor.amber : TWColor.mint)
+                    .padding(.horizontal, 9)
+                    .padding(.vertical, 4)
+                    .background {
+                        Capsule().fill((store.watchSyncAt == nil ? TWColor.amber : TWColor.mint).opacity(0.13))
+                    }
             }
 
             if let t = store.watchSyncAt {
                 Text("上次同步 \(DateFormatter.twDay.string(from: t)) \(DateFormatter.twShort.string(from: t))，累计 \(store.watchSyncCount) 次")
                     .font(.system(size: 12.5))
                     .foregroundStyle(TWColor.ink2)
-
-                HStack(spacing: 0) {
-                    syncStat("心率", store.hr > 0 ? "\(store.hr)" : "—", "bpm")
-                    divider
-                    syncStat("步数", store.watchSteps > 0 ? "\(store.watchSteps)" : "—", "步")
-                    divider
-                    syncStat("睡眠", store.watchSleepMin > 0 ? sleepText(store.watchSleepMin) : "—", "小时")
-                }
             } else {
-                Text("还没有收到过手表数据。按下面的五步配一次，之后每次打开这个 App 就会自动同步，不用再动手。")
+                Text("还没收到过数据。照下面「五步」走一遍，末了打开一次天才威，这里就会变成「已连通」。")
                     .font(.system(size: 12.5))
                     .foregroundStyle(TWColor.ink3)
                     .lineSpacing(2.5)
                     .fixedSize(horizontal: false, vertical: true)
+            }
+
+            HStack(spacing: 0) {
+                syncCell("心率", store.hr > 0 ? "\(store.hr)" : "—", "bpm")
+                syncCell("步数", "\(store.pedometerSteps > 0 ? store.pedometerSteps : store.watchSteps)", "步 · 实时")
+                syncCell("血氧", store.watchSpO2 > 0 ? "\(store.watchSpO2)" : "—", "%")
+            }
+            HStack(spacing: 0) {
+                syncCell("睡眠", store.watchSleepMin > 0 ? sleepText(store.watchSleepMin) : "—", "小时")
+                syncCell("活动", String(format: "%.0f", store.moveKcal), "kcal")
+                syncCell("锻炼", String(format: "%.0f", store.exerciseMin), "分钟")
             }
         }
         .padding(16)
         .twGlass()
     }
 
-    private var divider: some View {
-        Rectangle()
-            .fill(TWColor.ink3.opacity(0.22))
-            .frame(width: 1, height: 26)
-    }
-
-    private func syncStat(_ title: String, _ value: String, _ unit: String) -> some View {
+    private func syncCell(_ title: String, _ value: String, _ unit: String) -> some View {
         VStack(spacing: 3) {
             Text(value)
-                .font(.system(size: 22, weight: .heavy, design: .rounded))
+                .font(.system(size: 20, weight: .heavy, design: .rounded))
                 .foregroundStyle(TWColor.ink)
                 .monospacedDigit()
             Text("\(title) · \(unit)")
-                .font(.system(size: 10.5, weight: .semibold))
+                .font(.system(size: 10, weight: .semibold))
                 .foregroundStyle(TWColor.ink3)
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
         }
         .frame(maxWidth: .infinity)
+        .padding(.vertical, 6)
     }
 
     private func sleepText(_ min: Int) -> String {
-        let h = min / 60
-        let m = min % 60
-        return "\(h)h\(String(format: "%02d", m))"
+        "\(min / 60)h\(String(format: "%02d", min % 60))"
     }
 
-    // MARK: - 为什么
+    // MARK: - 一键
 
-    private var whyCard: some View {
-        VStack(alignment: .leading, spacing: 9) {
-            HStack(spacing: 6) {
-                Image(systemName: "exclamationmark.triangle.fill")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(TWColor.amber)
-                Text("为什么必须走快捷指令")
-                    .font(.system(size: 14.5, weight: .bold))
+    private var oneTapCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 7) {
+                Image(systemName: "wand.and.stars")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(TWColor.purple)
+                Text("第一步：点这里")
+                    .font(.system(size: 16.5, weight: .bold))
                     .foregroundStyle(TWColor.ink)
+                Spacer(minLength: 0)
             }
-            Text("Apple Watch 的数据在系统「健康」里，第三方 App 直接读需要 HealthKit 权限（com.apple.developer.healthkit），这个权限只在付费开发者账号下才发。免费签名的 App 一调就报 AUTH_FAILED。\n\n快捷指令是系统 App，本身就有读健康的权限。让它把数据读出来，再用链接交给天才威，这条路完全免费，也是唯一可行的一条。")
+
+            Text("点一下会把「5 项模板」放进剪贴板，同时跳到快捷指令。到那边直接粘贴，不用手打。")
                 .font(.system(size: 12.5))
                 .foregroundStyle(TWColor.ink2)
                 .lineSpacing(3)
                 .fixedSize(horizontal: false, vertical: true)
+
+            Button { makeShortcut() } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "arrow.up.right.square.fill")
+                        .font(.system(size: 14, weight: .bold))
+                    Text(copied ? "已复制 · 正在跳转" : "复制模板并打开快捷指令")
+                        .font(.system(size: 14.5, weight: .bold))
+                }
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 13)
+                .background {
+                    Capsule().fill(LinearGradient(colors: [TWColor.purple, TWColor.blue],
+                                                  startPoint: .leading, endPoint: .trailing))
+                }
+                .shadow(color: TWColor.purple.opacity(0.26), radius: 12, y: 5)
+            }
+            .buttonStyle(.plain)
+
+            HStack(spacing: 6) {
+                Image(systemName: "info.circle").font(.system(size: 10.5))
+                Text("iOS 不允许 App 直接写入快捷指令，跳过去粘一下是系统上限，不是偷懒。")
+                    .font(.system(size: 10.5))
+                    .lineSpacing(2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .foregroundStyle(TWColor.ink3)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
@@ -170,20 +191,18 @@ struct WatchSyncSheet: View {
 
     // MARK: - 五步
 
-    private var stepsCard: some View {
+    private var quickCard: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 6) {
                 Image(systemName: "list.number")
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(TWColor.purple)
-                Text("配一次，以后全自动")
+                Text("五步，照着屏幕点")
                     .font(.system(size: 14.5, weight: .bold))
                     .foregroundStyle(TWColor.ink)
                 Spacer()
-                Button {
-                    copySteps()
-                } label: {
-                    Text(copiedSteps ? "已复制" : "复制清单")
+                Button { copySteps() } label: {
+                    Text(copiedSteps ? "已复制" : "复制全文")
                         .font(.system(size: 11.5, weight: .bold))
                         .foregroundStyle(TWColor.purple)
                         .padding(.horizontal, 11)
@@ -193,25 +212,31 @@ struct WatchSyncSheet: View {
                 .buttonStyle(.plain)
             }
 
-            step(1, "打开「快捷指令」App，点右上角 + 新建一个快捷指令，命名「天才威同步」。",
-                 "先建一个空的，动作下面再加。")
+            step(1,
+                 "打开「快捷指令」App，点底部「自动化」，右上角 +",
+                 "桌面找不到就下拉搜索“快捷指令”。进自动化后先点 + 建一条新的。")
 
-            step(2, "连加 10 个「查找健康样本」动作，类型依次是：心率、HRV、静息心率、步数、步行+跑步距离、活动能量、锻炼分钟、站立小时、睡眠分析、深度睡眠。",
-                 "每个动作里把「排序」设成最新，「限制」设成 1；步数和距离用「求和」而不是取最新。")
+            step(2,
+                 "选「App」→ 搜“天才威”→ 选中 → 勾「打开时」→ 打开「立即运行」→ 点「下一步」",
+                 "「立即运行」不开的话，每次都会先弹一个确认框，白等两秒。")
 
-            step(3, "加一个「文本」动作，把下面那张卡里的模板整段粘进去，然后把每对方括号换成对应动作的魔法变量。",
-                 "变量插入方式：在文本里点一下，键盘上方会出现「变量」，选对应的查找结果。")
+            step(3,
+                 "回到「所有快捷指令」，右上角 + 新建，名字随便起（比如“天才威同步”）",
+                 "这条是“数据源”，第 2 步那条自动化稍后来调它。")
 
-            step(4, "加一个「打开 URL」动作，输入选「文本」上一步的输出。",
-                 "这一步就是把数据交给天才威，跑完会自动跳回 App 并写入。")
+            step(4,
+                 "点「添加动作」→ 搜「查找健康样本」，加 4 个：心率、步数、活动能量、睡眠分析",
+                 "每个动作里：类型改成对应那一项，「排序方式」选「最新样本」，「限制」填 1。睡眠选「睡眠分析」，它的值是分钟。")
 
-            step(5, "去底部「自动化」标签 → 新建个人自动化 → 触发选「App」→ 选天才威 → 勾「打开时」→ 下一步 → 关掉「运行前询问」→ 完成。",
-                 "到这一步就成了。以后每次点开天才威，健康数据自动灌进来。")
+            step(5,
+                 "加「文本」→ 粘贴第一步复制的模板 → 把 [心率] 这类方括号逐个换成变量 → 再加「打开 URL」",
+                 "换变量：先删掉方括号里的字，点键盘上方「变量」，选那个查找动作的「值」。最后「打开 URL」的输入选这个文本。")
 
-            Text("如果只想先要心率和步数，第 2 步只加那两个、模板里也只留 hr 和 steps 就行，其余留空不影响。")
+            Text("收尾：回到自动化那条 → 「添加动作」→ 选刚建的快捷指令 → 完成。之后每次打开天才威就自动同步。")
                 .font(.system(size: 11.5))
                 .foregroundStyle(TWColor.ink3)
                 .lineSpacing(2.5)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
@@ -228,7 +253,7 @@ struct WatchSyncSheet: View {
                     Circle().fill(LinearGradient(colors: [TWColor.purple, TWColor.violet],
                                                  startPoint: .topLeading, endPoint: .bottomTrailing))
                 }
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 5) {
                 Text(title)
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(TWColor.ink)
@@ -237,10 +262,61 @@ struct WatchSyncSheet: View {
                 Text(detail)
                     .font(.system(size: 11.5))
                     .foregroundStyle(TWColor.ink3)
-                    .lineSpacing(2)
+                    .lineSpacing(2.5)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
+    }
+
+    // MARK: - 参数表
+
+    private var paramCard: some View {
+        VStack(alignment: .leading, spacing: 11) {
+            Text("每个占位填什么")
+                .font(.system(size: 13.5, weight: .bold))
+                .foregroundStyle(TWColor.ink2)
+
+            paramRow("[心率]", "心率", "最新样本 · 限制 1", head: true)
+            paramRow("[步数]", "步数", "最新样本 · 限制 1")
+            paramRow("[活动能量]", "活动能量", "最新样本 · 限制 1")
+            paramRow("[睡眠分钟]", "睡眠分析", "最新样本 · 取时长")
+            paramRow("[血氧]", "血氧饱和度", "最新样本 · 限制 1")
+            paramRow("[HRV]", "心率变异性", "最新样本 · 限制 1")
+            paramRow("[静息心率]", "静息心率", "最新样本 · 限制 1")
+            paramRow("[距离]", "步行+跑步距离", "今日求和")
+            paramRow("[锻炼分钟]", "锻炼时间", "今日求和")
+            paramRow("[站立小时]", "站立小时", "今日求和")
+            paramRow("[深睡分钟]", "睡眠分析", "筛「深睡」阶段再求和，较绕，可先跳过")
+
+            Text("只要心率、步数、血氧，就只做前 4 个动作，模板里也只留对应占位。缺的参数 App 会自动跳过，不报错。")
+                .font(.system(size: 11))
+                .foregroundStyle(TWColor.ink3)
+                .lineSpacing(2.5)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 2)
+        }
+        .padding(16)
+        .twGlass()
+    }
+
+    private func paramRow(_ key: String, _ type: String, _ how: String, head: Bool = false) -> some View {
+        HStack(spacing: 10) {
+            Text(key)
+                .font(.system(size: 11.5, weight: .semibold, design: .monospaced))
+                .foregroundStyle(head ? TWColor.purple : TWColor.ink)
+                .frame(width: 92, alignment: .leading)
+            Text(type)
+                .font(.system(size: 11.5, weight: .medium))
+                .foregroundStyle(TWColor.ink2)
+                .frame(width: 96, alignment: .leading)
+            Text(how)
+                .font(.system(size: 11))
+                .foregroundStyle(TWColor.ink3)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .lineSpacing(2)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.vertical, 3)
     }
 
     // MARK: - 模板
@@ -248,17 +324,15 @@ struct WatchSyncSheet: View {
     private var templateCard: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("粘贴到「文本」动作里的模板")
+                Text("全量模板（11 项）")
                     .font(.system(size: 13, weight: .bold))
                     .foregroundStyle(TWColor.ink2)
                 Spacer()
-                Button {
-                    copyTemplate()
-                } label: {
+                Button { copyFull() } label: {
                     HStack(spacing: 4) {
-                        Image(systemName: copied ? "checkmark" : "doc.on.doc")
+                        Image(systemName: copiedFull ? "checkmark" : "doc.on.doc")
                             .font(.system(size: 10.5, weight: .bold))
-                        Text(copied ? "已复制" : "复制")
+                        Text(copiedFull ? "已复制" : "复制")
                             .font(.system(size: 11.5, weight: .bold))
                     }
                     .foregroundStyle(TWColor.purple)
@@ -270,7 +344,7 @@ struct WatchSyncSheet: View {
             }
 
             Text(template)
-                .font(.system(size: 11, weight: .medium, design: .monospaced))
+                .font(.system(size: 10.5, weight: .medium, design: .monospaced))
                 .foregroundStyle(TWColor.ink2)
                 .lineSpacing(3)
                 .fixedSize(horizontal: false, vertical: true)
@@ -281,16 +355,55 @@ struct WatchSyncSheet: View {
                         .fill(TWColor.glass(0.55))
                 }
 
-            Text("参数表：hr 心率 · hrv 心率变异性 · rhr 静息心率 · steps 步数 · dist 公里 · kcal 活动能量 · exercise 锻炼分钟 · stand 站立小时 · sleep 睡眠分钟 · deep 深睡分钟。缺哪个就不带哪个，App 会自动跳过。")
+            Text("上面那个按钮给的是 5 项简版。要 HRV、距离、锻炼分钟这些就用这条全量的；用不到的占位连同前面的 & 一起删掉也行。")
                 .font(.system(size: 11))
                 .foregroundStyle(TWColor.ink3)
                 .lineSpacing(2.5)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .padding(16)
         .twGlass()
     }
 
-    // MARK: - 正念 → 心情
+    // MARK: - 卡住了？
+
+    private var troubleCard: some View {
+        VStack(alignment: .leading, spacing: 11) {
+            HStack(spacing: 6) {
+                Image(systemName: "questionmark.circle.fill")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(TWColor.blue)
+                Text("卡住了？对照这几条")
+                    .font(.system(size: 14.5, weight: .bold))
+                    .foregroundStyle(TWColor.ink)
+            }
+            trouble("点了按钮没跳过去", "确认「快捷指令」没被删、没被屏幕使用时间限制。跳不过去就手动打开它，模板已经在剪贴板里了。")
+            trouble("文本里插不进变量", "「查找健康样本」必须排在「文本」前面。先有查找动作，变量列表里才出现它的值。")
+            trouble("URL 打开没反应", "检查是不是以 twfit:// 开头、中间没有空格、& 不是中文的＆。")
+            trouble("每次打开都弹确认", "自动化里关掉「运行前询问」，并确认选的是「立即运行」。")
+            trouble("步数一直是 0", "设置 → 隐私与安全 → 运动与健身 → 天才威 打开；步数要手机在身上才计得准。")
+            trouble("血氧显示 0 或 0.98", "健康里的血氧是 0.98 这种小数，App 两种写法都认，直接传就行。")
+            trouble("心率一直是 0", "手表要贴合手腕、健康里有心率记录；「最新样本」当天没记录就是空。")
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .twGlass()
+    }
+
+    private func trouble(_ q: String, _ a: String) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(q)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(TWColor.ink)
+            Text(a)
+                .font(.system(size: 11.5))
+                .foregroundStyle(TWColor.ink3)
+                .lineSpacing(2.5)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    // MARK: - 正念
 
     private var mindfulCard: some View {
         VStack(alignment: .leading, spacing: 9) {
@@ -312,24 +425,24 @@ struct WatchSyncSheet: View {
                 }
             }
 
-            Text("在手表上做完一次「正念 / 沉思」，Apple 会把它记进健康里的「正念分钟」。在同一个快捷指令里再加一个「查找健康样本 · 正念」（取最近 1 条），URL 结尾补上 &mind=[正念分钟] 就行。")
-                .font(.system(size: 12.5))
+            Text("手表上做完一次「正念」，健康里会记「正念分钟」。同一条快捷指令加一个「查找健康样本 · 正念」（最新 1 条），URL 结尾补 &mind=[正念分钟]。")
+                .font(.system(size: 12))
                 .foregroundStyle(TWColor.ink2)
                 .lineSpacing(3)
                 .fixedSize(horizontal: false, vertical: true)
 
-            Text("接收端收到 mind 就把心情切到「平静」，首页立绘的呼吸节奏会慢下来、光晕转薄荷色。做完沉思后打开一次天才威，就生效了。")
+            Text("收到 mind 后首页立绘会切「平静」：呼吸变慢、色温转薄荷。")
                 .font(.system(size: 11.5))
                 .foregroundStyle(TWColor.ink3)
                 .lineSpacing(2.5)
                 .fixedSize(horizontal: false, vertical: true)
 
-            if store.mindfulAt != nil {
+            if let at = store.mindfulAt {
                 HStack(spacing: 6) {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 11))
                         .foregroundStyle(TWColor.mint)
-                    Text("上次正念 \(store.mindfulMin) 分钟 · \(DateFormatter.twShort.string(from: store.mindfulAt!))")
+                    Text("上次正念 \(store.mindfulMin) 分钟 · \(DateFormatter.twShort.string(from: at))")
                         .font(.system(size: 11.5, weight: .semibold))
                         .foregroundStyle(TWColor.ink2)
                 }
@@ -340,19 +453,19 @@ struct WatchSyncSheet: View {
         .twGlass()
     }
 
-    // MARK: - 兜底
+    // MARK: - 为什么
 
-    private var fallbackCard: some View {
+    private var whyCard: some View {
         VStack(alignment: .leading, spacing: 9) {
             HStack(spacing: 6) {
-                Image(systemName: "bolt.horizontal.circle.fill")
+                Image(systemName: "exclamationmark.triangle.fill")
                     .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(TWColor.blue)
-                Text("只测心率的话，两步就够")
+                    .foregroundStyle(TWColor.amber)
+                Text("为什么必须绕快捷指令")
                     .font(.system(size: 14.5, weight: .bold))
                     .foregroundStyle(TWColor.ink)
             }
-            Text("新建快捷指令 → 加「查找健康样本（心率，最新）」→ 加「打开 URL」，URL 填：\n\ntwfit://sync?hr=[心率]\n\n这比配全套快，但只有心率一个数。要步数、睡眠、能耗就回到上面五步。")
+            Text("Apple Watch 的数据在系统「健康」里。第三方 App 直连要 HealthKit 权限，这个权限只在付费开发者账号下发；免费签名的 App 一调就 AUTH_FAILED。\n\n快捷指令是系统 App，天生能读健康。让它读出来、拼成链接交给天才威——这条完全免费，也是免费签名下唯一走得通的路。")
                 .font(.system(size: 12))
                 .foregroundStyle(TWColor.ink2)
                 .lineSpacing(3)
@@ -363,76 +476,14 @@ struct WatchSyncSheet: View {
         .twGlass()
     }
 
-    // MARK: - 一键生成
-
-    private var oneTapCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 7) {
-                Image(systemName: "wand.and.stars")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(TWColor.purple)
-                Text("一键生成")
-                    .font(.system(size: 16.5, weight: .bold))
-                    .foregroundStyle(TWColor.ink)
-                Spacer(minLength: 0)
-                Image(systemName: "sparkles")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(TWColor.violet)
-            }
-
-            Text("点一下：整套 URL 模板立刻进剪贴板，同时直接跳进快捷指令的新建页。到那边粘贴一次，把 [xx] 换成健康变量就能跑。")
-                .font(.system(size: 12.5))
-                .foregroundStyle(TWColor.ink2)
-                .lineSpacing(3)
-                .fixedSize(horizontal: false, vertical: true)
-
-            Button {
-                makeShortcut()
-            } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "arrow.up.right.square.fill")
-                        .font(.system(size: 14, weight: .bold))
-                    Text(copied ? "已复制 · 正在跳转" : "一键打开快捷指令")
-                        .font(.system(size: 14.5, weight: .bold))
-                }
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 13)
-                .background {
-                    Capsule().fill(
-                        LinearGradient(
-                            colors: [TWColor.purple, TWColor.blue],
-                            startPoint: .leading, endPoint: .trailing
-                        )
-                    )
-                }
-                .shadow(color: TWColor.purple.opacity(0.28), radius: 12, y: 5)
-            }
-            .buttonStyle(.plain)
-
-            HStack(spacing: 6) {
-                Image(systemName: "info.circle")
-                    .font(.system(size: 10.5))
-                    .foregroundStyle(TWColor.ink3)
-                Text("iOS 不允许 App 直接写入快捷指令，所以跳过去粘一下是系统上限，不是偷懒。")
-                    .font(.system(size: 10.5))
-                    .foregroundStyle(TWColor.ink3)
-                    .lineSpacing(2)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
-        .twGlass()
-    }
+    // MARK: - 动作
 
     private func makeShortcut() {
-        UIPasteboard.general.string = template
+        UIPasteboard.general.string = quickTemplate
         UINotificationFeedbackGenerator().notificationOccurred(.success)
         copied = true
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) { copied = false }
 
-        // 首选「新建空白快捷指令」，失败则退到快捷指令首页
         let create = URL(string: "shortcuts://create-shortcut")
         let root = URL(string: "shortcuts://")
         guard let target = create else {
@@ -444,30 +495,31 @@ struct WatchSyncSheet: View {
         }
     }
 
-    // MARK: - 复制
-
-    private func copyTemplate() {
+    private func copyFull() {
         UIPasteboard.general.string = template
         UIImpactFeedbackGenerator(style: .soft).impactOccurred()
-        copied = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) { copied = false }
+        copiedFull = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) { copiedFull = false }
     }
 
     private func copySteps() {
         let text = """
-        天才威手表同步 · 配置清单
+        天才威 · 手表同步 五步
 
-        1. 快捷指令 App → 右上角 + 新建，命名「天才威同步」
-        2. 加 10 个「查找健康样本」：心率 / HRV / 静息心率 / 步数 / 步行跑步距离 / 活动能量 / 锻炼分钟 / 站立小时 / 睡眠分析 / 深度睡眠
-           · 每个都设「排序=最新」「限制=1」
-           · 步数、距离改成「求和」
-        3. 加「文本」，粘贴：
-        twfit://sync?hr=[心率]&hrv=[HRV]&rhr=[静息心率]&steps=[步数]&dist=[距离]&kcal=[活动能量]&exercise=[锻炼分钟]&stand=[站立小时]&sleep=[睡眠分钟]&deep=[深睡分钟]
-           把每个 [xx] 换成对应查找动作的变量
-        4. 加「打开 URL」，输入选上一步的文本
-        5. 自动化标签 → 新建个人自动化 → 触发「App」→ 选天才威 → 勾「打开时」→ 关闭「运行前询问」→ 完成
+        模板（App 里点“复制模板并打开快捷指令”也能拿到）：
+        \(quickTemplate)
 
-        之后每次打开天才威自动同步，无需手动。
+        1. 快捷指令 App → 底部「自动化」→ 右上角 +
+        2. 选「App」→ 搜“天才威”→ 勾「打开时」→ 开「立即运行」→ 下一步
+        3. 回「所有快捷指令」→ 右上角 + 新建，名字随意
+        4. 添加动作 → 搜「查找健康样本」，加 4 个：心率 / 步数 / 活动能量 / 睡眠分析
+           每个：类型对应，排序方式=最新样本，限制=1
+        5. 添加「文本」→ 粘贴模板 → 把 [心率] 这类方括号换成变量
+           （删掉方括号内容，键盘上方点「变量」，选查找动作的值）
+           再添加「打开 URL」，输入选这个文本
+
+        收尾：自动化那条 → 添加动作 → 选刚建的快捷指令
+        之后每次打开天才威自动同步。
         """
         UIPasteboard.general.string = text
         UIImpactFeedbackGenerator(style: .soft).impactOccurred()

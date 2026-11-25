@@ -26,7 +26,6 @@ struct BioPage: View {
     @State private var showWaterLog = false
     @State private var showWeekly = false
 
-    private let pedometer = CMPedometer()
 
     var body: some View {
         VStack(spacing: 16) {
@@ -35,6 +34,7 @@ struct BioPage: View {
             weeklyCard
             hrCard
             watchSyncCard
+            spo2Card
             stepCard
             sleepCard
             bodyCard
@@ -239,6 +239,58 @@ struct BioPage: View {
                 .minimumScaleFactor(0.8)
         }
         .frame(maxWidth: .infinity)
+    }
+
+    /// 血氧（手表 / 快捷指令通道）
+    private var spo2Card: some View {
+        let v = store.watchSpO2
+        let tint: Color = v == 0 ? TWColor.ink3 : (v >= 95 ? TWColor.mint : (v >= 90 ? TWColor.amber : TWColor.coral))
+        let state: String = v == 0 ? "还没测" : (v >= 95 ? "正常" : (v >= 90 ? "偏低" : "明显偏低，建议就医"))
+
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                Image(systemName: "lungs.fill")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(tint)
+                Text("血氧 SpO₂")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundStyle(TWColor.ink)
+                Spacer()
+                Text(state)
+                    .font(.system(size: 11.5, weight: .bold))
+                    .foregroundStyle(tint)
+                    .padding(.horizontal, 9)
+                    .padding(.vertical, 4)
+                    .background { Capsule().fill(tint.opacity(0.13)) }
+            }
+
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text(v == 0 ? "—" : "\(v)")
+                    .font(.system(size: 34, weight: .heavy, design: .rounded))
+                    .foregroundStyle(TWColor.ink)
+                    .monospacedDigit()
+                Text("%")
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(TWColor.ink3)
+                Spacer()
+                if let t = store.watchSpO2At {
+                    Text(DateFormatter.twShort.string(from: t))
+                        .font(.system(size: 11.5, weight: .semibold))
+                        .foregroundStyle(TWColor.ink3)
+                }
+            }
+
+            Text(v == 0
+                 ? "在手表上测一次血氧，再用「手表同步」那条快捷指令把 spo2 一起带进来。无法直接读健康数据，走快捷指令是免费签名下唯一的路。"
+                 : "来自手表血氧传感器。正常范围 95–100%；长期低于 90% 要尽快就医。")
+                .font(.system(size: 11.5))
+                .foregroundStyle(TWColor.ink3)
+                .lineSpacing(2.5)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .twGlass()
     }
 
     private var sleepCard: some View {
@@ -923,27 +975,13 @@ struct BioPage: View {
 
         switch CMPedometer.authorizationStatus() {
         case .authorized: motionStatus = "已授权"
-        case .denied: motionStatus = "被拒绝"
+        case .denied:     motionStatus = "被拒绝"
         case .restricted: motionStatus = "受限"
-        default: motionStatus = "待授权"
+        default:          motionStatus = "待授权"
         }
 
-        let start = Calendar.current.startOfDay(for: Date())
-        pedometer.queryPedometerData(from: start, to: Date()) { data, error in
-            DispatchQueue.main.async {
-                if error != nil {
-                    motionStatus = "读取失败"
-                    return
-                }
-                if let d = data {
-                    store.pedometerSteps = d.numberOfSteps.intValue
-                    if let dist = d.distance {
-                        store.pedometerDistance = dist.doubleValue
-                    }
-                    if motionStatus == "待授权" { motionStatus = "已授权" }
-                }
-            }
-        }
+        // 交给全局 StepLive：query 补历史 + startUpdates 持续推送，数值只增不减
+        StepLive.shared.refresh()
     }
 
     private func timeText(_ d: Date) -> String {

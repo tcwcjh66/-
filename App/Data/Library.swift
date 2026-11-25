@@ -2,23 +2,25 @@ import SwiftUI
 
 // MARK: - 训练方案模型
 
-struct PlanItem: Identifiable, Hashable {
-    let id = UUID()
+struct PlanItem: Identifiable, Hashable, Codable {
+    var id = UUID()
     var name: String
     var sets: String
     var reps: String
     var rest: String
+    /// 自定义休息秒数，0 表示沿用 rest 文案解析出来的值
+    var restSec: Int = 0
 }
 
-struct PlanDay: Identifiable, Hashable {
-    let id = UUID()
+struct PlanDay: Identifiable, Hashable, Codable {
+    var id = UUID()
     var title: String
     var focus: String
     var items: [PlanItem]
 }
 
-struct PlanTemplate: Identifiable, Hashable {
-    let id = UUID()
+struct PlanTemplate: Identifiable, Hashable, Codable {
+    var id = UUID()
     var name: String
     var tag: String
     var level: String

@@ -21,9 +21,12 @@ struct FlowPage: View {
     @State private var detailSession: SessionLog?
     @State private var pendingPlan: Int?
     @State private var showSwitchConfirm = false
+    @State private var showPlanEditor = false
+    @State private var editPlanIndex: Int?
+    @State private var showRestSet = false
 
     private var planIndex: Int {
-        min(max(store.planPick, 0), planTemplates.count - 1)
+        min(max(store.planPick, 0), max(store.allPlans.count - 1, 0))
     }
 
     private var dayIndex: Int {
@@ -31,7 +34,7 @@ struct FlowPage: View {
     }
 
     private var plan: PlanTemplate {
-        planTemplates[planIndex]
+        store.allPlans[planIndex]
     }
 
     private var day: PlanDay {
@@ -51,6 +54,7 @@ struct FlowPage: View {
             PageHeader(title: "训练", subtitle: "\(plan.name) · \(day.title)")
 
             planPicker
+            planTools
 
             if plan.days.count > 1 {
                 dayTabs
@@ -82,6 +86,16 @@ struct FlowPage: View {
                 .presentationDetents([.medium, .large])
                 .presentationCornerRadius(28)
         }
+        .sheet(isPresented: $showPlanEditor) {
+            PlanEditorSheet(editIndex: editPlanIndex)
+                .environmentObject(store)
+        }
+        .sheet(isPresented: $showRestSet) {
+            RestSettingSheet()
+                .environmentObject(store)
+                .presentationDetents([.height(420)])
+                .presentationCornerRadius(26)
+        }
         .confirmationDialog("正在训练，切换方案会清空当前组数？",
                             isPresented: $showSwitchConfirm,
                             titleVisibility: .visible) {
@@ -102,10 +116,63 @@ struct FlowPage: View {
 
     // MARK: - 方案选择
 
+    private var planTools: some View {
+        HStack(spacing: 8) {
+            Button {
+                UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                editPlanIndex = nil
+                showPlanEditor = true
+            } label: {
+                toolChip("自定义方案", icon: "plus.circle.fill", active: false)
+            }
+            .buttonStyle(.plain)
+
+            if store.planPick >= planTemplates.count {
+                Button {
+                    UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                    editPlanIndex = store.planPick - planTemplates.count
+                    showPlanEditor = true
+                } label: {
+                    toolChip("编辑当前", icon: "slider.horizontal.3", active: true)
+                }
+                .buttonStyle(.plain)
+            }
+
+            Spacer(minLength: 0)
+
+            Button {
+                UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                showRestSet = true
+            } label: {
+                toolChip(store.restOverride == 0 ? "休息 · 跟随" : "休息 \(store.restOverride)s",
+                         icon: "timer", active: store.restOverride > 0)
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    private func toolChip(_ text: String, icon: String, active: Bool) -> some View {
+        HStack(spacing: 5) {
+            Image(systemName: icon)
+                .font(.system(size: 11, weight: .bold))
+            Text(text)
+                .font(.system(size: 11.5, weight: .bold))
+        }
+        .foregroundStyle(active ? TWColor.purple : TWColor.ink2)
+        .padding(.horizontal, 11)
+        .padding(.vertical, 7)
+        .background {
+            Capsule().fill(active ? TWColor.purple.opacity(0.13) : TWColor.glass(0.55))
+        }
+        .overlay {
+            Capsule().stroke(TWColor.glass(0.7), lineWidth: 0.8)
+        }
+    }
+
     private var planPicker: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 9) {
-                ForEach(Array(planTemplates.enumerated()), id: \.element.id) { pair in
+                ForEach(Array(store.allPlans.enumerated()), id: \.element.id) { pair in
                     Button {
                         UIImpactFeedbackGenerator(style: .soft).impactOccurred()
                         if store.sessionStart != nil && store.sessionSets > 0 {
@@ -299,7 +366,7 @@ struct FlowPage: View {
             doneMoves.insert(key)
             store.addSet(weight: setWeight, reps: setReps)
             // 按这个动作自己的 rest 起休息倒计时，不用再手调
-            let sec = restSeconds(rest)
+            let sec = store.restOverride > 0 ? store.restOverride : restSeconds(rest)
             withAnimation(.snappy(duration: 0.25)) {
                 total = sec
                 remain = sec

@@ -68,6 +68,15 @@ struct RootView: View {
             store.measuredHRV = Int(hrv)
             changed = true
         }
+        if var o = val("spo2", "oxygen", "o2") {
+            // 健康里的血氧是 0.98 这种小数，快捷指令有时直接给 0.98、有时给 98
+            if o <= 1.5 { o = o * 100 }
+            if o >= 60, o <= 100 {
+                store.watchSpO2 = Int(o.rounded())
+                store.watchSpO2At = Date()
+                changed = true
+            }
+        }
         if let rhr = val("rhr", "restinghr"), rhr >= 25, rhr <= 200 {
             store.restingHR = Int(rhr)
             changed = true
