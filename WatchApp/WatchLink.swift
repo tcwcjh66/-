@@ -37,6 +37,12 @@ final class WatchLink: NSObject, ObservableObject, WCSessionDelegate {
         }
     }
 
+    func sessionDidBecomeInactive(_ session: WCSession) {}
+
+    func sessionDidDeactivate(_ session: WCSession) {
+        WCSession.default.activate()
+    }
+
     func sessionReachabilityDidChange(_ session: WCSession) {
         DispatchQueue.main.async { self.reachable = session.isReachable }
     }
