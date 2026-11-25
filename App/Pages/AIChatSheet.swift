@@ -498,7 +498,7 @@ struct AISetupSheet: View {
             Text("服务商")
                 .font(.system(size: 14, weight: .bold))
                 .foregroundStyle(TWColor.ink)
-            HStack(spacing: 7) {
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 7), count: 3), spacing: 7) {
                 ForEach(AIProvider.allCases) { p in
                     Button {
                         UIImpactFeedbackGenerator(style: .soft).impactOccurred()
@@ -510,10 +510,10 @@ struct AISetupSheet: View {
                         }
                     } label: {
                         Text(p.label)
-                            .font(.system(size: 12, weight: provider == p ? .bold : .medium))
+                            .font(.system(size: 12.5, weight: provider == p ? .bold : .medium))
                             .foregroundStyle(provider == p ? .white : TWColor.ink2)
                             .frame(maxWidth: .infinity)
-                            .padding(.vertical, 10)
+                            .padding(.vertical, 11)
                             .background {
                                 RoundedRectangle(cornerRadius: 11, style: .continuous)
                                     .fill(provider == p
