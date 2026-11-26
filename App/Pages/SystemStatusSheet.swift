@@ -89,7 +89,7 @@ struct SystemStatusSheet: View {
         }
 
         let photos = fm.urls(for: .documentDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("twphotos", isDirectory: true)
+            .appendingPathComponent("mealPhotos", isDirectory: true)
         if let fs = try? fm.contentsOfDirectory(at: photos, includingPropertiesForKeys: [.fileSizeKey]) {
             photoCount = fs.count
             photoBytes = fs.reduce(0) { sum, f in

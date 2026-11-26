@@ -445,6 +445,8 @@ final class TWStore: ObservableObject {
     @Published var barcodeNotes: [String: BarcodeNote] = [:]
     /// 自动备份失败时的提示，首页会显示一条细横幅，点掉即可
     @Published var saveIssue: String? = nil
+    /// 进度照索引，图本身在 Documents/progressPhotos
+    @Published var progressPhotos: [ProgressPhoto] = []
 
     private let d = UserDefaults.standard
     private var saveWork: DispatchWorkItem?
@@ -1361,6 +1363,64 @@ final class TWStore: ObservableObject {
         return streak
     }
 
+    // MARK: - 进度照
+
+    var progressDir: URL {
+        FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("progressPhotos", isDirectory: true)
+    }
+
+    private static let progressCache = NSCache<NSString, UIImage>()
+
+    @discardableResult
+    func addProgressPhoto(_ img: UIImage, note: String) -> Bool {
+        // 压到 1200 宽，别让一张原图占十几兆
+        let maxW: CGFloat = 1200
+        let scale = img.size.width > maxW ? maxW / img.size.width : 1
+        let size = CGSize(width: img.size.width * scale, height: img.size.height * scale)
+        let fmt = UIGraphicsImageRendererFormat()
+        fmt.scale = 1
+        let out = UIGraphicsImageRenderer(size: size, format: fmt).image { _ in
+            img.draw(in: CGRect(origin: .zero, size: size))
+        }
+        guard let data = out.jpegData(compressionQuality: 0.82) else { return false }
+
+        let name = "\(UUID().uuidString).jpg"
+        let dir = progressDir
+        do {
+            try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+            try data.write(to: dir.appendingPathComponent(name), options: .atomic)
+        } catch { return false }
+
+        let p = ProgressPhoto(date: DateFormatter.twDay.string(from: Date()),
+                              file: name, note: note, kg: bodyWeight)
+        progressPhotos.insert(p, at: 0)
+        Self.progressCache.setObject(out, forKey: name as NSString)
+
+        if progressPhotos.count > 40 {
+            for old in progressPhotos.dropFirst(40) {
+                try? FileManager.default.removeItem(at: dir.appendingPathComponent(old.file))
+            }
+            progressPhotos = Array(progressPhotos.prefix(40))
+        }
+        persistSoon()
+        return true
+    }
+
+    func progressImage(_ p: ProgressPhoto) -> UIImage? {
+        if let c = Self.progressCache.object(forKey: p.file as NSString) { return c }
+        guard let img = UIImage(contentsOfFile: progressDir.appendingPathComponent(p.file).path) else { return nil }
+        Self.progressCache.setObject(img, forKey: p.file as NSString)
+        return img
+    }
+
+    func deleteProgressPhoto(_ p: ProgressPhoto) {
+        try? FileManager.default.removeItem(at: progressDir.appendingPathComponent(p.file))
+        Self.progressCache.removeObject(forKey: p.file as NSString)
+        progressPhotos.removeAll { $0.id == p.id }
+        persistSoon()
+    }
+
     // MARK: - 餐食照片
 
     var photoDir: URL {
@@ -1537,6 +1597,9 @@ final class TWStore: ObservableObject {
         if let v = try? JSONEncoder().encode(sessions) {
             d.set(v, forKey: Key.sess)
         }
+        if let v = try? JSONEncoder().encode(progressPhotos) {
+            d.set(v, forKey: "tw.progressPhotos.v1")
+        }
 
         // 每天顺手落一份完整 JSON 到 Documents/twbackup/，plist 坏了还能从这捡回来
         TWBackup.maybeAutoBackup(build: { [weak self] in self?.exportJSON() ?? "{}" }) { [weak self] err in
@@ -1654,6 +1717,10 @@ final class TWStore: ObservableObject {
         if let v = d.data(forKey: Key.sess),
            let decoded = try? JSONDecoder().decode([SessionLog].self, from: v) {
             sessions = decoded
+        }
+        if let v = d.data(forKey: "tw.progressPhotos.v1"),
+           let decoded = try? JSONDecoder().decode([ProgressPhoto].self, from: v) {
+            progressPhotos = decoded
         }
     }
 }

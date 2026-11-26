@@ -105,17 +105,7 @@ struct LibPage: View {
     private func moveRow(_ m: MoveItem) -> some View {
         let fav = store.favoriteMoves.contains(m.name)
         return HStack(spacing: 11) {
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(
-                    LinearGradient(colors: [TWColor.purple.opacity(0.22), TWColor.violet.opacity(0.10)],
-                                   startPoint: .topLeading, endPoint: .bottomTrailing)
-                )
-                .frame(width: 48, height: 48)
-                .overlay {
-                    Image(systemName: iconFor(m.group))
-                        .font(.tw(19, .semibold))
-                        .foregroundStyle(TWColor.purple)
-                }
+            MoveFigure(name: m.name, size: 48)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(m.name)

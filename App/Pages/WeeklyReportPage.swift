@@ -5,6 +5,7 @@ struct WeeklyReportPage: View {
     @EnvironmentObject var store: TWStore
     @Environment(\.dismiss) private var dismiss
     @State private var appeared = false
+    @State private var cardMsg: String? = nil
 
     private var dayFormatter: DateFormatter {
         let f = DateFormatter()
@@ -258,6 +259,25 @@ struct WeeklyReportPage: View {
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 28)
 
+                    Button { saveWeekCard() } label: {
+                        HStack(spacing: 7) {
+                            Image(systemName: cardMsg == nil ? "square.and.arrow.down" : "checkmark.circle.fill")
+                                .font(.tw(13, .bold))
+                            Text(cardMsg ?? "存一张周报长图")
+                                .font(.tw(14, .bold))
+                        }
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 13)
+                        .background {
+                            RoundedRectangle(cornerRadius: 15, style: .continuous)
+                                .fill(LinearGradient(colors: [TWColor.purple, TWColor.violet],
+                                                     startPoint: .leading, endPoint: .trailing))
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.horizontal, 18)
+
                     Button {
                         UIImpactFeedbackGenerator(style: .soft).impactOccurred()
                         dismiss()
@@ -279,6 +299,30 @@ struct WeeklyReportPage: View {
             }
         }
         .onAppear { withAnimation(.easeOut(duration: 0.35)) { appeared = true } }
+    }
+
+    @MainActor
+    private func saveWeekCard() {
+        UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+        guard cardMsg == nil else { return }
+        let snap = WeekSnapshot(
+            range: "\(keys.first ?? "") 至 \(keys.last ?? "")",
+            sets: totalSets,
+            mins: totalMins,
+            tonnage: totalTonnage,
+            steps: avgSteps,
+            verdict: verdict,
+            insight: insight
+        )
+        guard let img = TWWeekCard.render(snap) else {
+            cardMsg = "渲染失败"
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) { cardMsg = nil }
+            return
+        }
+        TWShareCard.save(img) { ok in
+            cardMsg = ok ? "已存进相簿" : "没存成，去设置给相册权限"
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.2) { cardMsg = nil }
+        }
     }
 
     private var weightText: String {

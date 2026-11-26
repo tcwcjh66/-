@@ -28,6 +28,7 @@ struct TodayPage: View {
             VStack(spacing: 0) {
                 heroDial
                 ringsCard
+                recoveryBar
                 if firstRun { firstRunCard }
                 hairline
                 todayTrainCard
@@ -209,6 +210,39 @@ struct TodayPage: View {
         }
         .frame(height: store.avatarAsset.hasSuffix("sleep") ? 252 : 322)
         .animation(.easeInOut(duration: 0.42), value: store.avatarAsset)
+    }
+
+    /// 只有 HRV / 睡眠 / 训练记录里至少有一项时才出现，不编分数
+    private var recoveryBar: some View {
+        Group {
+            if let r = TWRecovery.today(store) {
+                HStack(spacing: 10) {
+                    ZStack {
+                        Circle()
+                            .fill(r.tint.opacity(0.16))
+                            .frame(width: 34, height: 34)
+                        Text("\(r.value)")
+                            .font(.tw(13, .heavy))
+                            .foregroundStyle(r.tint)
+                            .monospacedDigit()
+                    }
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("恢复度 · \(r.advice)")
+                            .font(.tw(12.5, .semibold))
+                            .foregroundStyle(TWColor.ink)
+                        Text(r.reasons.prefix(2).joined(separator: "，"))
+                            .font(.tw(10))
+                            .foregroundStyle(TWColor.ink3)
+                            .lineLimit(1)
+                    }
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, 14)
+                .padding(.bottom, 10)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("恢复度 \(r.value)，\(r.advice)")
+            }
+        }
     }
 
     private var ringsCard: some View {

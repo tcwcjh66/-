@@ -84,6 +84,7 @@ struct FlowPage: View {
                 TWNotify.cancelRest()
                 TWRestLive.endAll()
                 TWNotify.playRestAlert()
+                TWVoice.announceNext(restNext)
             }
         }
         .onAppear {
@@ -477,6 +478,7 @@ struct FlowPage: View {
             // 就算把手机揣兜里、切出去刷视频，到点也会响
             TWNotify.scheduleRest(after: sec, move: name)
             TWRestLive.start(seconds: sec, move: name, next: next)
+            TWVoice.announceRest(sec, move: name)
         }
     }
 

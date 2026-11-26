@@ -27,6 +27,7 @@ struct BioPage: View {
     @State private var showWaterLog = false
     @State private var showWeekly = false
     @State private var showAch = false
+    @State private var showProgress = false
 
 
     var body: some View {
@@ -41,10 +42,17 @@ struct BioPage: View {
             stepCard
             sleepCard
             bodyCard
+            progressCard
             girthCard
             achievementCard
             waterCard
             sourceCard
+        }
+        .sheet(isPresented: $showProgress) {
+            ProgressPhotoSheet()
+                .environmentObject(store)
+                .presentationDetents([.large])
+                .presentationCornerRadius(28)
         }
         .sheet(isPresented: $showPulse) {
             PulseView { bpm, hrv in
@@ -603,6 +611,43 @@ struct BioPage: View {
     }
 
     private var girthTitles: [String] { ["腰围", "胸围", "臂围", "腿围", "臀围"] }
+
+    private var progressCard: some View {
+        Button {
+            UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+            showProgress = true
+        } label: {
+            HStack(spacing: 12) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 11, style: .continuous)
+                        .fill(LinearGradient(colors: [TWColor.purple.opacity(0.20), TWColor.violet.opacity(0.10)],
+                                             startPoint: .topLeading, endPoint: .bottomTrailing))
+                        .frame(width: 44, height: 44)
+                    Image(systemName: "photo.on.rectangle.angled")
+                        .font(.tw(17, .semibold))
+                        .foregroundStyle(TWColor.purple)
+                }
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("进度照")
+                        .font(.tw(15, .bold))
+                        .foregroundStyle(TWColor.ink)
+                    Text(store.progressPhotos.isEmpty
+                         ? "拍第一张，以后并排比变化"
+                         : "已存 \(store.progressPhotos.count) 张 · 最早 \(store.progressPhotos.last?.date ?? "")")
+                        .font(.tw(11))
+                        .foregroundStyle(TWColor.ink3)
+                        .lineLimit(1)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right")
+                    .font(.tw(11, .bold))
+                    .foregroundStyle(TWColor.ink3)
+            }
+            .padding(14)
+            .twGlass()
+        }
+        .buttonStyle(.plain)
+    }
 
     private var girthCard: some View {
         VStack(alignment: .leading, spacing: 12) {
