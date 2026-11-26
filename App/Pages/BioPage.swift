@@ -157,21 +157,21 @@ struct BioPage: View {
                                              startPoint: .topLeading, endPoint: .bottomTrailing))
                         .frame(width: 42, height: 42)
                     Image(systemName: "chart.bar.xaxis")
-                        .font(.system(size: 18, weight: .bold))
+                        .font(.tw(18, .bold))
                         .foregroundStyle(.white)
                 }
                 VStack(alignment: .leading, spacing: 3) {
                     Text("本周报告")
-                        .font(.system(size: 15, weight: .bold))
+                        .font(.tw(15, .bold))
                         .foregroundStyle(TWColor.ink)
                     Text("训练 · 步数 · 蛋白 · 体重，最近 7 天一次算完")
-                        .font(.system(size: 11.5))
+                        .font(.tw(11.5))
                         .foregroundStyle(TWColor.ink3)
                         .lineLimit(1)
                 }
                 Spacer(minLength: 0)
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .bold))
+                    .font(.tw(12, .bold))
                     .foregroundStyle(TWColor.ink3)
             }
             .padding(14)
@@ -188,23 +188,23 @@ struct BioPage: View {
             VStack(alignment: .leading, spacing: 11) {
                 HStack(spacing: 8) {
                     Image(systemName: "applewatch")
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(.tw(15, .semibold))
                         .foregroundStyle(TWColor.mint)
                     Text("手表同步")
-                        .font(.system(size: 16, weight: .bold))
+                        .font(.tw(16, .bold))
                         .foregroundStyle(TWColor.ink)
                     Spacer()
                     Text(store.watchSyncAt == nil ? "去配置" : "详情")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(.tw(12, .semibold))
                         .foregroundStyle(TWColor.mint)
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 10, weight: .bold))
+                        .font(.tw(10, .bold))
                         .foregroundStyle(TWColor.ink3)
                 }
 
                 if let t = store.watchSyncAt {
                     Text("上次同步 \(DateFormatter.twShort.string(from: t)) · 累计 \(store.watchSyncCount) 次")
-                        .font(.system(size: 12))
+                        .font(.tw(12))
                         .foregroundStyle(TWColor.ink2)
 
                     HStack(spacing: 0) {
@@ -217,7 +217,7 @@ struct BioPage: View {
                     .padding(.top, 2)
                 } else {
                     Text("快捷指令自动化，打开 App 就自动把心率、步数、睡眠、能耗灌进来")
-                        .font(.system(size: 12))
+                        .font(.tw(12))
                         .foregroundStyle(TWColor.ink3)
                         .lineSpacing(2)
                         .fixedSize(horizontal: false, vertical: true)
@@ -238,11 +238,11 @@ struct BioPage: View {
     private func watchCell(_ title: String, _ value: String, _ unit: String) -> some View {
         VStack(spacing: 2) {
             Text(value)
-                .font(.system(size: 18, weight: .heavy, design: .rounded))
+                .font(.tw(18, .heavy, .rounded))
                 .foregroundStyle(TWColor.ink)
                 .monospacedDigit()
             Text("\(title) · \(unit)")
-                .font(.system(size: 10, weight: .semibold))
+                .font(.tw(10, .semibold))
                 .foregroundStyle(TWColor.ink3)
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
@@ -259,14 +259,14 @@ struct BioPage: View {
         return VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 8) {
                 Image(systemName: "lungs.fill")
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.tw(15, .semibold))
                     .foregroundStyle(tint)
                 Text("血氧 SpO₂")
-                    .font(.system(size: 16, weight: .bold))
+                    .font(.tw(16, .bold))
                     .foregroundStyle(TWColor.ink)
                 Spacer()
                 Text(state)
-                    .font(.system(size: 11.5, weight: .bold))
+                    .font(.tw(11.5, .bold))
                     .foregroundStyle(tint)
                     .padding(.horizontal, 9)
                     .padding(.vertical, 4)
@@ -275,16 +275,16 @@ struct BioPage: View {
 
             HStack(alignment: .firstTextBaseline, spacing: 6) {
                 Text(v == 0 ? "—" : "\(v)")
-                    .font(.system(size: 34, weight: .heavy, design: .rounded))
+                    .font(.tw(34, .heavy, .rounded))
                     .foregroundStyle(TWColor.ink)
                     .monospacedDigit()
                 Text("%")
-                    .font(.system(size: 15, weight: .bold))
+                    .font(.tw(15, .bold))
                     .foregroundStyle(TWColor.ink3)
                 Spacer()
                 if let t = store.watchSpO2At {
                     Text(DateFormatter.twShort.string(from: t))
-                        .font(.system(size: 11.5, weight: .semibold))
+                        .font(.tw(11.5, .semibold))
                         .foregroundStyle(TWColor.ink3)
                 }
             }
@@ -292,7 +292,7 @@ struct BioPage: View {
             Text(v == 0
                  ? "在手表上测一次血氧，再用「手表同步」那条快捷指令把 spo2 一起带进来。无法直接读健康数据，走快捷指令是免费签名下唯一的路。"
                  : "来自手表血氧传感器。正常范围 95–100%；长期低于 90% 要尽快就医。")
-                .font(.system(size: 11.5))
+                .font(.tw(11.5))
                 .foregroundStyle(TWColor.ink3)
                 .lineSpacing(2.5)
                 .fixedSize(horizontal: false, vertical: true)
@@ -310,27 +310,27 @@ struct BioPage: View {
             VStack(alignment: .leading, spacing: 13) {
                 HStack(spacing: 8) {
                     Image(systemName: "moon.stars.fill")
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(.tw(15, .semibold))
                         .foregroundStyle(TWColor.purple)
                     Text("睡眠")
-                        .font(.system(size: 16, weight: .bold))
+                        .font(.tw(16, .bold))
                         .foregroundStyle(TWColor.ink)
                     Spacer()
                     Text(store.lastSleep == nil ? "去记录" : "详情")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(.tw(12, .semibold))
                         .foregroundStyle(TWColor.purple)
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 10, weight: .bold))
+                        .font(.tw(10, .bold))
                         .foregroundStyle(TWColor.ink3)
                 }
 
                 if store.watchSleepMin > 0 {
                     HStack(spacing: 6) {
                         Image(systemName: "applewatch")
-                            .font(.system(size: 11, weight: .semibold))
+                            .font(.tw(11, .semibold))
                             .foregroundStyle(TWColor.mint)
                         Text("手表夜间 \(store.watchSleepMin / 60) 小时 \(store.watchSleepMin % 60) 分 · 深睡 \(store.watchDeepMin) 分")
-                            .font(.system(size: 11.5, weight: .semibold))
+                            .font(.tw(11.5, .semibold))
                             .foregroundStyle(TWColor.ink2)
                         Spacer(minLength: 0)
                     }
@@ -340,20 +340,20 @@ struct BioPage: View {
                     HStack(spacing: 14) {
                         VStack(spacing: 1) {
                             Text("\(s.score)")
-                                .font(.system(size: 34, weight: .heavy, design: .rounded))
+                                .font(.tw(34, .heavy, .rounded))
                                 .foregroundStyle(sleepScoreColor(s.score))
                             Text(s.scoreLabel)
-                                .font(.system(size: 11, weight: .semibold))
+                                .font(.tw(11, .semibold))
                                 .foregroundStyle(TWColor.ink3)
                         }
                         .frame(width: 84)
 
                         VStack(alignment: .leading, spacing: 7) {
                             Text("睡了 \(s.durationText)")
-                                .font(.system(size: 13.5, weight: .bold))
+                                .font(.tw(13.5, .bold))
                                 .foregroundStyle(TWColor.ink)
                             Text("深 \(s.deepMinutes) 分 · 浅 \(s.lightMinutes) 分 · 醒 \(s.awakeMinutes) 分")
-                                .font(.system(size: 11.5))
+                                .font(.tw(11.5))
                                 .foregroundStyle(TWColor.ink3)
                             sleepMiniBar(s)
                         }
@@ -361,7 +361,7 @@ struct BioPage: View {
                 } else {
                     HStack(spacing: 10) {
                         Image(systemName: "bed.double.fill")
-                            .font(.system(size: 17, weight: .semibold))
+                            .font(.tw(17, .semibold))
                             .foregroundStyle(TWColor.ink3)
                             .frame(width: 40, height: 40)
                             .background {
@@ -370,10 +370,10 @@ struct BioPage: View {
                             }
                         VStack(alignment: .leading, spacing: 3) {
                             Text("还没有睡眠记录")
-                                .font(.system(size: 13.5, weight: .bold))
+                                .font(.tw(13.5, .bold))
                                 .foregroundStyle(TWColor.ink)
                             Text("睡前点开始，手机放枕边整夜记体动")
-                                .font(.system(size: 11.5))
+                                .font(.tw(11.5))
                                 .foregroundStyle(TWColor.ink3)
                                 .lineSpacing(2)
                         }
@@ -437,7 +437,7 @@ struct BioPage: View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
                 Text("身体数据")
-                    .font(.system(size: 16, weight: .bold))
+                    .font(.tw(16, .bold))
                     .foregroundStyle(TWColor.ink)
                 Spacer()
                 GlassPill(text: bmiText, tint: TWColor.purple)
@@ -445,19 +445,19 @@ struct BioPage: View {
 
             HStack(alignment: .firstTextBaseline, spacing: 6) {
                 Text(store.bodyWeight > 0 ? String(format: "%.1f", store.bodyWeight) : "--")
-                    .font(.system(size: 42, weight: .heavy))
+                    .font(.tw(42, .heavy))
                     .foregroundStyle(TWColor.ink)
                     .contentTransition(.numericText())
                 Text("kg")
-                    .font(.system(size: 13, weight: .medium))
+                    .font(.tw(13, .medium))
                     .foregroundStyle(TWColor.ink3)
                 Spacer()
                 VStack(alignment: .trailing, spacing: 2) {
                     Text("腰围")
-                        .font(.system(size: 11, weight: .semibold))
+                        .font(.tw(11, .semibold))
                         .foregroundStyle(TWColor.ink3)
                     Text(store.waistCM > 0 ? "\(Int(store.waistCM)) cm" : "--")
-                        .font(.system(size: 17, weight: .bold))
+                        .font(.tw(17, .bold))
                         .foregroundStyle(TWColor.blue)
                 }
             }
@@ -485,11 +485,11 @@ struct BioPage: View {
                     .frame(height: 18)
 
                     HStack {
-                        Text("偏瘦 18.5").font(.system(size: 9.5)).foregroundStyle(TWColor.ink3)
+                        Text("偏瘦 18.5").font(.tw(9.5)).foregroundStyle(TWColor.ink3)
                         Spacer()
-                        Text("正常 24").font(.system(size: 9.5)).foregroundStyle(TWColor.ink3)
+                        Text("正常 24").font(.tw(9.5)).foregroundStyle(TWColor.ink3)
                         Spacer()
-                        Text("偏高 28").font(.system(size: 9.5)).foregroundStyle(TWColor.ink3)
+                        Text("偏高 28").font(.tw(9.5)).foregroundStyle(TWColor.ink3)
                     }
                 }
             }
@@ -519,10 +519,10 @@ struct BioPage: View {
                 let diff = store.bodyWeight - store.weightGoal
                 HStack(spacing: 8) {
                     Image(systemName: abs(diff) < 0.3 ? "checkmark.circle.fill" : "flag.fill")
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.tw(13, .semibold))
                         .foregroundStyle(abs(diff) < 0.3 ? TWColor.mint : TWColor.amber)
                     Text("目标 \(String(format: "%.1f", store.weightGoal)) kg")
-                        .font(.system(size: 12.5, weight: .semibold))
+                        .font(.tw(12.5, .semibold))
                         .foregroundStyle(TWColor.ink2)
                     Spacer()
                     Text(abs(diff) < 0.3
@@ -530,7 +530,7 @@ struct BioPage: View {
                          : (diff > 0
                             ? String(format: "还差 %.1f kg", diff)
                             : String(format: "超目标 %.1f kg", -diff)))
-                        .font(.system(size: 12.5, weight: .bold))
+                        .font(.tw(12.5, .bold))
                         .foregroundStyle(abs(diff) < 0.3 ? TWColor.mint : TWColor.amber)
                 }
             }
@@ -549,9 +549,9 @@ struct BioPage: View {
             } label: {
                 HStack(spacing: 6) {
                     Image(systemName: "scalemass.fill")
-                        .font(.system(size: 14, weight: .bold))
+                        .font(.tw(14, .bold))
                     Text("记录身体数据")
-                        .font(.system(size: 14.5, weight: .bold))
+                        .font(.tw(14.5, .bold))
                 }
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
@@ -571,10 +571,10 @@ struct BioPage: View {
     private func girthCell(title: String, value: Double) -> some View {
         VStack(spacing: 2) {
             Text(title)
-                .font(.system(size: 10.5, weight: .semibold))
+                .font(.tw(10.5, .semibold))
                 .foregroundStyle(TWColor.ink3)
             Text(value > 0 ? String(format: "%.0f", value) : "--")
-                .font(.system(size: 16, weight: .heavy))
+                .font(.tw(16, .heavy))
                 .foregroundStyle(TWColor.ink)
         }
         .frame(maxWidth: .infinity)
@@ -607,7 +607,7 @@ struct BioPage: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text("围度趋势")
-                    .font(.system(size: 16, weight: .bold))
+                    .font(.tw(16, .bold))
                     .foregroundStyle(TWColor.ink)
                 Spacer()
                 GlassPill(text: girthTitles[min(girthPick, 4)], tint: TWColor.blue)
@@ -620,7 +620,7 @@ struct BioPage: View {
                         withAnimation(.snappy(duration: 0.2)) { girthPick = i }
                     } label: {
                         Text(String(girthTitles[i].prefix(1)))
-                            .font(.system(size: 13, weight: girthPick == i ? .bold : .medium))
+                            .font(.tw(13, girthPick == i ? .bold : .medium))
                             .foregroundStyle(girthPick == i ? .white : TWColor.ink2)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 9)
@@ -645,7 +645,7 @@ struct BioPage: View {
                            decimals: 1)
             } else {
                 Text("同一个部位记录两次以上，就会出现变化曲线。")
-                    .font(.system(size: 12.5))
+                    .font(.tw(12.5))
                     .foregroundStyle(TWColor.ink3)
             }
         }
@@ -659,7 +659,7 @@ struct BioPage: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text("饮水")
-                    .font(.system(size: 16, weight: .bold))
+                    .font(.tw(16, .bold))
                     .foregroundStyle(TWColor.ink)
                 Spacer()
                 Button {
@@ -668,11 +668,11 @@ struct BioPage: View {
                 } label: {
                     HStack(spacing: 4) {
                         Text("\(store.waterCups) / \(store.waterTarget) 杯 · \(store.waterML) ml")
-                            .font(.system(size: 12.5, weight: .semibold))
+                            .font(.tw(12.5, .semibold))
                             .foregroundStyle(TWColor.ink3)
                             .contentTransition(.numericText())
                         Image(systemName: "slider.horizontal.3")
-                            .font(.system(size: 11, weight: .bold))
+                            .font(.tw(11, .bold))
                             .foregroundStyle(TWColor.blue)
                     }
                 }
@@ -690,7 +690,7 @@ struct BioPage: View {
                         .frame(height: 36)
                         .overlay {
                             Image(systemName: "drop.fill")
-                                .font(.system(size: 11, weight: .semibold))
+                                .font(.tw(11, .semibold))
                                 .foregroundStyle(i < store.waterCups ? .white : TWColor.ink3.opacity(0.6))
                         }
                 }
@@ -702,7 +702,7 @@ struct BioPage: View {
                     withAnimation(.snappy(duration: 0.18)) { store.addWater(-1) }
                 } label: {
                     Text("− 1 杯")
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.tw(14, .semibold))
                         .foregroundStyle(TWColor.ink2)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 11)
@@ -719,9 +719,9 @@ struct BioPage: View {
                 } label: {
                     HStack(spacing: 4) {
                         Image(systemName: "square.and.pencil")
-                            .font(.system(size: 12, weight: .bold))
+                            .font(.tw(12, .bold))
                         Text("自定义")
-                            .font(.system(size: 13, weight: .bold))
+                            .font(.tw(13, .bold))
                     }
                     .foregroundStyle(TWColor.blue)
                     .frame(maxWidth: .infinity)
@@ -738,7 +738,7 @@ struct BioPage: View {
                     withAnimation(.snappy(duration: 0.18)) { store.addWater() }
                 } label: {
                     Text("+ 1 杯（\(store.cupSize)ml）")
-                        .font(.system(size: 14, weight: .bold))
+                        .font(.tw(14, .bold))
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 11)
@@ -763,7 +763,7 @@ struct BioPage: View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
                 Text("心率")
-                    .font(.system(size: 16, weight: .bold))
+                    .font(.tw(16, .bold))
                     .foregroundStyle(TWColor.ink)
                 Spacer()
                 if !store.hrSource.isEmpty {
@@ -773,32 +773,32 @@ struct BioPage: View {
 
             HStack(alignment: .firstTextBaseline, spacing: 7) {
                 Text(store.measuredHR > 0 ? "\(store.measuredHR)" : "--")
-                    .font(.system(size: 56, weight: .heavy))
+                    .font(.tw(56, .heavy))
                     .foregroundStyle(TWColor.ink)
                     .contentTransition(.numericText())
                 Text("bpm")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.tw(14, .semibold))
                     .foregroundStyle(TWColor.ink3)
 
                 Spacer()
 
                 VStack(alignment: .trailing, spacing: 3) {
                     Text("HRV")
-                        .font(.system(size: 11, weight: .semibold))
+                        .font(.tw(11, .semibold))
                         .foregroundStyle(TWColor.ink3)
                     Text(store.measuredHRV > 0 ? "\(store.measuredHRV) ms" : "--")
-                        .font(.system(size: 18, weight: .bold))
+                        .font(.tw(18, .bold))
                         .foregroundStyle(TWColor.amber)
                 }
             }
 
             if let at = store.measuredAt {
                 Text("最近一次：" + timeText(at))
-                    .font(.system(size: 12))
+                    .font(.tw(12))
                     .foregroundStyle(TWColor.ink3)
             } else {
                 Text("还没有测量记录")
-                    .font(.system(size: 12))
+                    .font(.tw(12))
                     .foregroundStyle(TWColor.ink3)
             }
 
@@ -809,9 +809,9 @@ struct BioPage: View {
                 } label: {
                     HStack(spacing: 7) {
                         Image(systemName: "waveform.path.ecg")
-                            .font(.system(size: 14, weight: .bold))
+                            .font(.tw(14, .bold))
                         Text("指尖测 30 秒")
-                            .font(.system(size: 14.5, weight: .bold))
+                            .font(.tw(14.5, .bold))
                     }
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
@@ -830,7 +830,7 @@ struct BioPage: View {
                     showManual = true
                 } label: {
                     Text("手动")
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.tw(14, .semibold))
                         .foregroundStyle(TWColor.ink2)
                         .frame(width: 74)
                         .padding(.vertical, 13)
@@ -852,7 +852,7 @@ struct BioPage: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text("今日步数")
-                    .font(.system(size: 16, weight: .bold))
+                    .font(.tw(16, .bold))
                     .foregroundStyle(TWColor.ink)
                 Spacer()
                 GlassPill(text: motionStatus, tint: TWColor.blue)
@@ -860,22 +860,22 @@ struct BioPage: View {
 
             HStack(alignment: .firstTextBaseline, spacing: 6) {
                 Text("\(store.pedometerSteps)")
-                    .font(.system(size: 40, weight: .heavy))
+                    .font(.tw(40, .heavy))
                     .foregroundStyle(TWColor.blue)
                     .contentTransition(.numericText())
                 Text("步")
-                    .font(.system(size: 13, weight: .medium))
+                    .font(.tw(13, .medium))
                     .foregroundStyle(TWColor.ink3)
                 Spacer()
                 if store.pedometerDistance > 0 {
                     Text(String(format: "%.2f 公里", store.pedometerDistance / 1000))
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.tw(13, .semibold))
                         .foregroundStyle(TWColor.ink2)
                 }
             }
 
             Text("来自 iPhone 运动协处理器，不需要 HealthKit，免费签名也能读")
-                .font(.system(size: 11.5))
+                .font(.tw(11.5))
                 .foregroundStyle(TWColor.ink3)
                 .fixedSize(horizontal: false, vertical: true)
 
@@ -884,7 +884,7 @@ struct BioPage: View {
                 UIImpactFeedbackGenerator(style: .soft).impactOccurred()
             } label: {
                 Text("刷新")
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.tw(13, .semibold))
                     .foregroundStyle(TWColor.blue)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 8)
@@ -908,17 +908,17 @@ struct BioPage: View {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 7) {
                     Image(systemName: "trophy.fill")
-                        .font(.system(size: 15, weight: .bold))
+                        .font(.tw(15, .bold))
                         .foregroundStyle(TWColor.amber)
                     Text("成就")
-                        .font(.system(size: 16, weight: .bold))
+                        .font(.tw(16, .bold))
                         .foregroundStyle(TWColor.ink)
                     Spacer()
                     Text("看进度")
-                        .font(.system(size: 11.5, weight: .semibold))
+                        .font(.tw(11.5, .semibold))
                         .foregroundStyle(TWColor.ink3)
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 11, weight: .bold))
+                        .font(.tw(11, .bold))
                         .foregroundStyle(TWColor.ink3)
                 }
 
@@ -929,7 +929,7 @@ struct BioPage: View {
                 }
 
                 Text("10 个徽章，做到就亮。全部按本机真实记录算，不写死。")
-                    .font(.system(size: 11))
+                    .font(.tw(11))
                     .foregroundStyle(TWColor.ink3)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -948,10 +948,10 @@ struct BioPage: View {
     private func achTile(_ title: String, _ value: String, _ tint: Color) -> some View {
         VStack(alignment: .leading, spacing: 3) {
             Text(title)
-                .font(.system(size: 10.5, weight: .medium))
+                .font(.tw(10.5, .medium))
                 .foregroundStyle(TWColor.ink3)
             Text(value)
-                .font(.system(size: 15, weight: .heavy))
+                .font(.tw(15, .heavy))
                 .foregroundStyle(tint)
                 .monospacedDigit()
                 .lineLimit(1)
@@ -969,7 +969,7 @@ struct BioPage: View {
     private var sourceCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("数据通路")
-                .font(.system(size: 16, weight: .bold))
+                .font(.tw(16, .bold))
                 .foregroundStyle(TWColor.ink)
 
             sourceRow(
@@ -1002,7 +1002,7 @@ struct BioPage: View {
             )
 
             Text("手表的数据只能经 HealthKit 或 WatchConnectivity 进入第三方 App，这两项都不在免费 Apple ID 的可签能力里。走快捷指令自动化是免费条件下唯一能拿到全量健康数据的通道，配一次之后每次打开 App 自动同步。")
-                .font(.system(size: 11.5))
+                .font(.tw(11.5))
                 .foregroundStyle(TWColor.ink3)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, 2)
@@ -1014,7 +1014,7 @@ struct BioPage: View {
     private func sourceRow(icon: String, title: String, detail: String, state: String, tint: Color) -> some View {
         HStack(spacing: 11) {
             Image(systemName: icon)
-                .font(.system(size: 15, weight: .semibold))
+                .font(.tw(15, .semibold))
                 .foregroundStyle(tint)
                 .frame(width: 34, height: 34)
                 .background {
@@ -1024,10 +1024,10 @@ struct BioPage: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.tw(14, .semibold))
                     .foregroundStyle(TWColor.ink)
                 Text(detail)
-                    .font(.system(size: 11))
+                    .font(.tw(11))
                     .foregroundStyle(TWColor.ink3)
                     .lineLimit(1)
             }
@@ -1035,7 +1035,7 @@ struct BioPage: View {
             Spacer(minLength: 4)
 
             Text(state)
-                .font(.system(size: 11, weight: .semibold))
+                .font(.tw(11, .semibold))
                 .foregroundStyle(tint)
         }
     }
@@ -1081,17 +1081,17 @@ struct ManualHeartSheet: View {
                     .padding(.top, 10)
 
                 Text("手动录入心率")
-                    .font(.system(size: 19, weight: .heavy))
+                    .font(.tw(19, .heavy))
                     .foregroundStyle(TWColor.ink)
 
                 Text("用脉搏计数（数 30 秒 × 2），或直接读手表上的数")
-                    .font(.system(size: 12.5))
+                    .font(.tw(12.5))
                     .foregroundStyle(TWColor.ink3)
                     .multilineTextAlignment(.center)
 
                 TextField("例如 72", text: $text)
                     .keyboardType(.numberPad)
-                    .font(.system(size: 24, weight: .bold))
+                    .font(.tw(24, .bold))
                     .multilineTextAlignment(.center)
                     .padding(.vertical, 14)
                     .background {
@@ -1107,7 +1107,7 @@ struct ManualHeartSheet: View {
                     }
                 } label: {
                     Text("保存")
-                        .font(.system(size: 16, weight: .bold))
+                        .font(.tw(16, .bold))
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 14)
@@ -1160,7 +1160,7 @@ struct PageHeader: View {
             VStack(alignment: .leading, spacing: 3) {
                 if !subtitle.isEmpty {
                     Text(subtitle)
-                        .font(.system(size: 11.5, weight: .semibold))
+                        .font(.tw(11.5, .semibold))
                         .tracking(1.0)
                         .foregroundStyle(TWColor.ink3)
                 }

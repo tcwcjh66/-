@@ -35,14 +35,14 @@ struct SettingsSheet: View {
 
                     HStack {
                         Text("设置")
-                            .font(.system(size: 26, weight: .heavy))
+                            .font(.tw(26, .heavy))
                             .foregroundStyle(TWColor.ink)
                         Spacer()
                         Button {
                             dismiss()
                         } label: {
                             Image(systemName: "xmark")
-                                .font(.system(size: 13, weight: .bold))
+                                .font(.tw(13, .bold))
                                 .foregroundStyle(TWColor.ink2)
                                 .frame(width: 34, height: 34)
                                 .background { Circle().fill(TWColor.glass(0.6)) }
@@ -107,7 +107,7 @@ struct SettingsSheet: View {
     private var overviewCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("数据概览")
-                .font(.system(size: 15, weight: .bold))
+                .font(.tw(15, .bold))
                 .foregroundStyle(TWColor.ink)
 
             HStack(spacing: 0) {
@@ -128,7 +128,7 @@ struct SettingsSheet: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text("提醒")
-                    .font(.system(size: 15, weight: .bold))
+                    .font(.tw(15, .bold))
                     .foregroundStyle(TWColor.ink)
                 Spacer()
                 if notifyDenied {
@@ -138,7 +138,7 @@ struct SettingsSheet: View {
                         }
                     } label: {
                         Text("去系统开启")
-                            .font(.system(size: 11.5, weight: .bold))
+                            .font(.tw(11.5, .bold))
                             .foregroundStyle(TWColor.coral)
                     }
                     .buttonStyle(.plain)
@@ -148,7 +148,7 @@ struct SettingsSheet: View {
             ForEach(TWNotify.Kind.allCases) { k in
                 HStack(spacing: 11) {
                     Image(systemName: k.icon)
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.tw(14, .semibold))
                         .foregroundStyle(TWNotify.isOn(k) ? TWColor.purple : TWColor.ink3)
                         .frame(width: 32, height: 32)
                         .background {
@@ -157,10 +157,10 @@ struct SettingsSheet: View {
                         }
                     VStack(alignment: .leading, spacing: 2) {
                         Text(k.label)
-                            .font(.system(size: 14, weight: .semibold))
+                            .font(.tw(14, .semibold))
                             .foregroundStyle(TWColor.ink)
                         Text(k.detail)
-                            .font(.system(size: 11))
+                            .font(.tw(11))
                             .foregroundStyle(TWColor.ink3)
                     }
                     Spacer(minLength: 0)
@@ -176,7 +176,7 @@ struct SettingsSheet: View {
             }
 
             Text("本地通知，不联网。关了就不会再响。")
-                .font(.system(size: 11))
+                .font(.tw(11))
                 .foregroundStyle(TWColor.ink3)
         }
         .padding(16)
@@ -205,11 +205,11 @@ struct SettingsSheet: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text("免费签名")
-                    .font(.system(size: 14.5, weight: .bold))
+                    .font(.tw(14.5, .bold))
                     .foregroundStyle(TWColor.ink)
                 Spacer(minLength: 0)
                 Text(sideloadText)
-                    .font(.system(size: 11, weight: .bold))
+                    .font(.tw(11, .bold))
                     .foregroundStyle(TWSideload.daysLeft <= 2 ? TWColor.coral : TWColor.mint)
                     .padding(.horizontal, 9)
                     .padding(.vertical, 4)
@@ -218,7 +218,7 @@ struct SettingsSheet: View {
                     }
             }
             Text("7 天到期要重签一次。第 5 天会推一条提醒；重装前先在下面「数据」里导出一份 JSON 双保险。")
-                .font(.system(size: 11.5))
+                .font(.tw(11.5))
                 .foregroundStyle(TWColor.ink3)
                 .lineSpacing(2.5)
                 .fixedSize(horizontal: false, vertical: true)
@@ -230,7 +230,7 @@ struct SettingsSheet: View {
                 sideloadText = TWSideload.dayText
             } label: {
                 Text("我刚重装过，重新计时")
-                    .font(.system(size: 12, weight: .bold))
+                    .font(.tw(12, .bold))
                     .foregroundStyle(TWColor.purple)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 7)
@@ -250,7 +250,7 @@ struct SettingsSheet: View {
         } label: {
             HStack(spacing: 11) {
                 Image(systemName: "target")
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.tw(15, .semibold))
                     .foregroundStyle(TWColor.purple)
                     .frame(width: 34, height: 34)
                     .background {
@@ -259,15 +259,15 @@ struct SettingsSheet: View {
                     }
                 VStack(alignment: .leading, spacing: 2) {
                     Text("目标设置")
-                        .font(.system(size: 14.5, weight: .semibold))
+                        .font(.tw(14.5, .semibold))
                         .foregroundStyle(TWColor.ink)
                     Text("\(Int(store.dietTarget)) kcal · 蛋白 \(Int(store.proteinGoal)) g · 水 \(store.waterTarget) 杯")
-                        .font(.system(size: 11.5))
+                        .font(.tw(11.5))
                         .foregroundStyle(TWColor.ink3)
                 }
                 Spacer(minLength: 0)
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 11, weight: .bold))
+                    .font(.tw(11, .bold))
                     .foregroundStyle(TWColor.ink3)
             }
         }
@@ -279,14 +279,14 @@ struct SettingsSheet: View {
     private var dataCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("数据")
-                .font(.system(size: 15, weight: .bold))
+                .font(.tw(15, .bold))
                 .foregroundStyle(TWColor.ink)
 
             ShareLink(item: exportURL ?? FileManager.default.temporaryDirectory,
                       subject: Text("天才威数据备份")) {
                 HStack(spacing: 11) {
                     Image(systemName: "square.and.arrow.up")
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(.tw(15, .semibold))
                         .foregroundStyle(TWColor.blue)
                         .frame(width: 34, height: 34)
                         .background {
@@ -295,15 +295,15 @@ struct SettingsSheet: View {
                         }
                     VStack(alignment: .leading, spacing: 2) {
                         Text("导出全部数据")
-                            .font(.system(size: 14.5, weight: .semibold))
+                            .font(.tw(14.5, .semibold))
                             .foregroundStyle(TWColor.ink)
                         Text("JSON 文件 · 存到「文件」或发给自己")
-                            .font(.system(size: 11.5))
+                            .font(.tw(11.5))
                             .foregroundStyle(TWColor.ink3)
                     }
                     Spacer(minLength: 0)
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 11, weight: .bold))
+                        .font(.tw(11, .bold))
                         .foregroundStyle(TWColor.ink3)
                 }
             }
@@ -317,7 +317,7 @@ struct SettingsSheet: View {
             } label: {
                 HStack(spacing: 11) {
                     Image(systemName: "square.and.arrow.down")
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(.tw(15, .semibold))
                         .foregroundStyle(TWColor.mint)
                         .frame(width: 34, height: 34)
                         .background {
@@ -326,15 +326,15 @@ struct SettingsSheet: View {
                         }
                     VStack(alignment: .leading, spacing: 2) {
                         Text("从备份恢复")
-                            .font(.system(size: 14.5, weight: .semibold))
+                            .font(.tw(14.5, .semibold))
                             .foregroundStyle(TWColor.ink)
                         Text("选之前导出的 JSON，把历史捡回来")
-                            .font(.system(size: 11.5))
+                            .font(.tw(11.5))
                             .foregroundStyle(TWColor.ink3)
                     }
                     Spacer(minLength: 0)
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 11, weight: .bold))
+                        .font(.tw(11, .bold))
                         .foregroundStyle(TWColor.ink3)
                 }
             }
@@ -348,7 +348,7 @@ struct SettingsSheet: View {
             } label: {
                 HStack(spacing: 11) {
                     Image(systemName: "trash")
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(.tw(15, .semibold))
                         .foregroundStyle(TWColor.coral)
                         .frame(width: 34, height: 34)
                         .background {
@@ -357,10 +357,10 @@ struct SettingsSheet: View {
                         }
                     VStack(alignment: .leading, spacing: 2) {
                         Text("清空全部数据")
-                            .font(.system(size: 14.5, weight: .semibold))
+                            .font(.tw(14.5, .semibold))
                             .foregroundStyle(TWColor.ink)
                         Text("删除本机所有记录，不可恢复")
-                            .font(.system(size: 11.5))
+                            .font(.tw(11.5))
                             .foregroundStyle(TWColor.ink3)
                     }
                     Spacer(minLength: 0)
@@ -375,7 +375,7 @@ struct SettingsSheet: View {
     private var aboutCard: some View {
         VStack(alignment: .leading, spacing: 11) {
             Text("关于")
-                .font(.system(size: 15, weight: .bold))
+                .font(.tw(15, .bold))
                 .foregroundStyle(TWColor.ink)
 
             infoRow("版本", versionText)
@@ -385,7 +385,7 @@ struct SettingsSheet: View {
             infoRow("心率来源", "指尖 PPG / 手动 / 快捷指令回传")
 
             Text("所有身体数据来自 iPhone 自身传感器或你手动输入，不含模拟数据。手表数据需要 HealthKit 授权，免费签名下不可用。")
-                .font(.system(size: 11.5))
+                .font(.tw(11.5))
                 .foregroundStyle(TWColor.ink3)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, 2)
@@ -403,14 +403,14 @@ struct SettingsSheet: View {
     private func metric(title: String, value: String, unit: String, tint: Color) -> some View {
         VStack(spacing: 3) {
             Text(title)
-                .font(.system(size: 10.5, weight: .semibold))
+                .font(.tw(10.5, .semibold))
                 .foregroundStyle(TWColor.ink3)
             HStack(alignment: .firstTextBaseline, spacing: 2) {
                 Text(value)
-                    .font(.system(size: 18, weight: .heavy))
+                    .font(.tw(18, .heavy))
                     .foregroundStyle(tint)
                 Text(unit)
-                    .font(.system(size: 10))
+                    .font(.tw(10))
                     .foregroundStyle(TWColor.ink3)
             }
         }
@@ -420,11 +420,11 @@ struct SettingsSheet: View {
     private func infoRow(_ title: String, _ value: String) -> some View {
         HStack {
             Text(title)
-                .font(.system(size: 12.5, weight: .medium))
+                .font(.tw(12.5, .medium))
                 .foregroundStyle(TWColor.ink3)
             Spacer()
             Text(value)
-                .font(.system(size: 12.5, weight: .semibold))
+                .font(.tw(12.5, .semibold))
                 .foregroundStyle(TWColor.ink2)
                 .multilineTextAlignment(.trailing)
         }

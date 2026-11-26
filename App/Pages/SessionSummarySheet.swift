@@ -59,9 +59,9 @@ struct SessionSummarySheet: View {
 
                         HStack(spacing: 5) {
                             Image(systemName: "checkmark")
-                                .font(.system(size: 10, weight: .heavy))
+                                .font(.tw(10, .heavy))
                             Text("训练完成")
-                                .font(.system(size: 11.5, weight: .bold))
+                                .font(.tw(11.5, .bold))
                         }
                         .foregroundStyle(.white)
                         .padding(.horizontal, 12)
@@ -77,13 +77,13 @@ struct SessionSummarySheet: View {
 
                     VStack(spacing: 6) {
                         Text(headline)
-                            .font(.system(size: 24, weight: .heavy))
+                            .font(.tw(24, .heavy))
                             .foregroundStyle(TWColor.ink)
                         Text("\(entry.plan) · \(entry.day)")
-                            .font(.system(size: 13, weight: .semibold))
+                            .font(.tw(13, .semibold))
                             .foregroundStyle(TWColor.purple)
                         Text(subline)
-                            .font(.system(size: 12.5))
+                            .font(.tw(12.5))
                             .foregroundStyle(TWColor.ink3)
                             .multilineTextAlignment(.center)
                             .padding(.horizontal, 24)
@@ -123,7 +123,7 @@ struct SessionSummarySheet: View {
                         dismiss()
                     } label: {
                         Text("收工")
-                            .font(.system(size: 16, weight: .bold))
+                            .font(.tw(16, .bold))
                             .foregroundStyle(.white)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 15)
@@ -153,11 +153,11 @@ struct SessionSummarySheet: View {
     private func stat(_ v: String, _ unit: String, _ tint: Color) -> some View {
         VStack(spacing: 3) {
             Text(v)
-                .font(.system(size: 26, weight: .heavy))
+                .font(.tw(26, .heavy))
                 .foregroundStyle(tint)
                 .monospacedDigit()
             Text(unit)
-                .font(.system(size: 11.5, weight: .semibold))
+                .font(.tw(11.5, .semibold))
                 .foregroundStyle(TWColor.ink3)
         }
         .frame(maxWidth: .infinity)
@@ -171,11 +171,11 @@ struct SessionSummarySheet: View {
     private func row(_ k: String, _ v: String) -> some View {
         HStack(alignment: .top, spacing: 10) {
             Text(k)
-                .font(.system(size: 12.5, weight: .medium))
+                .font(.tw(12.5, .medium))
                 .foregroundStyle(TWColor.ink3)
                 .frame(width: 74, alignment: .leading)
             Text(v.isEmpty ? "—" : v)
-                .font(.system(size: 12.5, weight: .semibold))
+                .font(.tw(12.5, .semibold))
                 .foregroundStyle(TWColor.ink)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)

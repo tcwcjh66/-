@@ -38,7 +38,7 @@ struct LibPage: View {
                             withAnimation(.snappy(duration: 0.22)) { group = g }
                         } label: {
                             Text(g)
-                                .font(.system(size: 14, weight: group == g ? .bold : .medium))
+                                .font(.tw(14, group == g ? .bold : .medium))
                                 .foregroundStyle(group == g ? .white : TWColor.ink2)
                                 .padding(.horizontal, 15)
                                 .padding(.vertical, 9)
@@ -65,7 +65,7 @@ struct LibPage: View {
 
             if filtered.isEmpty {
                 Text(group == "收藏" ? "还没有收藏的动作，点右侧的心形" : "没有匹配的动作")
-                    .font(.system(size: 14))
+                    .font(.tw(14))
                     .foregroundStyle(TWColor.ink3)
                     .padding(.top, 40)
             }
@@ -80,10 +80,10 @@ struct LibPage: View {
     private var searchBar: some View {
         HStack(spacing: 9) {
             Image(systemName: "magnifyingglass")
-                .font(.system(size: 15, weight: .semibold))
+                .font(.tw(15, .semibold))
                 .foregroundStyle(TWColor.ink3)
             TextField("搜索动作、器械或肌群", text: $query)
-                .font(.system(size: 15, weight: .medium))
+                .font(.tw(15, .medium))
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
             if !query.isEmpty {
@@ -91,7 +91,7 @@ struct LibPage: View {
                     query = ""
                 } label: {
                     Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 15))
+                        .font(.tw(15))
                         .foregroundStyle(TWColor.ink3)
                 }
                 .buttonStyle(.plain)
@@ -113,17 +113,17 @@ struct LibPage: View {
                 .frame(width: 48, height: 48)
                 .overlay {
                     Image(systemName: iconFor(m.group))
-                        .font(.system(size: 19, weight: .semibold))
+                        .font(.tw(19, .semibold))
                         .foregroundStyle(TWColor.purple)
                 }
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(m.name)
-                    .font(.system(size: 16, weight: .bold))
+                    .font(.tw(16, .bold))
                     .foregroundStyle(TWColor.ink)
                     .lineLimit(1)
                 Text("\(m.group) · \(m.equipment) · \(m.level)")
-                    .font(.system(size: 12.5, weight: .medium))
+                    .font(.tw(12.5, .medium))
                     .foregroundStyle(TWColor.ink3)
                     .lineLimit(1)
             }
@@ -131,7 +131,7 @@ struct LibPage: View {
             Spacer(minLength: 0)
 
             Text(store.prs[m.name] ?? "未记录")
-                .font(.system(size: 11.5, weight: store.prs[m.name] == nil ? .medium : .semibold))
+                .font(.tw(11.5, store.prs[m.name] == nil ? .medium : .semibold))
                 .foregroundStyle(store.prs[m.name] == nil ? TWColor.ink3 : TWColor.ink2)
                 .lineLimit(1)
 
@@ -140,7 +140,7 @@ struct LibPage: View {
                 withAnimation(.snappy(duration: 0.2)) { store.toggleFav(m.name) }
             } label: {
                 Image(systemName: fav ? "heart.fill" : "heart")
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(.tw(18, .semibold))
                     .foregroundStyle(fav ? TWColor.pink : TWColor.ink3.opacity(0.55))
                     .frame(width: 36, height: 36)
                     .contentShape(Rectangle())
@@ -193,7 +193,7 @@ struct MoveDetailSheet: View {
 
                     HStack(alignment: .top, spacing: 12) {
                         Text(move.name)
-                            .font(.system(size: 27, weight: .heavy))
+                            .font(.tw(27, .heavy))
                             .foregroundStyle(TWColor.ink)
                             .fixedSize(horizontal: false, vertical: true)
                         Spacer(minLength: 0)
@@ -202,7 +202,7 @@ struct MoveDetailSheet: View {
                             withAnimation(.snappy(duration: 0.2)) { store.toggleFav(move.name) }
                         } label: {
                             Image(systemName: fav ? "heart.fill" : "heart")
-                                .font(.system(size: 22, weight: .semibold))
+                                .font(.tw(22, .semibold))
                                 .foregroundStyle(fav ? TWColor.pink : TWColor.ink3)
                                 .frame(width: 42, height: 42)
                                 .background {
@@ -220,7 +220,7 @@ struct MoveDetailSheet: View {
 
                     HStack(spacing: 11) {
                         Image(systemName: "trophy.fill")
-                            .font(.system(size: 15, weight: .semibold))
+                            .font(.tw(15, .semibold))
                             .foregroundStyle(TWColor.amber)
                             .frame(width: 34, height: 34)
                             .background {
@@ -230,10 +230,10 @@ struct MoveDetailSheet: View {
 
                         VStack(alignment: .leading, spacing: 2) {
                             Text("我的最好成绩")
-                                .font(.system(size: 13, weight: .bold))
+                                .font(.tw(13, .bold))
                                 .foregroundStyle(TWColor.ink)
                             Text(store.prs[move.name] ?? "还没记录")
-                                .font(.system(size: 12))
+                                .font(.tw(12))
                                 .foregroundStyle(store.prs[move.name] == nil ? TWColor.ink3 : TWColor.ink2)
                         }
 
@@ -244,7 +244,7 @@ struct MoveDetailSheet: View {
                             showPR = true
                         } label: {
                             Text(store.prs[move.name] == nil ? "记录" : "更新")
-                                .font(.system(size: 12.5, weight: .bold))
+                                .font(.tw(12.5, .bold))
                                 .foregroundStyle(TWColor.amber)
                                 .padding(.horizontal, 13)
                                 .padding(.vertical, 7)
@@ -269,7 +269,7 @@ struct MoveDetailSheet: View {
 
                     VStack(alignment: .leading, spacing: 10) {
                         Text("建议组次")
-                            .font(.system(size: 17, weight: .bold))
+                            .font(.tw(17, .bold))
                             .foregroundStyle(TWColor.ink)
                         ForEach(["增肌：4 组 × 8–12 次，组间休 90 秒",
                                  "力量：5 组 × 3–5 次，组间休 3 分钟",
@@ -280,7 +280,7 @@ struct MoveDetailSheet: View {
                                     .frame(width: 5, height: 5)
                                     .padding(.top, 7)
                                 Text(line)
-                                    .font(.system(size: 14))
+                                    .font(.tw(14))
                                     .foregroundStyle(TWColor.ink2)
                                     .fixedSize(horizontal: false, vertical: true)
                             }
@@ -293,14 +293,14 @@ struct MoveDetailSheet: View {
                     if !move.alt.isEmpty {
                         HStack(alignment: .top, spacing: 10) {
                             Image(systemName: "arrow.triangle.2.circlepath")
-                                .font(.system(size: 15, weight: .semibold))
+                                .font(.tw(15, .semibold))
                                 .foregroundStyle(TWColor.blue)
                             VStack(alignment: .leading, spacing: 4) {
                                 Text("替代动作")
-                                    .font(.system(size: 15, weight: .bold))
+                                    .font(.tw(15, .bold))
                                     .foregroundStyle(TWColor.ink)
                                 Text(move.alt)
-                                    .font(.system(size: 14))
+                                    .font(.tw(14))
                                     .foregroundStyle(TWColor.ink2)
                                     .fixedSize(horizontal: false, vertical: true)
                             }
@@ -314,7 +314,7 @@ struct MoveDetailSheet: View {
                         dismiss()
                     } label: {
                         Text("知道了")
-                            .font(.system(size: 16, weight: .bold))
+                            .font(.tw(16, .bold))
                             .foregroundStyle(.white)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 15)
@@ -354,21 +354,21 @@ struct MoveDetailSheet: View {
                     .frame(width: 54, height: 54)
                     .overlay {
                         Image(systemName: "play.fill")
-                            .font(.system(size: 19, weight: .bold))
+                            .font(.tw(19, .bold))
                             .foregroundStyle(TWColor.purple)
                     }
                 VStack(alignment: .leading, spacing: 3) {
                     Text(move.video.isEmpty ? "看教学视频" : "看精讲视频")
-                        .font(.system(size: 16, weight: .bold))
+                        .font(.tw(16, .bold))
                         .foregroundStyle(TWColor.ink)
                     Text(move.video.isEmpty ? "在抖音搜这个动作的标准示范" : "已收录专业教学，点开直接看")
-                        .font(.system(size: 12.5, weight: .medium))
+                        .font(.tw(12.5, .medium))
                         .foregroundStyle(TWColor.ink3)
                         .lineLimit(1)
                 }
                 Spacer(minLength: 0)
                 Image(systemName: "arrow.up.right")
-                    .font(.system(size: 12, weight: .bold))
+                    .font(.tw(12, .bold))
                     .foregroundStyle(TWColor.ink3)
             }
             .padding(14)
@@ -382,14 +382,14 @@ struct MoveDetailSheet: View {
         VStack(alignment: .leading, spacing: 9) {
             HStack(spacing: 6) {
                 Image(systemName: icon)
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.tw(14, .semibold))
                     .foregroundStyle(tint)
                 Text(title)
-                    .font(.system(size: 16, weight: .bold))
+                    .font(.tw(16, .bold))
                     .foregroundStyle(TWColor.ink)
             }
             Text(body)
-                .font(.system(size: 14.5))
+                .font(.tw(14.5))
                 .foregroundStyle(TWColor.ink2)
                 .lineSpacing(3)
                 .fixedSize(horizontal: false, vertical: true)

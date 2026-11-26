@@ -60,10 +60,10 @@ struct SleepSheet: View {
         HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 5) {
                 Text("睡眠")
-                    .font(.system(size: 30, weight: .heavy, design: .rounded))
+                    .font(.tw(30, .heavy, .rounded))
                     .foregroundStyle(TWColor.ink)
                 Text("用手机加速度计做体动记录，不靠手表、不靠健康权限")
-                    .font(.system(size: 12.5))
+                    .font(.tw(12.5))
                     .foregroundStyle(TWColor.ink3)
                     .lineSpacing(2)
             }
@@ -72,7 +72,7 @@ struct SleepSheet: View {
                 dismiss()
             } label: {
                 Image(systemName: "xmark")
-                    .font(.system(size: 13, weight: .bold))
+                    .font(.tw(13, .bold))
                     .foregroundStyle(TWColor.ink2)
                     .frame(width: 33, height: 33)
                     .background {
@@ -89,21 +89,21 @@ struct SleepSheet: View {
         VStack(spacing: 14) {
             HStack {
                 Text("上一晚")
-                    .font(.system(size: 14.5, weight: .bold))
+                    .font(.tw(14.5, .bold))
                     .foregroundStyle(TWColor.ink2)
                 Spacer()
                 Text(log.date)
-                    .font(.system(size: 11.5, weight: .medium))
+                    .font(.tw(11.5, .medium))
                     .foregroundStyle(TWColor.ink3)
             }
 
             HStack(spacing: 14) {
                 VStack(spacing: 2) {
                     Text("\(log.score)")
-                        .font(.system(size: 38, weight: .heavy, design: .rounded))
+                        .font(.tw(38, .heavy, .rounded))
                         .foregroundStyle(scoreColor(log.score))
                     Text(log.scoreLabel)
-                        .font(.system(size: 11.5, weight: .semibold))
+                        .font(.tw(11.5, .semibold))
                         .foregroundStyle(TWColor.ink3)
                 }
                 .frame(width: 92)
@@ -124,7 +124,7 @@ struct SleepSheet: View {
         VStack(spacing: 13) {
             VStack(spacing: 8) {
                 Image(systemName: "moon.stars.fill")
-                    .font(.system(size: 27, weight: .semibold))
+                    .font(.tw(27, .semibold))
                     .foregroundStyle(TWColor.purple)
                     .frame(width: 64, height: 64)
                     .background {
@@ -132,10 +132,10 @@ struct SleepSheet: View {
                     }
 
                 Text("睡前点一下，整夜记体动")
-                    .font(.system(size: 16.5, weight: .bold))
+                    .font(.tw(16.5, .bold))
                     .foregroundStyle(TWColor.ink)
                 Text("把手机放在枕头边或床头柜，插上充电器。锁屏也能继续记，第二天点结束就出报告。")
-                    .font(.system(size: 12.5))
+                    .font(.tw(12.5))
                     .foregroundStyle(TWColor.ink3)
                     .multilineTextAlignment(.center)
                     .lineSpacing(2)
@@ -148,7 +148,7 @@ struct SleepSheet: View {
                 tracker.start()
             } label: {
                 Text("开始记录睡眠")
-                    .font(.system(size: 16, weight: .bold))
+                    .font(.tw(16, .bold))
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 14)
@@ -170,11 +170,11 @@ struct SleepSheet: View {
         VStack(spacing: 0) {
             HStack {
                 Text("正在记录")
-                    .font(.system(size: 15, weight: .bold))
+                    .font(.tw(15, .bold))
                     .foregroundStyle(TWColor.purple)
                 Spacer()
                 Button("放弃") { confirmCancel = true }
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.tw(13, .semibold))
                     .foregroundStyle(TWColor.ink3)
                     .buttonStyle(.plain)
             }
@@ -185,25 +185,25 @@ struct SleepSheet: View {
 
             VStack(spacing: 18) {
                 Text(timeText(tracker.elapsed))
-                    .font(.system(size: 46, weight: .heavy, design: .rounded))
+                    .font(.tw(46, .heavy, .rounded))
                     .foregroundStyle(TWColor.ink)
                     .monospacedDigit()
 
                 Text("已记 \(tracker.epochCount) 段（每 30 秒一段）")
-                    .font(.system(size: 12))
+                    .font(.tw(12))
                     .foregroundStyle(TWColor.ink3)
 
                 VStack(spacing: 8) {
                     HStack {
                         Image(systemName: "waveform.path")
-                            .font(.system(size: 12, weight: .semibold))
+                            .font(.tw(12, .semibold))
                             .foregroundStyle(TWColor.pink)
                         Text("当前体动")
-                            .font(.system(size: 12, weight: .semibold))
+                            .font(.tw(12, .semibold))
                             .foregroundStyle(TWColor.ink3)
                         Spacer()
                         Text("\(Int(tracker.liveAct))")
-                            .font(.system(size: 12, weight: .bold, design: .rounded))
+                            .font(.tw(12, .bold, .rounded))
                             .foregroundStyle(TWColor.ink2)
                             .monospacedDigit()
                     }
@@ -224,7 +224,7 @@ struct SleepSheet: View {
                 .twGlass(radius: 16, shadow: false)
 
                 Text("现在可以锁屏睡觉了。别把 App 划掉，也别关后台刷新。")
-                    .font(.system(size: 11.5))
+                    .font(.tw(11.5))
                     .foregroundStyle(TWColor.ink3)
                     .multilineTextAlignment(.center)
                     .lineSpacing(2)
@@ -241,7 +241,7 @@ struct SleepSheet: View {
                 }
             } label: {
                 Text("结束并生成报告")
-                    .font(.system(size: 16, weight: .bold))
+                    .font(.tw(16, .bold))
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 14)
@@ -277,20 +277,20 @@ struct SleepSheet: View {
                 HStack(spacing: 16) {
                     VStack(spacing: 2) {
                         Text("\(log.score)")
-                            .font(.system(size: 52, weight: .heavy, design: .rounded))
+                            .font(.tw(52, .heavy, .rounded))
                             .foregroundStyle(scoreColor(log.score))
                         Text(log.scoreLabel)
-                            .font(.system(size: 12.5, weight: .semibold))
+                            .font(.tw(12.5, .semibold))
                             .foregroundStyle(TWColor.ink3)
                     }
                     .frame(width: 110)
 
                     VStack(alignment: .leading, spacing: 7) {
                         Text("睡了 \(log.durationText)")
-                            .font(.system(size: 15, weight: .bold))
+                            .font(.tw(15, .bold))
                             .foregroundStyle(TWColor.ink)
                         Text("\(log.startText) 入睡 · \(log.endText) 起床")
-                            .font(.system(size: 12))
+                            .font(.tw(12))
                             .foregroundStyle(TWColor.ink3)
                         stageBar(log, height: 12)
                         legendRow(log)
@@ -300,11 +300,11 @@ struct SleepSheet: View {
                 VStack(spacing: 9) {
                     HStack {
                         Text("体动曲线")
-                            .font(.system(size: 12.5, weight: .bold))
+                            .font(.tw(12.5, .bold))
                             .foregroundStyle(TWColor.ink2)
                         Spacer()
                         Text("越高越可能醒着")
-                            .font(.system(size: 10.5))
+                            .font(.tw(10.5))
                             .foregroundStyle(TWColor.ink3)
                     }
                     actChart(log)
@@ -323,7 +323,7 @@ struct SleepSheet: View {
 
             if fresh {
                 Text("报告全部来自这次的真实体动数据，没有补任何默认值。\n体动法能判断「睡稳没睡稳」和大概的深浅，跟医院的多导睡眠图不是一回事。")
-                    .font(.system(size: 11.5))
+                    .font(.tw(11.5))
                     .foregroundStyle(TWColor.ink3)
                     .multilineTextAlignment(.center)
                     .lineSpacing(2.5)
@@ -332,7 +332,7 @@ struct SleepSheet: View {
                     dismiss()
                 } label: {
                     Text("完成")
-                        .font(.system(size: 15.5, weight: .bold))
+                        .font(.tw(15.5, .bold))
                         .foregroundStyle(TWColor.purple)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 13)
@@ -350,11 +350,11 @@ struct SleepSheet: View {
         HStack(spacing: 9) {
             Circle().fill(tint).frame(width: 7, height: 7)
             Text(title)
-                .font(.system(size: 13, weight: .semibold))
+                .font(.tw(13, .semibold))
                 .foregroundStyle(TWColor.ink2)
             Spacer()
             Text(value)
-                .font(.system(size: 13.5, weight: .bold, design: .rounded))
+                .font(.tw(13.5, .bold, .rounded))
                 .foregroundStyle(TWColor.ink)
                 .monospacedDigit()
         }
@@ -368,24 +368,24 @@ struct SleepSheet: View {
         return VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 7) {
                 Image(systemName: "bed.double.fill")
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.tw(13, .semibold))
                     .foregroundStyle(TWColor.purple)
                 Text("今晚补多少")
-                    .font(.system(size: 14.5, weight: .bold))
+                    .font(.tw(14.5, .bold))
                     .foregroundStyle(TWColor.ink)
                 Spacer()
                 Text("目标 \(store.sleepGoalMin / 60) 小时 \(store.sleepGoalMin % 60) 分")
-                    .font(.system(size: 10.5))
+                    .font(.tw(10.5))
                     .foregroundStyle(TWColor.ink3)
             }
 
             HStack(alignment: .firstTextBaseline, spacing: 6) {
                 Text("\(tonight / 60) 小时 \(tonight % 60) 分")
-                    .font(.system(size: 27, weight: .heavy, design: .rounded))
+                    .font(.tw(27, .heavy, .rounded))
                     .foregroundStyle(TWColor.ink)
                     .monospacedDigit()
                 Text("建议今晚")
-                    .font(.system(size: 11.5, weight: .semibold))
+                    .font(.tw(11.5, .semibold))
                     .foregroundStyle(TWColor.ink3)
                 Spacer(minLength: 0)
             }
@@ -400,10 +400,10 @@ struct SleepSheet: View {
 
             VStack(alignment: .leading, spacing: 5) {
                 Text(store.sleepAdviceTitle)
-                    .font(.system(size: 12.5, weight: .bold))
+                    .font(.tw(12.5, .bold))
                     .foregroundStyle(TWColor.purple)
                 Text(store.sleepAdviceBody)
-                    .font(.system(size: 11.5))
+                    .font(.tw(11.5))
                     .foregroundStyle(TWColor.ink2)
                     .lineSpacing(2.5)
                     .fixedSize(horizontal: false, vertical: true)
@@ -430,13 +430,13 @@ struct SleepSheet: View {
     private func adviceCell(_ title: String, _ value: String) -> some View {
         VStack(spacing: 2) {
             Text(value)
-                .font(.system(size: 13.5, weight: .heavy, design: .rounded))
+                .font(.tw(13.5, .heavy, .rounded))
                 .foregroundStyle(TWColor.ink)
                 .monospacedDigit()
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
             Text(title)
-                .font(.system(size: 10, weight: .semibold))
+                .font(.tw(10, .semibold))
                 .foregroundStyle(TWColor.ink3)
         }
         .frame(maxWidth: .infinity)
@@ -474,7 +474,7 @@ struct SleepSheet: View {
         HStack(spacing: 4) {
             Circle().fill(color).frame(width: 6, height: 6)
             Text(text)
-                .font(.system(size: 10.5, weight: .semibold))
+                .font(.tw(10.5, .semibold))
                 .foregroundStyle(TWColor.ink2)
         }
     }
@@ -505,29 +505,29 @@ struct SleepSheet: View {
         VStack(spacing: 11) {
             HStack {
                 Text("最近记录")
-                    .font(.system(size: 14.5, weight: .bold))
+                    .font(.tw(14.5, .bold))
                     .foregroundStyle(TWColor.ink2)
                 Spacer()
                 Text("\(store.sleepLogs.count) 晚")
-                    .font(.system(size: 11.5))
+                    .font(.tw(11.5))
                     .foregroundStyle(TWColor.ink3)
             }
             ForEach(store.sleepLogs.prefix(6)) { log in
                 HStack(spacing: 10) {
                     Text(log.date.suffix(5))
-                        .font(.system(size: 12, weight: .semibold, design: .rounded))
+                        .font(.tw(12, .semibold, .rounded))
                         .foregroundStyle(TWColor.ink3)
                         .frame(width: 46, alignment: .leading)
                     Text(log.scoreLabel)
-                        .font(.system(size: 12.5, weight: .semibold))
+                        .font(.tw(12.5, .semibold))
                         .foregroundStyle(TWColor.ink2)
                     Spacer()
                     Text("\(log.score)")
-                        .font(.system(size: 14, weight: .heavy, design: .rounded))
+                        .font(.tw(14, .heavy, .rounded))
                         .foregroundStyle(scoreColor(log.score))
                         .monospacedDigit()
                     Text(log.durationText)
-                        .font(.system(size: 11.5))
+                        .font(.tw(11.5))
                         .foregroundStyle(TWColor.ink3)
                         .frame(width: 74, alignment: .trailing)
                 }
@@ -541,14 +541,14 @@ struct SleepSheet: View {
         VStack(alignment: .leading, spacing: 9) {
             HStack(spacing: 6) {
                 Image(systemName: "info.circle.fill")
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.tw(13, .semibold))
                     .foregroundStyle(TWColor.blue)
                 Text("这个监测是怎么做的")
-                    .font(.system(size: 14.5, weight: .bold))
+                    .font(.tw(14.5, .bold))
                     .foregroundStyle(TWColor.ink)
             }
             Text("整夜以 20Hz 采集加速度，每 30 秒归纳成一段体动强度。安静不动的长段判为睡眠，其中连续 20 分钟以上不动的判深睡，频繁翻动的时间算清醒。\n\n这是睡眠医学里的体动记录法（actigraphy），能反映睡眠的连续性和睡眠量，测不出脑电和血氧。想要精确分期得上手表或睡眠带。")
-                .font(.system(size: 12.5))
+                .font(.tw(12.5))
                 .foregroundStyle(TWColor.ink2)
                 .lineSpacing(3)
                 .fixedSize(horizontal: false, vertical: true)

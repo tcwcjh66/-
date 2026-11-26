@@ -36,7 +36,7 @@ struct PulseView: View {
                     .padding(.top, 10)
 
                 Text(meter.errorText ?? meter.quality)
-                    .font(.system(size: 13.5, weight: .medium))
+                    .font(.tw(13.5, .medium))
                     .foregroundStyle(meter.errorText == nil ? TWColor.glass(0.62) : Color(red: 1.0, green: 0.55, blue: 0.55))
                     .multilineTextAlignment(.center)
                     .padding(.top, 12)
@@ -58,7 +58,7 @@ struct PulseView: View {
                 dismiss()
             } label: {
                 Image(systemName: "xmark")
-                    .font(.system(size: 15, weight: .bold))
+                    .font(.tw(15, .bold))
                     .foregroundStyle(TWColor.glass(0.85))
                     .frame(width: 38, height: 38)
                     .background {
@@ -70,7 +70,7 @@ struct PulseView: View {
             Spacer()
 
             Text("指尖心率")
-                .font(.system(size: 15, weight: .semibold))
+                .font(.tw(15, .semibold))
                 .foregroundStyle(TWColor.glass(0.8))
 
             Spacer()
@@ -104,29 +104,33 @@ struct PulseView: View {
             VStack(spacing: 2) {
                 if meter.bpm > 0 {
                     Text("\(meter.bpm)")
-                        .font(.system(size: 64, weight: .heavy))
+                        .font(.tw(64, .heavy))
                         .foregroundStyle(.white)
                         .monospacedDigit()
                         .contentTransition(.numericText())
                 } else {
                     Text("--")
-                        .font(.system(size: 64, weight: .heavy))
+                        .font(.tw(64, .heavy))
                         .foregroundStyle(TWColor.glass(0.4))
                 }
 
                 Text(meter.bpm > 0 ? "BPM" : (meter.running ? "测量中" : "未开始"))
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.tw(12, .semibold))
                     .tracking(2)
                     .foregroundStyle(TWColor.glass(0.55))
 
                 if meter.hrv > 0 {
                     Text("HRV \(meter.hrv) ms")
-                        .font(.system(size: 12, weight: .medium))
+                        .font(.tw(12, .medium))
                         .foregroundStyle(Color(red: 0.55, green: 0.92, blue: 0.78).opacity(0.85))
                         .padding(.top, 2)
                 }
             }
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(meter.bpm > 0
+                            ? "当前心率 \(meter.bpm) 次每分"
+                            : (meter.running ? "正在测量心率" : "心率还没开始测"))
     }
 
     private var waveCanvas: some View {
@@ -170,7 +174,7 @@ struct PulseView: View {
                     dismiss()
                 } label: {
                     Text("保存这次结果")
-                        .font(.system(size: 17, weight: .bold))
+                        .font(.tw(17, .bold))
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 16)
@@ -188,7 +192,7 @@ struct PulseView: View {
                     meter.reset()
                     meter.start()
                 }
-                .font(.system(size: 14, weight: .semibold))
+                .font(.tw(14, .semibold))
                 .foregroundStyle(TWColor.glass(0.7))
             } else {
                 Button {
@@ -200,7 +204,7 @@ struct PulseView: View {
                     }
                 } label: {
                     Text(meter.running ? "停止测量" : "开始测量")
-                        .font(.system(size: 17, weight: .bold))
+                        .font(.tw(17, .bold))
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 16)
@@ -215,7 +219,7 @@ struct PulseView: View {
                 .buttonStyle(.plain)
 
                 Text("食指指腹轻盖后置镜头与闪光灯，别用力压，保持 30 秒不动")
-                    .font(.system(size: 12))
+                    .font(.tw(12))
                     .foregroundStyle(TWColor.glass(0.5))
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 26)

@@ -17,12 +17,12 @@ struct TrendChart: View {
         VStack(alignment: .leading, spacing: 9) {
             HStack {
                 Text(title)
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.tw(14, .semibold))
                     .foregroundStyle(TWColor.ink2)
                 Spacer()
                 if let last = values.last {
                     Text(fmt(last) + " " + unit)
-                        .font(.system(size: 13, weight: .bold))
+                        .font(.tw(13, .bold))
                         .foregroundStyle(tint)
                 }
             }
@@ -85,7 +85,7 @@ struct TrendChart: View {
                     .frame(height: 88)
                     .overlay {
                         Text("记录满 2 天后出现趋势")
-                            .font(.system(size: 12))
+                            .font(.tw(12))
                             .foregroundStyle(TWColor.ink3)
                     }
             }
@@ -93,12 +93,23 @@ struct TrendChart: View {
             HStack(spacing: 0) {
                 ForEach(Array(labels.enumerated()), id: \.offset) { pair in
                     Text(pair.element)
-                        .font(.system(size: 10.5))
+                        .font(.tw(10.5))
                         .foregroundStyle(TWColor.ink3)
                         .frame(maxWidth: .infinity)
                 }
             }
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(achLabel)
+    }
+
+    private var achLabel: String {
+        guard let last = values.last else { return "\(title)：还没有数据" }
+        let first = values.first ?? last
+        if decimals == 0 {
+            return "\(title)：最近 \(values.count) 天，从 \(Int(first)) 到 \(Int(last)) \(unit)"
+        }
+        return "\(title)：最近 \(values.count) 天，从 \(fmt(first)) 到 \(fmt(last)) \(unit)"
     }
 
     private func fmt(_ v: Double) -> String {

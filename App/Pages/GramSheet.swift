@@ -50,18 +50,18 @@ struct GramSheet: View {
     private var headerCard: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(pick.brand.isEmpty ? pick.name : "\(pick.brand) \(pick.name)")
-                .font(.system(size: 20, weight: .heavy, design: .rounded))
+                .font(.tw(20, .heavy, .rounded))
                 .foregroundStyle(TWColor.ink)
                 .fixedSize(horizontal: false, vertical: true)
             HStack(spacing: 6) {
                 Text(pick.source)
-                    .font(.system(size: 10, weight: .bold))
+                    .font(.tw(10, .bold))
                     .foregroundStyle(TWColor.purple)
                     .padding(.horizontal, 7)
                     .padding(.vertical, 3)
                     .background { Capsule().fill(TWColor.purple.opacity(0.12)) }
                 Text(String(format: "每100g %.0f kcal", pick.kcal100))
-                    .font(.system(size: 11))
+                    .font(.tw(11))
                     .foregroundStyle(TWColor.ink3)
             }
         }
@@ -74,12 +74,12 @@ struct GramSheet: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .firstTextBaseline, spacing: 6) {
                 Text("\(Int(grams))")
-                    .font(.system(size: 38, weight: .heavy, design: .rounded))
+                    .font(.tw(38, .heavy, .rounded))
                     .foregroundStyle(TWColor.ink)
                     .monospacedDigit()
                     .contentTransition(.numericText())
                 Text("克")
-                    .font(.system(size: 15, weight: .bold))
+                    .font(.tw(15, .bold))
                     .foregroundStyle(TWColor.ink3)
                 Spacer()
                 HStack(spacing: 10) {
@@ -109,7 +109,7 @@ struct GramSheet: View {
             withAnimation(.snappy) { grams = g }
         } label: {
             Text("\(Int(g))g")
-                .font(.system(size: 11.5, weight: .bold))
+                .font(.tw(11.5, .bold))
                 .foregroundStyle(grams == g ? .white : TWColor.purple)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
@@ -126,7 +126,7 @@ struct GramSheet: View {
             if icon == "minus" { grams = max(5, grams - 5) } else { grams = min(1000, grams + 5) }
         } label: {
             Image(systemName: icon)
-                .font(.system(size: 13, weight: .bold))
+                .font(.tw(13, .bold))
                 .foregroundStyle(TWColor.purple)
                 .frame(width: 32, height: 32)
                 .background { Circle().fill(TWColor.purple.opacity(0.12)) }
@@ -138,11 +138,11 @@ struct GramSheet: View {
         VStack(spacing: 0) {
             HStack {
                 Text("这 \(Int(grams))g 折算")
-                    .font(.system(size: 12, weight: .bold))
+                    .font(.tw(12, .bold))
                     .foregroundStyle(TWColor.ink3)
                 Spacer()
                 Text(String(format: "%.0f kcal", kcal))
-                    .font(.system(size: 17, weight: .heavy, design: .rounded))
+                    .font(.tw(17, .heavy, .rounded))
                     .foregroundStyle(TWColor.ink)
                     .monospacedDigit()
             }
@@ -164,11 +164,11 @@ struct GramSheet: View {
     private func macroCell(_ t: String, _ v: String, _ tint: Color) -> some View {
         VStack(spacing: 3) {
             Text(v)
-                .font(.system(size: 18, weight: .heavy, design: .rounded))
+                .font(.tw(18, .heavy, .rounded))
                 .foregroundStyle(tint)
                 .monospacedDigit()
             Text("\(t) g")
-                .font(.system(size: 10.5, weight: .semibold))
+                .font(.tw(10.5, .semibold))
                 .foregroundStyle(TWColor.ink3)
         }
         .frame(maxWidth: .infinity)
@@ -181,12 +181,12 @@ struct GramSheet: View {
             } label: {
                 HStack(spacing: 6) {
                     Image(systemName: "list.bullet.rectangle")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(.tw(12, .semibold))
                     Text("配料表（配方）")
-                        .font(.system(size: 13, weight: .bold))
+                        .font(.tw(13, .bold))
                     Spacer()
                     Image(systemName: showIngredients ? "chevron.up" : "chevron.down")
-                        .font(.system(size: 10, weight: .bold))
+                        .font(.tw(10, .bold))
                 }
                 .foregroundStyle(TWColor.ink2)
             }
@@ -194,7 +194,7 @@ struct GramSheet: View {
 
             if showIngredients {
                 Text(pick.ingredients)
-                    .font(.system(size: 11.5))
+                    .font(.tw(11.5))
                     .foregroundStyle(TWColor.ink3)
                     .lineSpacing(3)
                     .fixedSize(horizontal: false, vertical: true)
@@ -223,7 +223,7 @@ struct GramSheet: View {
             dismiss()
         } label: {
             Text(String(format: "加入 %@ · %.0f kcal", slot, kcal))
-                .font(.system(size: 16, weight: .bold))
+                .font(.tw(16, .bold))
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 15)
@@ -355,7 +355,7 @@ struct BarcodeScanSheet: View {
                     }
                     .overlay(alignment: .bottom) {
                         Text("把包装上的条形码放进框里")
-                            .font(.system(size: 11.5, weight: .semibold))
+                            .font(.tw(11.5, .semibold))
                             .foregroundStyle(.white)
                             .padding(.horizontal, 10)
                             .padding(.vertical, 5)
@@ -370,7 +370,7 @@ struct BarcodeScanSheet: View {
                     HStack(spacing: 8) {
                         ProgressView()
                         Text("查库里这个条码…")
-                            .font(.system(size: 12.5))
+                            .font(.tw(12.5))
                             .foregroundStyle(TWColor.ink3)
                     }
                 }
@@ -378,7 +378,7 @@ struct BarcodeScanSheet: View {
                 if let e = errorText {
                     VStack(alignment: .leading, spacing: 8) {
                         Text(e)
-                            .font(.system(size: 12))
+                            .font(.tw(12))
                             .foregroundStyle(TWColor.amber)
                             .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -388,9 +388,9 @@ struct BarcodeScanSheet: View {
                         } label: {
                             HStack(spacing: 5) {
                                 Image(systemName: "plus.circle.fill")
-                                    .font(.system(size: 11, weight: .bold))
+                                    .font(.tw(11, .bold))
                                 Text("这个条码我来建档")
-                                    .font(.system(size: 12.5, weight: .bold))
+                                    .font(.tw(12.5, .bold))
                             }
                             .foregroundStyle(TWColor.purple)
                             .padding(.horizontal, 11)
@@ -449,13 +449,13 @@ struct BarcodeScanSheet: View {
     private var deniedView: some View {
         VStack(spacing: 9) {
             Image(systemName: "camera.fill")
-                .font(.system(size: 26))
+                .font(.tw(26))
                 .foregroundStyle(TWColor.ink3)
             Text("相机没被允许")
-                .font(.system(size: 15, weight: .bold))
+                .font(.tw(15, .bold))
                 .foregroundStyle(TWColor.ink)
             Text("设置 → 隐私与安全 → 相机 → 天才威 打开，或者下面手动输入条码。")
-                .font(.system(size: 12))
+                .font(.tw(12))
                 .foregroundStyle(TWColor.ink3)
                 .multilineTextAlignment(.center)
                 .lineSpacing(2)
@@ -468,7 +468,7 @@ struct BarcodeScanSheet: View {
     private var manualRow: some View {
         HStack(spacing: 9) {
             TextField("手动输入条码，例如 6920000000000", text: $manual)
-                .font(.system(size: 14))
+                .font(.tw(14))
                 .keyboardType(.numberPad)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 10)
@@ -481,7 +481,7 @@ struct BarcodeScanSheet: View {
                 lookup(manual)
             } label: {
                 Text("查")
-                    .font(.system(size: 14.5, weight: .bold))
+                    .font(.tw(14.5, .bold))
                     .foregroundStyle(.white)
                     .frame(width: 54, height: 42)
                     .background {
@@ -509,24 +509,24 @@ struct BarcodeScanSheet: View {
                 }
                 VStack(alignment: .leading, spacing: 3) {
                     Text(r.brand.isEmpty ? r.name : "\(r.brand) · \(r.name)")
-                        .font(.system(size: 15, weight: .bold))
+                        .font(.tw(15, .bold))
                         .foregroundStyle(TWColor.ink)
                         .lineLimit(2)
                     Text(r.quantity.isEmpty ? r.code : "\(r.quantity) · \(r.code)")
-                        .font(.system(size: 10.5))
+                        .font(.tw(10.5))
                         .foregroundStyle(TWColor.ink3)
                 }
                 Spacer(minLength: 0)
             }
 
             Text(r.macroLine)
-                .font(.system(size: 11.5))
+                .font(.tw(11.5))
                 .foregroundStyle(TWColor.ink2)
                 .lineSpacing(2)
 
             if !r.ingredients.isEmpty {
                 Text(r.ingredients)
-                    .font(.system(size: 10.5))
+                    .font(.tw(10.5))
                     .foregroundStyle(TWColor.ink3)
                     .lineLimit(4)
                     .lineSpacing(2)
@@ -544,7 +544,7 @@ struct BarcodeScanSheet: View {
                 )
             } label: {
                 Text("记这一份")
-                    .font(.system(size: 14.5, weight: .bold))
+                    .font(.tw(14.5, .bold))
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)

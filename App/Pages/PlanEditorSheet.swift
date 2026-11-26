@@ -32,13 +32,13 @@ struct PlanEditorSheet: View {
                             VStack(alignment: .leading, spacing: 8) {
                                 HStack {
                                     Text(draft.days[di].sets[si].name.isEmpty ? "未命名动作" : draft.days[di].sets[si].name)
-                                        .font(.system(size: 15, weight: .semibold))
+                                        .font(.tw(15, .semibold))
                                     Spacer()
                                     Button {
                                         draft.days[di].sets[si].name = ""
                                     } label: {
                                         Image(systemName: "arrow.triangle.2.circlepath")
-                                            .font(.system(size: 12))
+                                            .font(.tw(12))
                                     }
                                     .buttonStyle(.borderless)
                                     .foregroundStyle(TWColor.purple)
@@ -47,7 +47,7 @@ struct PlanEditorSheet: View {
                                 HStack(spacing: 14) {
                                     Stepper("组数 \(draft.days[di].sets[si].sets)",
                                             value: $draft.days[di].sets[si].sets, in: 1...12)
-                                        .font(.system(size: 13))
+                                        .font(.tw(13))
                                 }
 
                                 HStack(spacing: 12) {
@@ -59,7 +59,7 @@ struct PlanEditorSheet: View {
                                         .textFieldStyle(.roundedBorder)
                                     Stepper("休息 \(draft.days[di].sets[si].restSec)s",
                                             value: $draft.days[di].sets[si].restSec, in: 10...300, step: 5)
-                                        .font(.system(size: 12))
+                                        .font(.tw(12))
                                 }
                             }
                             .padding(.vertical, 3)
@@ -73,7 +73,7 @@ struct PlanEditorSheet: View {
                             showMovePicker = true
                         } label: {
                             Label("从动作库挑一个", systemImage: "plus.circle.fill")
-                                .font(.system(size: 14, weight: .semibold))
+                                .font(.tw(14, .semibold))
                         }
                     } header: {
                         Text("第 \(di + 1) 天")
@@ -185,9 +185,9 @@ struct MovePickerSheet: View {
                                 HStack {
                                     VStack(alignment: .leading, spacing: 2) {
                                         Text(m.name)
-                                            .font(.system(size: 15, weight: .semibold))
+                                            .font(.tw(15, .semibold))
                                         Text(m.equipment)
-                                            .font(.system(size: 11))
+                                            .font(.tw(11))
                                             .foregroundStyle(.secondary)
                                     }
                                     Spacer()
@@ -223,12 +223,12 @@ struct RestSettingSheet: View {
         NavigationStack {
             VStack(alignment: .leading, spacing: 18) {
                 Text("组间休息")
-                    .font(.system(size: 26, weight: .heavy, design: .rounded))
+                    .font(.tw(26, .heavy, .rounded))
 
                 Text(value == 0
                      ? "跟随动作自带：每个方案里写多少秒就歇多少秒。"
                      : "统一 \(Int(value)) 秒：不管方案里写多少，每组做完都歇这么久。")
-                    .font(.system(size: 13))
+                    .font(.tw(13))
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
 
@@ -239,7 +239,7 @@ struct RestSettingSheet: View {
                             withAnimation(.snappy) { value = Double(p) }
                         } label: {
                             Text(p == 0 ? "跟随" : "\(p)s")
-                                .font(.system(size: 13.5, weight: .bold))
+                                .font(.tw(13.5, .bold))
                                 .foregroundStyle(value == Double(p) ? .white : TWColor.purple)
                                 .padding(.horizontal, 12)
                                 .padding(.vertical, 8)
@@ -258,7 +258,7 @@ struct RestSettingSheet: View {
                     .tint(TWColor.purple)
 
                 Text("\(Int(value)) 秒")
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.tw(13, .semibold))
                     .foregroundStyle(TWColor.ink3)
 
                 Spacer()
@@ -269,7 +269,7 @@ struct RestSettingSheet: View {
                     dismiss()
                 } label: {
                     Text("保存")
-                        .font(.system(size: 16, weight: .bold))
+                        .font(.tw(16, .bold))
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 14)

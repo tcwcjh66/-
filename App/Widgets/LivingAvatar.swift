@@ -14,6 +14,8 @@ struct LivingAvatar: View {
     var hour: Int = -1
     /// 横版（睡眠）按这个宽度铺满，不再固定 348 死在中间留白
     var boxWidth: CGFloat? = nil
+    /// 外层给的高度。睡眠态首页只给 252，这里不能写死 322，否则底边会被卡片切掉
+    var boxHeight: CGFloat? = nil
 
     @StateObject private var gyro = Gyro3D()
     /// 屏幕刷新能力：ProMotion（≥100Hz）与 60Hz 屏的拖影权重不同
@@ -174,7 +176,7 @@ struct LivingAvatar: View {
             // 第 5 层：近景微粒 —— 视差最大，压在人物前景，做出"镜头穿过粒子"的纵深
             particles(t: t, tint: lightTint, tx: tx, ty: ty, near: true)
         }
-        .frame(height: 322, alignment: .center)
+        .frame(height: boxHeight ?? 322, alignment: .center)
     }
 
     private func particles(t: CGFloat, tint: Color, tx: CGFloat, ty: CGFloat, near: Bool) -> some View {

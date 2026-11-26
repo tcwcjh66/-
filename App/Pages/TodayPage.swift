@@ -21,6 +21,10 @@ struct TodayPage: View {
         VStack(spacing: 0) {
             header
                 .padding(.bottom, 10)
+            if let issue = store.saveIssue {
+                saveBanner(issue)
+                    .padding(.bottom, 10)
+            }
             VStack(spacing: 0) {
                 heroDial
                 ringsCard
@@ -65,6 +69,30 @@ struct TodayPage: View {
         }
     }
 
+    /// 自动备份失败时的一条细横幅，点叉能关掉，不挡内容
+    private func saveBanner(_ text: String) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.tw(11, .bold))
+                .foregroundStyle(TWColor.amber)
+            Text(text)
+                .font(.tw(11))
+                .foregroundStyle(TWColor.ink2)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
+            Button { store.saveIssue = nil } label: {
+                Image(systemName: "xmark")
+                    .font(.tw(10, .bold))
+                    .foregroundStyle(TWColor.ink3)
+                    .padding(4)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 9)
+        .twGlass(radius: 14)
+    }
+
     /// 今天一条数据都没有：新装第一天，或者刚清空过
     private var firstRun: Bool {
         store.stepsForDisplay == 0 && store.meals.isEmpty && store.sessions.isEmpty
@@ -74,10 +102,10 @@ struct TodayPage: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 6) {
                 Image(systemName: "sparkles")
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.tw(13, .semibold))
                     .foregroundStyle(TWColor.purple)
                 Text("第一天，从这三件开始")
-                    .font(.system(size: 15, weight: .bold))
+                    .font(.tw(15, .bold))
                     .foregroundStyle(TWColor.ink)
                 Spacer(minLength: 0)
             }
@@ -92,9 +120,9 @@ struct TodayPage: View {
             } label: {
                 HStack(spacing: 6) {
                     Image(systemName: "play.circle.fill")
-                        .font(.system(size: 14, weight: .bold))
+                        .font(.tw(14, .bold))
                     Text("去训练")
-                        .font(.system(size: 13.5, weight: .bold))
+                        .font(.tw(13.5, .bold))
                 }
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
@@ -115,16 +143,16 @@ struct TodayPage: View {
     private func hintLine(_ n: String, _ title: String, _ detail: String, _ tint: Color) -> some View {
         HStack(alignment: .top, spacing: 9) {
             Text(n)
-                .font(.system(size: 10, weight: .bold))
+                .font(.tw(10, .bold))
                 .foregroundStyle(tint)
                 .frame(width: 18, height: 18)
                 .background { Circle().fill(tint.opacity(0.14)) }
             VStack(alignment: .leading, spacing: 1) {
                 Text(title)
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.tw(13, .semibold))
                     .foregroundStyle(TWColor.ink)
                 Text(detail)
-                    .font(.system(size: 11))
+                    .font(.tw(11))
                     .foregroundStyle(TWColor.ink3)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -135,7 +163,7 @@ struct TodayPage: View {
         HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(dateText)
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.tw(13, .semibold))
                     .tracking(1.2)
                     .foregroundStyle(TWColor.ink3)
                 TwGradientText(text: "今天", size: 31)
@@ -146,7 +174,7 @@ struct TodayPage: View {
                 showSettings = true
             } label: {
                 Image(systemName: "gearshape.fill")
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(.tw(16, .semibold))
                     .foregroundStyle(TWColor.ink2)
                     .frame(width: 38, height: 38)
                     .twGlass(radius: 19)
@@ -164,14 +192,21 @@ struct TodayPage: View {
     }
 
     private var heroDial: some View {
-        ZStack {
-            LivingAvatar(asset: store.avatarAsset, mood: store.mood,
-                         hour: Calendar.current.component(.hour, from: Date()),
-                         boxWidth: UIScreen.main.bounds.width - 60)
-                .id(store.avatarAsset)
-                .transition(.opacity)
+        GeometryReader { geo in
+            let isSleep = store.avatarAsset.hasSuffix("sleep")
+            let h: CGFloat = isSleep ? 252 : 322
+            // 两边各留 12pt，别让它贴着卡片边；横版按宽度换算出来的高度正好落在 h 里
+            let w = max(180, geo.size.width - 24)
+            ZStack {
+                LivingAvatar(asset: store.avatarAsset, mood: store.mood,
+                             hour: Calendar.current.component(.hour, from: Date()),
+                             boxWidth: w,
+                             boxHeight: h)
+                    .id(store.avatarAsset)
+                    .transition(.opacity)
+            }
+            .frame(width: geo.size.width, height: h)
         }
-        .frame(maxWidth: .infinity)
         .frame(height: store.avatarAsset.hasSuffix("sleep") ? 252 : 322)
         .animation(.easeInOut(duration: 0.42), value: store.avatarAsset)
     }
@@ -204,6 +239,9 @@ struct TodayPage: View {
             UIImpactFeedbackGenerator(style: .soft).impactOccurred()
             showRingInfo = true
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("四环：活动 \(Int(store.moveKcal)) 千卡，目标 \(Int(store.moveTarget)) 千卡；锻炼 \(Int(store.exerciseMin)) 分钟，目标 \(Int(store.exerciseTarget)) 分钟；站立 \(Int(store.standHours)) 小时，目标 \(Int(store.standTarget)) 小时；HRV \(store.hrv) 毫秒")
+        .accessibilityHint("轻点查看每一项怎么算出来的")
     }
 
     private func ringRow(color: Color, label: String, value: String, unit: String) -> some View {
@@ -213,13 +251,13 @@ struct TodayPage: View {
                 .frame(width: 7, height: 7)
                 .shadow(color: color.opacity(0.5), radius: 3)
             Text(label)
-                .font(.system(size: 13.5, weight: .semibold))
+                .font(.tw(13.5, .semibold))
                 .foregroundStyle(TWColor.ink2)
             Text(value)
-                .font(.system(size: 16, weight: .heavy))
+                .font(.tw(16, .heavy))
                 .foregroundStyle(TWColor.ink)
             Text(unit)
-                .font(.system(size: 12, weight: .medium))
+                .font(.tw(12, .medium))
                 .foregroundStyle(TWColor.ink3)
         }
     }
@@ -266,14 +304,14 @@ struct TodayPage: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 4) {
                 Image(systemName: icon)
-                    .font(.system(size: 12, weight: .bold))
+                    .font(.tw(12, .bold))
                     .foregroundStyle(tint)
                 Text(title)
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.tw(12, .semibold))
                     .foregroundStyle(TWColor.ink3)
             }
             Text(value)
-                .font(.system(size: 22, weight: .heavy))
+                .font(.tw(22, .heavy))
                 .foregroundStyle(TWColor.ink)
                 .contentTransition(.numericText())
         }
@@ -296,7 +334,7 @@ struct TodayPage: View {
         VStack(alignment: .leading, spacing: 11) {
             HStack {
                 Text("今日训练")
-                    .font(.system(size: 14.5, weight: .semibold))
+                    .font(.tw(14.5, .semibold))
                     .foregroundStyle(TWColor.ink2)
                 Spacer()
                 GlassPill(text: "本周 \(weekCount) 次", tint: TWColor.mint)
@@ -308,32 +346,32 @@ struct TodayPage: View {
                         .fill(TWColor.purple)
                         .frame(width: 7, height: 7)
                     Text("正在练：\(store.sessionMoves.first ?? "")\(store.sessionMoves.count > 1 ? " 等" : "")")
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.tw(14, .semibold))
                         .foregroundStyle(TWColor.ink)
                         .lineLimit(1)
                     Spacer(minLength: 0)
                     Text("已 \(store.sessionSets) 组")
-                        .font(.system(size: 12, weight: .bold))
+                        .font(.tw(12, .bold))
                         .foregroundStyle(TWColor.purple)
                 }
             } else if let hint = store.nextDayHint {
                 HStack(spacing: 8) {
                     Text(hint.day)
-                        .font(.system(size: 20, weight: .heavy))
+                        .font(.tw(20, .heavy))
                         .foregroundStyle(TWColor.ink)
                     Text(hint.plan)
-                        .font(.system(size: 12, weight: .medium))
+                        .font(.tw(12, .medium))
                         .foregroundStyle(TWColor.ink3)
                     Spacer(minLength: 0)
                     if let last = store.sessions.first {
                         Text("上次 \(shortDay(last.date))")
-                            .font(.system(size: 11.5, weight: .semibold))
+                            .font(.tw(11.5, .semibold))
                             .foregroundStyle(TWColor.ink3)
                     }
                 }
             } else {
                 Text("还没有训练记录。挑一套方案，从今天开始。")
-                    .font(.system(size: 13))
+                    .font(.tw(13))
                     .foregroundStyle(TWColor.ink3)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -344,9 +382,9 @@ struct TodayPage: View {
             } label: {
                 HStack(spacing: 6) {
                     Image(systemName: "dumbbell.fill")
-                        .font(.system(size: 13, weight: .bold))
+                        .font(.tw(13, .bold))
                     Text(store.sessionStart != nil ? "回到训练" : "去训练")
-                        .font(.system(size: 14.5, weight: .bold))
+                        .font(.tw(14.5, .bold))
                 }
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
@@ -370,17 +408,17 @@ struct TodayPage: View {
     private var waterQuick: some View {
         HStack(spacing: 11) {
             Image(systemName: "drop.fill")
-                .font(.system(size: 13, weight: .semibold))
+                .font(.tw(13, .semibold))
                 .foregroundStyle(TWColor.blue)
                 .frame(width: 30, height: 30)
                 .background { Circle().fill(TWColor.blue.opacity(0.12)) }
 
             VStack(alignment: .leading, spacing: 2) {
                 Text("饮水")
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(.tw(11, .semibold))
                     .foregroundStyle(TWColor.ink3)
                 Text("\(store.waterML) ml / \(store.waterTargetML) ml")
-                    .font(.system(size: 13.5, weight: .bold))
+                    .font(.tw(13.5, .bold))
                     .foregroundStyle(TWColor.ink)
                     .contentTransition(.numericText())
             }
@@ -392,7 +430,7 @@ struct TodayPage: View {
                 showWaterLog = true
             } label: {
                 Image(systemName: "square.and.pencil")
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.tw(13, .semibold))
                     .foregroundStyle(TWColor.blue)
                     .frame(width: 32, height: 32)
                     .background { Circle().fill(TWColor.blue.opacity(0.12)) }
@@ -404,7 +442,7 @@ struct TodayPage: View {
                 withAnimation(.snappy(duration: 0.18)) { store.addWater() }
             } label: {
                 Text("+1 杯")
-                    .font(.system(size: 13, weight: .bold))
+                    .font(.tw(13, .bold))
                     .foregroundStyle(.white)
                     .padding(.horizontal, 15)
                     .padding(.vertical, 8)
@@ -444,7 +482,7 @@ struct TodayPage: View {
         let tip = todayTip
         return HStack(alignment: .top, spacing: 10) {
             Image(systemName: tip.2)
-                .font(.system(size: 14, weight: .semibold))
+                .font(.tw(14, .semibold))
                 .foregroundStyle(tip.3)
                 .frame(width: 30, height: 30)
                 .background {
@@ -452,10 +490,10 @@ struct TodayPage: View {
                 }
             VStack(alignment: .leading, spacing: 3) {
                 Text(tip.0)
-                    .font(.system(size: 13.5, weight: .bold))
+                    .font(.tw(13.5, .bold))
                     .foregroundStyle(TWColor.ink)
                 Text(tip.1)
-                    .font(.system(size: 12.5))
+                    .font(.tw(12.5))
                     .foregroundStyle(TWColor.ink2)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -468,11 +506,11 @@ struct TodayPage: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text("今天感觉怎么样")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.tw(14, .semibold))
                     .foregroundStyle(TWColor.ink2)
                 Spacer()
                 Text(moodLabel)
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.tw(13, .semibold))
                     .foregroundStyle(TWColor.purple)
             }
 
@@ -539,9 +577,9 @@ struct MoodChip: View {
         } label: {
             VStack(spacing: 4) {
                 Text(option.emoji)
-                    .font(.system(size: 23))
+                    .font(.tw(23))
                 Text(option.name)
-                    .font(.system(size: 11, weight: .medium))
+                    .font(.tw(11, .medium))
                     .foregroundStyle(labelColor)
             }
             .frame(maxWidth: .infinity)
@@ -576,10 +614,10 @@ struct RingInfoSheet: View {
                 HStack(alignment: .top) {
                     VStack(alignment: .leading, spacing: 3) {
                         Text("这四个环怎么算的")
-                            .font(.system(size: 20, weight: .heavy))
+                            .font(.tw(20, .heavy))
                             .foregroundStyle(TWColor.ink)
                         Text("每个数都能追到来源，没有一项是编的")
-                            .font(.system(size: 11.5))
+                            .font(.tw(11.5))
                             .foregroundStyle(TWColor.ink3)
                     }
                     Spacer(minLength: 0)
@@ -588,7 +626,7 @@ struct RingInfoSheet: View {
                         dismiss()
                     } label: {
                         Image(systemName: "xmark")
-                            .font(.system(size: 12, weight: .bold))
+                            .font(.tw(12, .bold))
                             .foregroundStyle(TWColor.ink2)
                             .frame(width: 32, height: 32)
                             .background { Circle().fill(TWColor.glass(0.55)) }
@@ -610,7 +648,7 @@ struct RingInfoSheet: View {
                         detail: "指尖测量或快捷指令回传的最新值，不会拿心率去推。")
 
                 Text("环没满只是还没到目标。某项是 0 就代表今天确实没这个数据，这里不做估算。")
-                    .font(.system(size: 11.5))
+                    .font(.tw(11.5))
                     .foregroundStyle(TWColor.ink3)
                     .lineSpacing(2.5)
                     .fixedSize(horizontal: false, vertical: true)
@@ -634,15 +672,15 @@ struct RingInfoSheet: View {
             VStack(alignment: .leading, spacing: 3) {
                 HStack(alignment: .firstTextBaseline, spacing: 7) {
                     Text(title)
-                        .font(.system(size: 13.5, weight: .bold))
+                        .font(.tw(13.5, .bold))
                         .foregroundStyle(TWColor.ink)
                     Text(value)
-                        .font(.system(size: 12))
+                        .font(.tw(12))
                         .foregroundStyle(TWColor.ink2)
                         .monospacedDigit()
                 }
                 Text(detail)
-                    .font(.system(size: 11))
+                    .font(.tw(11))
                     .foregroundStyle(TWColor.ink3)
                     .lineSpacing(2)
                     .fixedSize(horizontal: false, vertical: true)

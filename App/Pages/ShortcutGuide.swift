@@ -34,16 +34,16 @@ struct ShortcutGuideSheet: View {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 5) {
                     Text("两步，只要心率")
-                        .font(.system(size: 26, weight: .heavy, design: .rounded))
+                        .font(.tw(26, .heavy, .rounded))
                         .foregroundStyle(TWColor.ink)
                     Text("比原来的五步少一半，60 秒能建完")
-                        .font(.system(size: 12.5))
+                        .font(.tw(12.5))
                         .foregroundStyle(TWColor.ink3)
                 }
                 Spacer(minLength: 0)
                 Button { dismiss() } label: {
                     Image(systemName: "xmark")
-                        .font(.system(size: 13, weight: .bold))
+                        .font(.tw(13, .bold))
                         .foregroundStyle(TWColor.ink2)
                         .frame(width: 34, height: 34)
                         .background { Circle().fill(TWColor.glass(0.5)) }
@@ -82,22 +82,22 @@ struct ShortcutGuideSheet: View {
             VStack(alignment: .leading, spacing: 9) {
                 HStack(spacing: 7) {
                     Image(systemName: "link")
-                        .font(.system(size: 12, weight: .bold))
+                        .font(.tw(12, .bold))
                         .foregroundStyle(TWColor.blue)
                         .frame(width: 24, height: 24)
                         .background { RoundedRectangle(cornerRadius: 7).fill(TWColor.blue.opacity(0.14)) }
                     Text("打开 URL")
-                        .font(.system(size: 13.5, weight: .semibold))
+                        .font(.tw(13.5, .semibold))
                         .foregroundStyle(TWColor.ink)
                     Spacer(minLength: 0)
                 }
 
                 HStack(spacing: 0) {
                     Text(urlPrefix)
-                        .font(.system(size: 12, design: .monospaced))
+                        .font(.tw(12))
                         .foregroundStyle(TWColor.ink2)
                     Text("心率")
-                        .font(.system(size: 11.5, weight: .bold))
+                        .font(.tw(11.5, .bold))
                         .foregroundStyle(.white)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 3)
@@ -116,13 +116,14 @@ struct ShortcutGuideSheet: View {
             }
 
             hint("先手打 twfit://hr?bpm= ，然后把光标停在这行末尾，点键盘上方的「变量」，选第一步那个查找动作的「值」——它就变成右边那个紫色胶囊。")
+            hint("建完把这条改名成「天才威心率」，以后在手表同步页点「跑一次」就不用再进来。")
 
             Button { copyPrefix() } label: {
                 HStack(spacing: 7) {
                     Image(systemName: copied ? "checkmark" : "doc.on.doc")
-                        .font(.system(size: 12, weight: .bold))
+                        .font(.tw(12, .bold))
                     Text(copied ? "已复制，去粘贴" : "复制 twfit://hr?bpm=")
-                        .font(.system(size: 13.5, weight: .bold))
+                        .font(.tw(13.5, .bold))
                 }
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
@@ -144,13 +145,13 @@ struct ShortcutGuideSheet: View {
         VStack(alignment: .leading, spacing: 9) {
             HStack(spacing: 6) {
                 Image(systemName: "checkmark.seal.fill")
-                    .font(.system(size: 13))
+                    .font(.tw(13))
                     .foregroundStyle(TWColor.mint)
                 Text("建完怎么验")
-                    .font(.system(size: 14.5, weight: .bold))
+                    .font(.tw(14.5, .bold))
                     .foregroundStyle(TWColor.ink)
             }
-            checkLine(1, "在快捷指令里点一下这条，让它跑完")
+            checkLine(1, "先给这条快捷指令改名成「天才威心率」——回 App 点「跑一次」就靠这个名字找它")
             checkLine(2, "回到天才威，看首页「心率」那一格")
             checkLine(3, "数字变成了你刚才的心率，就成了；还是 — 就回来看第二步的变量插没插对")
         }
@@ -162,15 +163,15 @@ struct ShortcutGuideSheet: View {
     private var whyCard: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("为什么只有心率")
-                .font(.system(size: 13.5, weight: .bold))
+                .font(.tw(13.5, .bold))
                 .foregroundStyle(TWColor.ink)
             Text("免费签名拿不到 HealthKit 权限，App 自己读不了手表。快捷指令是系统 App，它能读，把值拼进链接再交回来——这一步绕不开苹果。")
-                .font(.system(size: 11.5))
+                .font(.tw(11.5))
                 .foregroundStyle(TWColor.ink3)
                 .lineSpacing(2.5)
                 .fixedSize(horizontal: false, vertical: true)
             Text("步数不用管，App 自己用 CoreMotion 拿，已经是实时的。")
-                .font(.system(size: 11.5))
+                .font(.tw(11.5))
                 .foregroundStyle(TWColor.ink3)
                 .lineSpacing(2.5)
                 .fixedSize(horizontal: false, vertical: true)
@@ -185,7 +186,7 @@ struct ShortcutGuideSheet: View {
     private func stepHead(_ n: Int, _ title: String, _ sub: String) -> some View {
         HStack(alignment: .top, spacing: 10) {
             Text("\(n)")
-                .font(.system(size: 13, weight: .heavy, design: .rounded))
+                .font(.tw(13, .heavy, .rounded))
                 .foregroundStyle(.white)
                 .frame(width: 24, height: 24)
                 .background {
@@ -194,10 +195,10 @@ struct ShortcutGuideSheet: View {
                 }
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(.system(size: 15, weight: .bold))
+                    .font(.tw(15, .bold))
                     .foregroundStyle(TWColor.ink)
                 Text(sub)
-                    .font(.system(size: 11.5))
+                    .font(.tw(11.5))
                     .foregroundStyle(TWColor.ink3)
             }
             Spacer(minLength: 0)
@@ -209,12 +210,12 @@ struct ShortcutGuideSheet: View {
         VStack(alignment: .leading, spacing: 9) {
             HStack(spacing: 7) {
                 Image(systemName: icon)
-                    .font(.system(size: 12, weight: .bold))
+                    .font(.tw(12, .bold))
                     .foregroundStyle(tint)
                     .frame(width: 24, height: 24)
                     .background { RoundedRectangle(cornerRadius: 7).fill(tint.opacity(0.14)) }
                 Text(title)
-                    .font(.system(size: 13.5, weight: .semibold))
+                    .font(.tw(13.5, .semibold))
                     .foregroundStyle(TWColor.ink)
                 Spacer(minLength: 0)
             }
@@ -222,11 +223,11 @@ struct ShortcutGuideSheet: View {
             ForEach(Array(rows.enumerated()), id: \.offset) { item in
                 HStack(spacing: 8) {
                     Text(item.element.0)
-                        .font(.system(size: 11.5))
+                        .font(.tw(11.5))
                         .foregroundStyle(TWColor.ink3)
                     Spacer(minLength: 0)
                     Text(item.element.1)
-                        .font(.system(size: 11.5, weight: .semibold))
+                        .font(.tw(11.5, .semibold))
                         .foregroundStyle(TWColor.ink)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 3)
@@ -242,7 +243,7 @@ struct ShortcutGuideSheet: View {
 
     private func hint(_ text: String) -> some View {
         Text(text)
-            .font(.system(size: 11.5))
+            .font(.tw(11.5))
             .foregroundStyle(TWColor.ink3)
             .lineSpacing(2.5)
             .fixedSize(horizontal: false, vertical: true)
@@ -251,12 +252,12 @@ struct ShortcutGuideSheet: View {
     private func checkLine(_ n: Int, _ text: String) -> some View {
         HStack(alignment: .top, spacing: 8) {
             Text("\(n)")
-                .font(.system(size: 10, weight: .bold))
+                .font(.tw(10, .bold))
                 .foregroundStyle(TWColor.mint)
                 .frame(width: 16, height: 16)
                 .background { Circle().fill(TWColor.mint.opacity(0.16)) }
             Text(text)
-                .font(.system(size: 11.5))
+                .font(.tw(11.5))
                 .foregroundStyle(TWColor.ink2)
                 .lineSpacing(2)
                 .fixedSize(horizontal: false, vertical: true)

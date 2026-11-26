@@ -440,6 +440,8 @@ final class TWStore: ObservableObject {
     @Published var mealHistory: [String: [MealEntry]] = [:]
     /// 本机条码库：code → 营养。扫到过的码都留在这里。
     @Published var barcodeNotes: [String: BarcodeNote] = [:]
+    /// 自动备份失败时的提示，首页会显示一条细横幅，点掉即可
+    @Published var saveIssue: String? = nil
 
     private let d = UserDefaults.standard
     private var saveWork: DispatchWorkItem?
@@ -1531,6 +1533,12 @@ final class TWStore: ObservableObject {
         if let t = mindfulAt { d.set(t.timeIntervalSince1970, forKey: Key.mindat) }
         if let v = try? JSONEncoder().encode(sessions) {
             d.set(v, forKey: Key.sess)
+        }
+
+        // 每天顺手落一份完整 JSON 到 Documents/twbackup/，plist 坏了还能从这捡回来
+        TWBackup.maybeAutoBackup(build: { [weak self] in self?.exportJSON() ?? "{}" }) { [weak self] err in
+            guard let self else { return }
+            if let err { self.saveIssue = err }
         }
     }
 

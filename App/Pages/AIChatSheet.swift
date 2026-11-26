@@ -61,15 +61,15 @@ struct AIChatSheet: View {
                                          startPoint: .topLeading, endPoint: .bottomTrailing))
                     .frame(width: 34, height: 34)
                 Image(systemName: "sparkles")
-                    .font(.system(size: 15, weight: .bold))
+                    .font(.tw(15, .bold))
                     .foregroundStyle(.white)
             }
             VStack(alignment: .leading, spacing: 2) {
                 Text("AI 教练")
-                    .font(.system(size: 19, weight: .heavy))
+                    .font(.tw(19, .heavy))
                     .foregroundStyle(TWColor.ink)
                 Text(client.ready ? "\(client.provider.label) · \(client.model)" : "本地模式 · 未接大模型")
-                    .font(.system(size: 11, weight: .medium))
+                    .font(.tw(11, .medium))
                     .foregroundStyle(TWColor.ink3)
             }
             Spacer(minLength: 0)
@@ -78,7 +78,7 @@ struct AIChatSheet: View {
                 showSetup = true
             } label: {
                 Image(systemName: "gearshape.fill")
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.tw(15, .semibold))
                     .foregroundStyle(TWColor.ink2)
                     .frame(width: 34, height: 34)
                     .background(Circle().fill(TWColor.glass(0.5)))
@@ -89,7 +89,7 @@ struct AIChatSheet: View {
                 dismiss()
             } label: {
                 Image(systemName: "xmark")
-                    .font(.system(size: 13, weight: .bold))
+                    .font(.tw(13, .bold))
                     .foregroundStyle(TWColor.ink2)
                     .frame(width: 34, height: 34)
                     .background(Circle().fill(TWColor.glass(0.5)))
@@ -107,19 +107,19 @@ struct AIChatSheet: View {
         } label: {
             HStack(spacing: 9) {
                 Image(systemName: "bolt.horizontal.circle.fill")
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.tw(15, .semibold))
                     .foregroundStyle(TWColor.amber)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("没填 API Key，现在走本地规则引擎")
-                        .font(.system(size: 12.5, weight: .bold))
+                        .font(.tw(12.5, .bold))
                         .foregroundStyle(TWColor.ink)
                     Text("填入 Key 后换成真大模型，回答更灵活")
-                        .font(.system(size: 11))
+                        .font(.tw(11))
                         .foregroundStyle(TWColor.ink3)
                 }
                 Spacer(minLength: 0)
                 Text("接入")
-                    .font(.system(size: 11.5, weight: .bold))
+                    .font(.tw(11.5, .bold))
                     .foregroundStyle(TWColor.purple)
             }
             .padding(12)
@@ -177,13 +177,13 @@ struct AIChatSheet: View {
                         .fill(TWColor.glass(0.75))
                         .frame(width: 28, height: 28)
                     Image(systemName: "sparkles")
-                        .font(.system(size: 12, weight: .bold))
+                        .font(.tw(12, .bold))
                         .foregroundStyle(TWColor.purple)
                 }
                 .padding(.trailing, 7)
             }
             Text(m.text)
-                .font(.system(size: 13.5, weight: .regular))
+                .font(.tw(13.5, .regular))
                 .foregroundStyle(m.role == "user" ? .white : TWColor.ink)
                 .multilineTextAlignment(.leading)
                 .lineSpacing(3)
@@ -214,7 +214,7 @@ struct AIChatSheet: View {
                     )
             }
             Text("正在想…")
-                .font(.system(size: 11))
+                .font(.tw(11))
                 .foregroundStyle(TWColor.ink3)
             Spacer(minLength: 0)
         }
@@ -224,10 +224,10 @@ struct AIChatSheet: View {
     private func errRow(_ s: String) -> some View {
         HStack(alignment: .top, spacing: 7) {
             Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 11, weight: .bold))
+                .font(.tw(11, .bold))
                 .foregroundStyle(TWColor.coral)
             Text(s)
-                .font(.system(size: 11.5))
+                .font(.tw(11.5))
                 .foregroundStyle(TWColor.coral)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)
@@ -249,7 +249,7 @@ struct AIChatSheet: View {
                         send(q)
                     } label: {
                         Text(q)
-                            .font(.system(size: 12, weight: .semibold))
+                            .font(.tw(12, .semibold))
                             .foregroundStyle(TWColor.purple)
                             .padding(.horizontal, 12)
                             .padding(.vertical, 8)
@@ -269,7 +269,7 @@ struct AIChatSheet: View {
     private var composer: some View {
         HStack(spacing: 8) {
             TextField("问教练点什么…", text: $input, axis: .vertical)
-                .font(.system(size: 14))
+                .font(.tw(14))
                 .foregroundStyle(TWColor.ink)
                 .lineLimit(1...4)
                 .focused($focused)
@@ -286,7 +286,7 @@ struct AIChatSheet: View {
                 send(input)
             } label: {
                 Image(systemName: "arrow.up")
-                    .font(.system(size: 15, weight: .bold))
+                    .font(.tw(15, .bold))
                     .foregroundStyle(.white)
                     .frame(width: 38, height: 38)
                     .background {
@@ -458,16 +458,16 @@ struct AISetupSheet: View {
                     VStack(alignment: .leading, spacing: 12) {
                         HStack {
                             Text("接入 AI")
-                                .font(.system(size: 20, weight: .heavy))
+                                .font(.tw(20, .heavy))
                                 .foregroundStyle(TWColor.ink)
                             Spacer(minLength: 0)
                             Button("关闭") { dismiss() }
-                                .font(.system(size: 13, weight: .bold))
+                                .font(.tw(13, .bold))
                                 .foregroundStyle(TWColor.ink2)
                         }
 
                         Text("填自己的 Key，按量付费由服务商直接扣。不填也能用，走本地规则引擎。")
-                            .font(.system(size: 12))
+                            .font(.tw(12))
                             .foregroundStyle(TWColor.ink3)
                             .fixedSize(horizontal: false, vertical: true)
 
@@ -496,7 +496,7 @@ struct AISetupSheet: View {
     private var providerCard: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("服务商")
-                .font(.system(size: 14, weight: .bold))
+                .font(.tw(14, .bold))
                 .foregroundStyle(TWColor.ink)
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 7), count: 3), spacing: 7) {
                 ForEach(AIProvider.allCases) { p in
@@ -510,7 +510,7 @@ struct AISetupSheet: View {
                         }
                     } label: {
                         Text(p.label)
-                            .font(.system(size: 12.5, weight: provider == p ? .bold : .medium))
+                            .font(.tw(12.5, provider == p ? .bold : .medium))
                             .foregroundStyle(provider == p ? .white : TWColor.ink2)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 11)
@@ -526,11 +526,11 @@ struct AISetupSheet: View {
                 }
             }
             Text(provider.hint)
-                .font(.system(size: 11.5))
+                .font(.tw(11.5))
                 .foregroundStyle(TWColor.ink3)
                 .fixedSize(horizontal: false, vertical: true)
             Text(provider.pricing)
-                .font(.system(size: 11.5, weight: .semibold))
+                .font(.tw(11.5, .semibold))
                 .foregroundStyle(TWColor.mint)
         }
         .padding(15)
@@ -540,11 +540,11 @@ struct AISetupSheet: View {
     private var keyCard: some View {
         VStack(alignment: .leading, spacing: 11) {
             Text("密钥")
-                .font(.system(size: 14, weight: .bold))
+                .font(.tw(14, .bold))
                 .foregroundStyle(TWColor.ink)
 
             SecureField("sk-...", text: $key)
-                .font(.system(size: 13, design: .monospaced))
+                .font(.tw(13))
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
                 .foregroundStyle(TWColor.ink)
@@ -557,10 +557,10 @@ struct AISetupSheet: View {
 
             HStack(spacing: 8) {
                 Text("接口地址")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.tw(12, .semibold))
                     .foregroundStyle(TWColor.ink3)
                 TextField(provider.baseURL.isEmpty ? "https://..." : provider.baseURL, text: $url)
-                    .font(.system(size: 12, design: .monospaced))
+                    .font(.tw(12))
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
                     .foregroundStyle(TWColor.ink2)
@@ -574,10 +574,10 @@ struct AISetupSheet: View {
 
             HStack(spacing: 8) {
                 Text("模型名")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.tw(12, .semibold))
                     .foregroundStyle(TWColor.ink3)
                 TextField(provider.model.isEmpty ? "model" : provider.model, text: $model)
-                    .font(.system(size: 12, design: .monospaced))
+                    .font(.tw(12))
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
                     .foregroundStyle(TWColor.ink2)
@@ -590,7 +590,7 @@ struct AISetupSheet: View {
             }
 
             Text("留空就用该服务商的默认地址和模型。Key 只存在本机，不上传。")
-                .font(.system(size: 11))
+                .font(.tw(11))
                 .foregroundStyle(TWColor.ink3)
         }
         .padding(15)
@@ -608,10 +608,10 @@ struct AISetupSheet: View {
                             ProgressView().scaleEffect(0.7)
                         } else {
                             Image(systemName: "bolt.fill")
-                                .font(.system(size: 11, weight: .bold))
+                                .font(.tw(11, .bold))
                         }
                         Text(probing ? "测试中…" : "测试连通")
-                            .font(.system(size: 12.5, weight: .bold))
+                            .font(.tw(12.5, .bold))
                     }
                     .foregroundStyle(TWColor.purple)
                     .padding(.horizontal, 13)
@@ -628,9 +628,9 @@ struct AISetupSheet: View {
                 if let m = probeMsg {
                     HStack(spacing: 4) {
                         Image(systemName: probeOK ? "checkmark.circle.fill" : "info.circle.fill")
-                            .font(.system(size: 10, weight: .bold))
+                            .font(.tw(10, .bold))
                         Text(m)
-                            .font(.system(size: 10.5, weight: .semibold))
+                            .font(.tw(10.5, .semibold))
                             .lineLimit(2)
                     }
                     .foregroundStyle(probeOK ? TWColor.mint : TWColor.ink3)
@@ -651,7 +651,7 @@ struct AISetupSheet: View {
             dismiss()
         } label: {
             Text("保存")
-                .font(.system(size: 16, weight: .bold))
+                .font(.tw(16, .bold))
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 14)

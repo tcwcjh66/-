@@ -86,16 +86,16 @@ struct AchievementsSheet: View {
                     HStack {
                         VStack(alignment: .leading, spacing: 3) {
                             Text("成就")
-                                .font(.system(size: 26, weight: .heavy))
+                                .font(.tw(26, .heavy))
                                 .foregroundStyle(TWColor.ink)
                             Text("已解锁 \(unlockedCount) / \(items.count)")
-                                .font(.system(size: 12.5, weight: .medium))
+                                .font(.tw(12.5, .medium))
                                 .foregroundStyle(TWColor.ink3)
                         }
                         Spacer()
                         Button { dismiss() } label: {
                             Image(systemName: "xmark")
-                                .font(.system(size: 13, weight: .bold))
+                                .font(.tw(13, .bold))
                                 .foregroundStyle(TWColor.ink2)
                                 .frame(width: 34, height: 34)
                                 .background { Circle().fill(TWColor.glass(0.6)) }
@@ -117,7 +117,7 @@ struct AchievementsSheet: View {
                     }
 
                     Text("全部由本机记录算出，没有一条是写死的。新记录会继续解锁，旧数据不丢。")
-                        .font(.system(size: 11.5))
+                        .font(.tw(11.5))
                         .foregroundStyle(TWColor.ink3)
                         .lineSpacing(2.5)
                         .fixedSize(horizontal: false, vertical: true)
@@ -142,10 +142,10 @@ struct AchievementsSheet: View {
     private func statTile(_ title: String, _ value: String, _ tint: Color) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(title)
-                .font(.system(size: 10.5, weight: .medium))
+                .font(.tw(10.5, .medium))
                 .foregroundStyle(TWColor.ink3)
             Text(value)
-                .font(.system(size: 17, weight: .heavy))
+                .font(.tw(17, .heavy))
                 .foregroundStyle(tint)
                 .monospacedDigit()
                 .lineLimit(1)
@@ -168,7 +168,7 @@ struct AchievementsSheet: View {
                         .fill(item.done ? item.tint.opacity(0.16) : TWColor.ink3.opacity(0.10))
                         .frame(width: 34, height: 34)
                     Image(systemName: item.done ? item.icon : "lock.fill")
-                        .font(.system(size: 14, weight: .bold))
+                        .font(.tw(14, .bold))
                         .foregroundStyle(item.done ? item.tint : TWColor.ink3.opacity(0.7))
                         .scaleEffect(item.done && glow ? 1.14 : 1.0)
                         .animation(item.done
@@ -179,17 +179,17 @@ struct AchievementsSheet: View {
                 Spacer(minLength: 0)
                 if item.done {
                     Image(systemName: "checkmark.seal.fill")
-                        .font(.system(size: 12, weight: .bold))
+                        .font(.tw(12, .bold))
                         .foregroundStyle(item.tint)
                 }
             }
 
             Text(item.title)
-                .font(.system(size: 14, weight: .bold))
+                .font(.tw(14, .bold))
                 .foregroundStyle(item.done ? TWColor.ink : TWColor.ink2)
 
             Text(item.note)
-                .font(.system(size: 10.5))
+                .font(.tw(10.5))
                 .foregroundStyle(TWColor.ink3)
                 .lineLimit(2)
                 .fixedSize(horizontal: false, vertical: true)

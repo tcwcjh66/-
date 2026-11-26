@@ -8,6 +8,18 @@ private func dyn(_ l: (Double, Double, Double), _ d: (Double, Double, Double)) -
     })
 }
 
+extension Font {
+    /// 跟着系统字号缩放的自定义字体。
+    /// 直接写 .system(size:) 不会响应「设置 → 显示与亮度 → 文字大小」，
+    /// 这里过一遍 UIFontMetrics，用户把字调大 App 才会跟着变大。
+    static func tw(_ size: CGFloat,
+                   _ weight: Font.Weight = .regular,
+                   _ design: Font.Design = .default) -> Font {
+        let scaled = UIFontMetrics(forTextStyle: .body).scaledValue(for: size)
+        return .system(size: scaled, weight: weight, design: design)
+    }
+}
+
 enum TWColor {
     static let ink    = dyn((0.090, 0.086, 0.110), (0.949, 0.945, 0.969))
     static let ink2   = dyn((0.427, 0.416, 0.471), (0.769, 0.753, 0.824))
@@ -136,7 +148,7 @@ struct AuroraBG: View {
 extension View {
     /// 统一大标题风格
     func twTitle() -> some View {
-        self.font(.system(size: 36, weight: .heavy))
+        self.font(.tw(36, .heavy))
     }
 }
 
@@ -164,7 +176,7 @@ struct TwGradientText: View {
 
     var body: some View {
         Text(text)
-            .font(.system(size: size, weight: .heavy))
+            .font(.tw(size, .heavy))
             .foregroundStyle(
                 LinearGradient(colors: colors, startPoint: .leading, endPoint: .trailing)
             )

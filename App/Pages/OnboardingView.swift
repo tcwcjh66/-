@@ -44,11 +44,11 @@ struct OnboardingView: View {
             Spacer(minLength: 30)
 
             Text("天才威")
-                .font(.system(size: 44, weight: .black))
+                .font(.tw(44, .black))
                 .foregroundStyle(TWColor.ink)
 
             Text("自己记、自己算、不联网也不上传。\n步数、心率、饮食、训练、睡眠都在这一台手机里。")
-                .font(.system(size: 16, weight: .medium))
+                .font(.tw(16, .medium))
                 .foregroundStyle(TWColor.ink2)
                 .lineSpacing(5)
                 .fixedSize(horizontal: false, vertical: true)
@@ -70,7 +70,7 @@ struct OnboardingView: View {
     private func bullet(_ icon: String, _ text: String) -> some View {
         HStack(spacing: 12) {
             Image(systemName: icon)
-                .font(.system(size: 14, weight: .bold))
+                .font(.tw(14, .bold))
                 .foregroundStyle(TWColor.purple)
                 .frame(width: 30, height: 30)
                 .background {
@@ -78,7 +78,7 @@ struct OnboardingView: View {
                         .fill(TWColor.purple.opacity(0.12))
                 }
             Text(text)
-                .font(.system(size: 13.5))
+                .font(.tw(13.5))
                 .foregroundStyle(TWColor.ink2)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)
@@ -92,11 +92,11 @@ struct OnboardingView: View {
             Spacer(minLength: 20)
 
             Text("先给两个权限")
-                .font(.system(size: 30, weight: .black))
+                .font(.tw(30, .black))
                 .foregroundStyle(TWColor.ink)
 
             Text("这两个都不联网，只在手机本地用。不给也能用，只是数字要自己填。")
-                .font(.system(size: 14))
+                .font(.tw(14))
                 .foregroundStyle(TWColor.ink3)
                 .fixedSize(horizontal: false, vertical: true)
 
@@ -124,7 +124,7 @@ struct OnboardingView: View {
             }
 
             Text("手表数据不在这里——免费签名拿不到 HealthKit，得走「身体 → 手表同步」配一次快捷指令。装好后按那页的五步做。")
-                .font(.system(size: 11.5))
+                .font(.tw(11.5))
                 .foregroundStyle(TWColor.ink3)
                 .lineSpacing(3)
                 .fixedSize(horizontal: false, vertical: true)
@@ -140,7 +140,7 @@ struct OnboardingView: View {
                            state: String, tint: Color, action: @escaping () -> Void) -> some View {
         HStack(spacing: 12) {
             Image(systemName: icon)
-                .font(.system(size: 16, weight: .bold))
+                .font(.tw(16, .bold))
                 .foregroundStyle(tint)
                 .frame(width: 38, height: 38)
                 .background {
@@ -150,10 +150,10 @@ struct OnboardingView: View {
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(title)
-                    .font(.system(size: 14.5, weight: .bold))
+                    .font(.tw(14.5, .bold))
                     .foregroundStyle(TWColor.ink)
                 Text(detail)
-                    .font(.system(size: 11.5))
+                    .font(.tw(11.5))
                     .foregroundStyle(TWColor.ink3)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -162,7 +162,7 @@ struct OnboardingView: View {
 
             Button(action: action) {
                 Text(state)
-                    .font(.system(size: 11.5, weight: .bold))
+                    .font(.tw(11.5, .bold))
                     .foregroundStyle(.white)
                     .padding(.horizontal, 11)
                     .padding(.vertical, 7)
@@ -181,11 +181,11 @@ struct OnboardingView: View {
             Spacer(minLength: 20)
 
             Text("两个数，算热量")
-                .font(.system(size: 30, weight: .black))
+                .font(.tw(30, .black))
                 .foregroundStyle(TWColor.ink)
 
             Text("填了体重和身高，饮食页的目标热量会按 Mifflin-St Jeor 算出来，不再是一个凭空的 2200。")
-                .font(.system(size: 14))
+                .font(.tw(14))
                 .foregroundStyle(TWColor.ink3)
                 .fixedSize(horizontal: false, vertical: true)
 
@@ -196,20 +196,20 @@ struct OnboardingView: View {
 
             if let est = roughMaintain {
                 Text("按 20 岁、男、一般活动量粗算：维持 \(est) kcal 上下。年龄和性别可以进「目标」页再改。")
-                    .font(.system(size: 11.5))
+                    .font(.tw(11.5))
                     .foregroundStyle(TWColor.mint)
                     .lineSpacing(3)
                     .fixedSize(horizontal: false, vertical: true)
             } else {
                 Text("不填也能进，之后在「身体」页补上。")
-                    .font(.system(size: 11.5))
+                    .font(.tw(11.5))
                     .foregroundStyle(TWColor.ink3)
             }
 
             Spacer()
 
             Text("接下来：今天页点「开始记录」记一餐，训练页选一套方案就能练。")
-                .font(.system(size: 12))
+                .font(.tw(12))
                 .foregroundStyle(TWColor.ink3)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -220,16 +220,16 @@ struct OnboardingView: View {
     private func numberBox(_ title: String, unit: String, text: Binding<String>) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title)
-                .font(.system(size: 11, weight: .medium))
+                .font(.tw(11, .medium))
                 .foregroundStyle(TWColor.ink3)
             HStack(spacing: 5) {
                 TextField("0", text: text)
                     .keyboardType(.decimalPad)
-                    .font(.system(size: 22, weight: .heavy))
+                    .font(.tw(22, .heavy))
                     .foregroundStyle(TWColor.ink)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 Text(unit)
-                    .font(.system(size: 12, weight: .bold))
+                    .font(.tw(12, .bold))
                     .foregroundStyle(TWColor.ink3)
             }
         }
@@ -261,7 +261,7 @@ struct OnboardingView: View {
                 }
             } label: {
                 Text(page < 2 ? "下一步" : "开始用")
-                    .font(.system(size: 16, weight: .bold))
+                    .font(.tw(16, .bold))
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 15)
@@ -279,7 +279,7 @@ struct OnboardingView: View {
                     finish()
                 } label: {
                     Text("跳过，直接用")
-                        .font(.system(size: 12.5, weight: .medium))
+                        .font(.tw(12.5, .medium))
                         .foregroundStyle(TWColor.ink3)
                 }
                 .buttonStyle(.plain)

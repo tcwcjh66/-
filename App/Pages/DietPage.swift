@@ -118,7 +118,7 @@ struct DietPage: View {
             .overlay(alignment: .topTrailing) {
                 Button { showPhoto = false } label: {
                     Image(systemName: "xmark")
-                        .font(.system(size: 13, weight: .bold))
+                        .font(.tw(13, .bold))
                         .foregroundStyle(.white)
                         .frame(width: 36, height: 36)
                         .background { Circle().fill(.white.opacity(0.18)) }
@@ -168,23 +168,23 @@ struct DietPage: View {
                                              startPoint: .topLeading, endPoint: .bottomTrailing))
                         .frame(width: 40, height: 40)
                     Image(systemName: "sparkles")
-                        .font(.system(size: 16, weight: .bold))
+                        .font(.tw(16, .bold))
                         .foregroundStyle(.white)
                 }
                 VStack(alignment: .leading, spacing: 3) {
                     Text("问 AI 教练")
-                        .font(.system(size: 15, weight: .bold))
+                        .font(.tw(15, .bold))
                         .foregroundStyle(TWColor.ink)
                     Text(AIClient.shared.ready
                          ? "\(AIClient.shared.provider.label) · 结合你今天的数据回答"
                          : "本地引擎可用 · 接上 Key 换成大模型")
-                        .font(.system(size: 11.5))
+                        .font(.tw(11.5))
                         .foregroundStyle(TWColor.ink3)
                         .lineLimit(1)
                 }
                 Spacer(minLength: 0)
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .bold))
+                    .font(.tw(12, .bold))
                     .foregroundStyle(TWColor.ink3)
             }
             .padding(14)
@@ -205,11 +205,11 @@ struct DietPage: View {
                 )
                 VStack(spacing: 0) {
                     Text("\(Int(store.dietKcal))")
-                        .font(.system(size: 31, weight: .heavy))
+                        .font(.tw(31, .heavy))
                         .foregroundStyle(TWColor.ink)
                         .contentTransition(.numericText())
                     Text("kcal")
-                        .font(.system(size: 11.5, weight: .semibold))
+                        .font(.tw(11.5, .semibold))
                         .foregroundStyle(TWColor.ink3)
                 }
             }
@@ -217,20 +217,20 @@ struct DietPage: View {
             VStack(alignment: .leading, spacing: 10) {
                 VStack(alignment: .leading, spacing: 1) {
                     Text("还可以吃")
-                        .font(.system(size: 12.5, weight: .semibold))
+                        .font(.tw(12.5, .semibold))
                         .foregroundStyle(TWColor.ink3)
                     HStack(alignment: .firstTextBaseline, spacing: 3) {
                         Text("\(Int(remaining))")
-                            .font(.system(size: 28, weight: .heavy))
+                            .font(.tw(28, .heavy))
                             .foregroundStyle(TWColor.mint)
                         Text("kcal")
-                            .font(.system(size: 12, weight: .medium))
+                            .font(.tw(12, .medium))
                             .foregroundStyle(TWColor.ink3)
                     }
                 }
 
                 Text("目标 \(Int(store.dietTarget)) · 已记录 \(store.meals.count) 餐")
-                    .font(.system(size: 12, weight: .regular))
+                    .font(.tw(12, .regular))
                     .foregroundStyle(TWColor.ink3)
             }
             Spacer(minLength: 0)
@@ -253,7 +253,7 @@ struct DietPage: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text("三大营养素")
-                    .font(.system(size: 14.5, weight: .semibold))
+                    .font(.tw(14.5, .semibold))
                     .foregroundStyle(TWColor.ink2)
                 Spacer()
                 GlassPill(text: proteinHint,
@@ -305,7 +305,7 @@ struct DietPage: View {
         HStack(spacing: 3) {
             Circle().fill(tint).frame(width: 5, height: 5)
             Text("\(name) \(Int(ratio * 100))%")
-                .font(.system(size: 10.5, weight: .semibold))
+                .font(.tw(10.5, .semibold))
                 .foregroundStyle(TWColor.ink3)
         }
     }
@@ -314,11 +314,11 @@ struct DietPage: View {
         VStack(alignment: .leading, spacing: 5) {
             HStack {
                 Text(title)
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.tw(13, .semibold))
                     .foregroundStyle(TWColor.ink2)
                 Spacer()
                 Text("\(Int(value)) / \(Int(target)) \(unit)")
-                    .font(.system(size: 12.5, weight: .semibold))
+                    .font(.tw(12.5, .semibold))
                     .foregroundStyle(value >= target ? TWColor.mint : TWColor.ink3)
             }
             GeometryReader { geo in
@@ -341,8 +341,8 @@ struct DietPage: View {
                 showPicker = true
             } label: {
                 HStack(spacing: 6) {
-                    Image(systemName: "plus.circle.fill").font(.system(size: 15, weight: .bold))
-                    Text("加一餐 · \(autoSlot)").font(.system(size: 15, weight: .bold))
+                    Image(systemName: "plus.circle.fill").font(.tw(15, .bold))
+                    Text("加一餐 · \(autoSlot)").font(.tw(15, .bold))
                 }
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
@@ -357,8 +357,8 @@ struct DietPage: View {
 
             PhotosPicker(selection: $pick, matching: .images, photoLibrary: .shared()) {
                 VStack(spacing: 4) {
-                    Image(systemName: "camera.fill").font(.system(size: 17, weight: .bold))
-                    Text(analyzing ? "识别中" : "拍照识别").font(.system(size: 12, weight: .semibold))
+                    Image(systemName: "camera.fill").font(.tw(17, .bold))
+                    Text(analyzing ? "识别中" : "拍照识别").font(.tw(12, .semibold))
                 }
                 .foregroundStyle(TWColor.purple)
                 .frame(width: 92, height: 52)
@@ -379,14 +379,14 @@ struct DietPage: View {
         VStack(alignment: .leading, spacing: 11) {
             HStack(spacing: 7) {
                 Image(systemName: "photo.on.rectangle.angled")
-                    .font(.system(size: 14, weight: .bold))
+                    .font(.tw(14, .bold))
                     .foregroundStyle(TWColor.blue)
                 Text("今天的餐食照片")
-                    .font(.system(size: 15, weight: .bold))
+                    .font(.tw(15, .bold))
                     .foregroundStyle(TWColor.ink)
                 Spacer()
                 Text("\(store.todayPhotos.count) 张 · 只留 40 天")
-                    .font(.system(size: 11))
+                    .font(.tw(11))
                     .foregroundStyle(TWColor.ink3)
             }
 
@@ -415,7 +415,7 @@ struct DietPage: View {
             }
 
             Text("照片只当影像记录，不参与热量计算。要数营养走上面的「搜食物」或「扫条码」。")
-                .font(.system(size: 10.5))
+                .font(.tw(10.5))
                 .foregroundStyle(TWColor.ink3)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -431,14 +431,14 @@ struct DietPage: View {
             } label: {
                 HStack(spacing: 9) {
                     Image(systemName: "magnifyingglass")
-                        .font(.system(size: 16, weight: .bold))
+                        .font(.tw(16, .bold))
                         .foregroundStyle(TWColor.purple)
                     VStack(alignment: .leading, spacing: 1) {
                         Text("搜食物")
-                            .font(.system(size: 14.5, weight: .bold))
+                            .font(.tw(14.5, .bold))
                             .foregroundStyle(TWColor.ink)
                         Text("本地库 + 联网营养表")
-                            .font(.system(size: 10))
+                            .font(.tw(10))
                             .foregroundStyle(TWColor.ink3)
                     }
                     Spacer(minLength: 0)
@@ -462,10 +462,10 @@ struct DietPage: View {
             } label: {
                 HStack(spacing: 7) {
                     Image(systemName: "barcode.viewfinder")
-                        .font(.system(size: 16, weight: .bold))
+                        .font(.tw(16, .bold))
                         .foregroundStyle(.white)
                     Text("扫条码")
-                        .font(.system(size: 13.5, weight: .bold))
+                        .font(.tw(13.5, .bold))
                         .foregroundStyle(.white)
                 }
                 .padding(.horizontal, 14)
@@ -484,7 +484,7 @@ struct DietPage: View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
                 Text("今天吃了什么")
-                    .font(.system(size: 14.5, weight: .semibold))
+                    .font(.tw(14.5, .semibold))
                     .foregroundStyle(TWColor.ink2)
                 Spacer()
                 Button {
@@ -497,11 +497,11 @@ struct DietPage: View {
                 } label: {
                     HStack(spacing: 4) {
                         Image(systemName: copiedCount == nil ? "arrow.uturn.down" : (copiedCount ?? 0) > 0 ? "checkmark" : "xmark")
-                            .font(.system(size: 10, weight: .bold))
+                            .font(.tw(10, .bold))
                         Text(copiedCount == nil
                              ? "复制昨天"
                              : ((copiedCount ?? 0) > 0 ? "已搬 \(copiedCount ?? 0) 条" : "昨天没记录"))
-                            .font(.system(size: 12, weight: .bold))
+                            .font(.tw(12, .bold))
                     }
                     .foregroundStyle((copiedCount ?? 0) > 0 ? TWColor.mint : TWColor.purple)
                     .padding(.horizontal, 9)
@@ -512,14 +512,14 @@ struct DietPage: View {
 
                 if !store.meals.isEmpty {
                     Button("清空") { store.resetToday() }
-                        .font(.system(size: 12.5, weight: .semibold))
+                        .font(.tw(12.5, .semibold))
                         .foregroundStyle(TWColor.ink3)
                 }
             }
 
             if store.meals.isEmpty {
                 Text("还没记录。点「加一餐」或拍张照片，系统会算出热量和蛋白。")
-                    .font(.system(size: 13, weight: .regular))
+                    .font(.tw(13, .regular))
                     .foregroundStyle(TWColor.ink3)
                     .fixedSize(horizontal: false, vertical: true)
             } else {
@@ -532,10 +532,10 @@ struct DietPage: View {
                                     .fill(slotTint(s))
                                     .frame(width: 7, height: 7)
                                 Text(s)
-                                    .font(.system(size: 13.5, weight: .bold))
+                                    .font(.tw(13.5, .bold))
                                     .foregroundStyle(TWColor.ink)
                                 Text("\(kcal(in: s)) kcal")
-                                    .font(.system(size: 11.5, weight: .semibold))
+                                    .font(.tw(11.5, .semibold))
                                     .foregroundStyle(TWColor.ink3)
                                 Spacer(minLength: 0)
                             }
@@ -555,24 +555,24 @@ struct DietPage: View {
         HStack(spacing: 10) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(m.name)
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.tw(14, .semibold))
                     .foregroundStyle(TWColor.ink)
                 Text("\(Int(m.grams))g · 蛋白 \(Int(m.protein))g · 碳 \(Int(m.carb))g · 脂 \(Int(m.fat))g")
-                    .font(.system(size: 11.5, weight: .regular))
+                    .font(.tw(11.5, .regular))
                     .foregroundStyle(TWColor.ink3)
                     .lineLimit(1)
                     .minimumScaleFactor(0.85)
             }
             Spacer(minLength: 4)
             Text("\(Int(m.kcal))")
-                .font(.system(size: 15, weight: .heavy))
+                .font(.tw(15, .heavy))
                 .foregroundStyle(TWColor.ink2)
             Button {
                 UIImpactFeedbackGenerator(style: .soft).impactOccurred()
                 withAnimation(.snappy(duration: 0.2)) { store.deleteMeal(id: m.id) }
             } label: {
                 Image(systemName: "xmark.circle.fill")
-                    .font(.system(size: 16))
+                    .font(.tw(16))
                     .foregroundStyle(TWColor.ink3.opacity(0.65))
                     .frame(width: 30, height: 30)
                     .contentShape(Rectangle())
@@ -624,14 +624,14 @@ struct DietPage: View {
     private func miniStat(title: String, value: String, unit: String, tint: Color) -> some View {
         VStack(spacing: 3) {
             Text(title)
-                .font(.system(size: 11, weight: .semibold))
+                .font(.tw(11, .semibold))
                 .foregroundStyle(TWColor.ink3)
             HStack(alignment: .firstTextBaseline, spacing: 2) {
                 Text(value)
-                    .font(.system(size: 19, weight: .heavy))
+                    .font(.tw(19, .heavy))
                     .foregroundStyle(tint)
                 Text(unit)
-                    .font(.system(size: 10.5, weight: .medium))
+                    .font(.tw(10.5, .medium))
                     .foregroundStyle(TWColor.ink3)
             }
         }
@@ -674,7 +674,7 @@ struct FoodPicker: View {
 
                 HStack(spacing: 8) {
                     Text("加一餐")
-                        .font(.system(size: 19, weight: .heavy))
+                        .font(.tw(19, .heavy))
                         .foregroundStyle(TWColor.ink)
                     Spacer()
                     Button {
@@ -683,9 +683,9 @@ struct FoodPicker: View {
                     } label: {
                         HStack(spacing: 4) {
                             Image(systemName: "plus")
-                                .font(.system(size: 11, weight: .bold))
+                                .font(.tw(11, .bold))
                             Text("自定义")
-                                .font(.system(size: 12.5, weight: .bold))
+                                .font(.tw(12.5, .bold))
                         }
                         .foregroundStyle(TWColor.purple)
                         .padding(.horizontal, 11)
@@ -705,7 +705,7 @@ struct FoodPicker: View {
                             withAnimation(.snappy(duration: 0.2)) { slot = s }
                         } label: {
                             Text(s)
-                                .font(.system(size: 13, weight: activeSlot == s ? .bold : .medium))
+                                .font(.tw(13, activeSlot == s ? .bold : .medium))
                                 .foregroundStyle(activeSlot == s ? .white : TWColor.ink2)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 9)
@@ -726,11 +726,11 @@ struct FoodPicker: View {
                     VStack(alignment: .leading, spacing: 7) {
                         HStack {
                             Text("最近吃过")
-                                .font(.system(size: 12, weight: .bold))
+                                .font(.tw(12, .bold))
                                 .foregroundStyle(TWColor.ink3)
                             Spacer(minLength: 0)
                             Text("点一下按原分量直接记")
-                                .font(.system(size: 10.5))
+                                .font(.tw(10.5))
                                 .foregroundStyle(TWColor.ink3)
                         }
                         .padding(.horizontal, 18)
@@ -748,11 +748,11 @@ struct FoodPicker: View {
                                     } label: {
                                         VStack(alignment: .leading, spacing: 3) {
                                             Text(m.name)
-                                                .font(.system(size: 12.5, weight: .semibold))
+                                                .font(.tw(12.5, .semibold))
                                                 .foregroundStyle(TWColor.ink)
                                                 .lineLimit(1)
                                             Text("\(Int(m.kcal)) kcal · \(Int(m.grams))g")
-                                                .font(.system(size: 10))
+                                                .font(.tw(10))
                                                 .foregroundStyle(TWColor.ink3)
                                         }
                                         .padding(.horizontal, 11)
@@ -776,7 +776,7 @@ struct FoodPicker: View {
                         if !customPresets.isEmpty {
                             HStack {
                                 Text("我的常吃")
-                                    .font(.system(size: 12, weight: .bold))
+                                    .font(.tw(12, .bold))
                                     .foregroundStyle(TWColor.ink3)
                                 Spacer()
                             }
@@ -788,7 +788,7 @@ struct FoodPicker: View {
 
                             HStack {
                                 Text("常见食物")
-                                    .font(.system(size: 12, weight: .bold))
+                                    .font(.tw(12, .bold))
                                     .foregroundStyle(TWColor.ink3)
                                 Spacer()
                             }
@@ -806,11 +806,11 @@ struct FoodPicker: View {
                 VStack(spacing: 6) {
                     HStack {
                         Text("分量")
-                            .font(.system(size: 13, weight: .semibold))
+                            .font(.tw(13, .semibold))
                             .foregroundStyle(TWColor.ink2)
                         Spacer()
                         Text("\(Int(grams)) g")
-                            .font(.system(size: 15, weight: .heavy))
+                            .font(.tw(15, .heavy))
                             .foregroundStyle(TWColor.purple)
                     }
                     Slider(value: $grams, in: 30...500, step: 5)
@@ -834,7 +834,7 @@ struct FoodPicker: View {
                     dismiss()
                 } label: {
                     Text("记入\(activeSlot)")
-                        .font(.system(size: 16, weight: .bold))
+                        .font(.tw(16, .bold))
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 13)
@@ -865,13 +865,13 @@ struct FoodPicker: View {
             withAnimation(.snappy(duration: 0.2)) { selected = f }
         } label: {
             HStack {
-                Text(f.emoji).font(.system(size: 19))
+                Text(f.emoji).font(.tw(19))
                 VStack(alignment: .leading, spacing: 2) {
                     Text(f.name)
-                        .font(.system(size: 14.5, weight: .semibold))
+                        .font(.tw(14.5, .semibold))
                         .foregroundStyle(TWColor.ink)
                     Text("每 100g · \(Int(f.kcalPer100)) kcal · 蛋白 \(String(format: "%.1f", f.proteinPer100))g")
-                        .font(.system(size: 11.5, weight: .regular))
+                        .font(.tw(11.5, .regular))
                         .foregroundStyle(TWColor.ink3)
                 }
                 Spacer()
@@ -918,17 +918,17 @@ struct ShotResultSheet: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 12) {
                         Text("识别结果")
-                            .font(.system(size: 20, weight: .heavy))
+                            .font(.tw(20, .heavy))
                             .foregroundStyle(TWColor.ink)
 
                         Text(hits.isEmpty
                              ? "没看出明显食物，换个角度、把餐盘放正再拍一次"
                              : "共 \(hits.count) 项，勾选要记入的")
-                            .font(.system(size: 13))
+                            .font(.tw(13))
                             .foregroundStyle(TWColor.ink3)
 
                         Text("拍照只能按颜色估个大概，别当准数。要精确就到「搜食物」按名称查，或「扫条码」读包装上厂商申报的营养表。")
-                            .font(.system(size: 11.5))
+                            .font(.tw(11.5))
                             .foregroundStyle(TWColor.amber)
                             .lineSpacing(2.5)
                             .fixedSize(horizontal: false, vertical: true)
@@ -946,7 +946,7 @@ struct ShotResultSheet: View {
                                     withAnimation(.snappy(duration: 0.2)) { slot = s }
                                 } label: {
                                     Text(s)
-                                        .font(.system(size: 13, weight: activeSlot == s ? .bold : .medium))
+                                        .font(.tw(13, activeSlot == s ? .bold : .medium))
                                         .foregroundStyle(activeSlot == s ? .white : TWColor.ink2)
                                         .frame(maxWidth: .infinity)
                                         .padding(.vertical, 9)
@@ -973,15 +973,15 @@ struct ShotResultSheet: View {
                                 HStack(spacing: 10) {
                                     VStack(alignment: .leading, spacing: 4) {
                                         Text(h.name)
-                                            .font(.system(size: 15, weight: .semibold))
+                                            .font(.tw(15, .semibold))
                                             .foregroundStyle(TWColor.ink)
                                         Text("\(Int(h.grams))g · \(Int(h.kcal)) kcal · 蛋白 \(Int(h.protein))g")
-                                            .font(.system(size: 12))
+                                            .font(.tw(12))
                                             .foregroundStyle(TWColor.ink3)
                                     }
                                     Spacer(minLength: 0)
                                     Image(systemName: selected.contains(h.id) ? "checkmark.circle.fill" : "circle")
-                                        .font(.system(size: 20, weight: .semibold))
+                                        .font(.tw(20, .semibold))
                                         .foregroundStyle(TWColor.purple)
                                 }
                                 .padding(14)
@@ -1011,9 +1011,9 @@ struct ShotResultSheet: View {
                         } label: {
                             HStack(spacing: 5) {
                                 Image(systemName: savedToast ? "checkmark.circle.fill" : "star")
-                                    .font(.system(size: 12, weight: .bold))
+                                    .font(.tw(12, .bold))
                                 Text(savedToast ? "已存进我的常吃" : "存进我的常吃")
-                                    .font(.system(size: 12.5, weight: .bold))
+                                    .font(.tw(12.5, .bold))
                             }
                             .foregroundStyle(savedToast ? TWColor.mint : TWColor.ink2)
                             .padding(.horizontal, 12)
@@ -1035,9 +1035,9 @@ struct ShotResultSheet: View {
                     } label: {
                         HStack(spacing: 5) {
                             Image(systemName: "sparkles")
-                                .font(.system(size: 13, weight: .bold))
+                                .font(.tw(13, .bold))
                             Text("问 AI")
-                                .font(.system(size: 14, weight: .bold))
+                                .font(.tw(14, .bold))
                         }
                         .foregroundStyle(TWColor.purple)
                         .padding(.horizontal, 15)
@@ -1056,7 +1056,7 @@ struct ShotResultSheet: View {
                         dismiss()
                     } label: {
                         Text("记入\(activeSlot)")
-                            .font(.system(size: 16, weight: .bold))
+                            .font(.tw(16, .bold))
                             .foregroundStyle(.white)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 14)

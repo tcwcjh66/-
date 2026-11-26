@@ -102,7 +102,7 @@ struct GlassPill: View {
 
     var body: some View {
         Text(text)
-            .font(.system(size: 14, weight: .semibold))
+            .font(.tw(14, .semibold))
             .foregroundStyle(tint)
             .padding(.horizontal, 10)
             .padding(.vertical, 5)
@@ -131,7 +131,7 @@ struct SegGroup<T: Hashable>: View {
                     withAnimation(.snappy(duration: 0.22)) { selected = item }
                 } label: {
                     Text(label(item))
-                        .font(.system(size: 14.5, weight: on ? .bold : .medium))
+                        .font(.tw(14.5, on ? .bold : .medium))
                         .foregroundStyle(on ? .white : TWColor.ink2)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 7)

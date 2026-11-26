@@ -44,12 +44,12 @@ struct GoalSheet: View {
 
                     HStack {
                         Text("目标")
-                            .font(.system(size: 24, weight: .heavy))
+                            .font(.tw(24, .heavy))
                             .foregroundStyle(TWColor.ink)
                         Spacer()
                         Button { dismiss() } label: {
                             Image(systemName: "xmark")
-                                .font(.system(size: 13, weight: .bold))
+                                .font(.tw(13, .bold))
                                 .foregroundStyle(TWColor.ink2)
                                 .frame(width: 34, height: 34)
                                 .background { Circle().fill(TWColor.glass(0.6)) }
@@ -77,10 +77,10 @@ struct GoalSheet: View {
                         HStack(spacing: 6) {
                             if saved {
                                 Image(systemName: "checkmark")
-                                    .font(.system(size: 13, weight: .bold))
+                                    .font(.tw(13, .bold))
                             }
                             Text(saved ? "已保存" : "保存目标")
-                                .font(.system(size: 16, weight: .bold))
+                                .font(.tw(16, .bold))
                         }
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
@@ -97,7 +97,7 @@ struct GoalSheet: View {
                     .disabled(!canSave)
 
                     Text("热量 800–6000 kcal、蛋白 20–500 g、饮水 2–30 杯，超出范围不允许保存。")
-                        .font(.system(size: 11))
+                        .font(.tw(11))
                         .foregroundStyle(TWColor.ink3)
                         .padding(.horizontal, 4)
                 }
@@ -117,25 +117,25 @@ struct GoalSheet: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 7) {
                 Image(systemName: "function")
-                    .font(.system(size: 13, weight: .bold))
+                    .font(.tw(13, .bold))
                     .foregroundStyle(TWColor.blue)
                 Text("按身体算一个")
-                    .font(.system(size: 14, weight: .bold))
+                    .font(.tw(14, .bold))
                     .foregroundStyle(TWColor.ink)
                 Spacer()
                 Text("Mifflin-St Jeor")
-                    .font(.system(size: 10))
+                    .font(.tw(10))
                     .foregroundStyle(TWColor.ink3)
             }
 
             if store.bodyWeight <= 0 || store.heightCM <= 0 {
                 Text("先去「身体」页填体重和身高，这里才算得出来。粗算需要这两个数。")
-                    .font(.system(size: 12))
+                    .font(.tw(12))
                     .foregroundStyle(TWColor.amber)
                     .fixedSize(horizontal: false, vertical: true)
             } else {
                 Text("基础代谢 \(Int(store.bmr)) kcal　·　\(store.activityLabel) ×\(String(format: "%.3f", store.activityFactor))　·　维持 \(store.maintainKcal) kcal")
-                    .font(.system(size: 11.5))
+                    .font(.tw(11.5))
                     .foregroundStyle(TWColor.ink3)
                     .fixedSize(horizontal: false, vertical: true)
 
@@ -166,7 +166,7 @@ struct GoalSheet: View {
                             store.persistSoon()
                         } label: {
                             Image(systemName: "minus")
-                                .font(.system(size: 11, weight: .bold))
+                                .font(.tw(11, .bold))
                                 .foregroundStyle(TWColor.ink2)
                                 .frame(width: 26, height: 26)
                                 .background { Circle().fill(TWColor.glass(0.5)) }
@@ -174,7 +174,7 @@ struct GoalSheet: View {
                         .buttonStyle(.plain)
 
                         Text("\(store.age) 岁")
-                            .font(.system(size: 12.5, weight: .bold))
+                            .font(.tw(12.5, .bold))
                             .foregroundStyle(TWColor.ink)
                             .monospacedDigit()
                             .frame(minWidth: 48)
@@ -184,7 +184,7 @@ struct GoalSheet: View {
                             store.persistSoon()
                         } label: {
                             Image(systemName: "plus")
-                                .font(.system(size: 11, weight: .bold))
+                                .font(.tw(11, .bold))
                                 .foregroundStyle(TWColor.ink2)
                                 .frame(width: 26, height: 26)
                                 .background { Circle().fill(TWColor.glass(0.5)) }
@@ -208,7 +208,7 @@ struct GoalSheet: View {
 
                 HStack(spacing: 8) {
                     Text("建议 \(store.recommendedKcal) kcal")
-                        .font(.system(size: 15, weight: .heavy))
+                        .font(.tw(15, .heavy))
                         .foregroundStyle(TWColor.ink)
                         .monospacedDigit()
 
@@ -219,7 +219,7 @@ struct GoalSheet: View {
                         kcalText = "\(store.recommendedKcal)"
                     } label: {
                         Text("填进每日热量")
-                            .font(.system(size: 12, weight: .bold))
+                            .font(.tw(12, .bold))
                             .foregroundStyle(.white)
                             .padding(.horizontal, 12)
                             .padding(.vertical, 7)
@@ -232,7 +232,7 @@ struct GoalSheet: View {
                 }
 
                 Text("减脂给维持 −400 kcal，增肌给维持 +300 kcal。这只是起点，真实消耗要看两周体重趋势再修。")
-                    .font(.system(size: 10.5))
+                    .font(.tw(10.5))
                     .foregroundStyle(TWColor.ink3)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -247,7 +247,7 @@ struct GoalSheet: View {
             action()
         } label: {
             Text(title)
-                .font(.system(size: 12, weight: on ? .bold : .medium))
+                .font(.tw(12, on ? .bold : .medium))
                 .foregroundStyle(on ? .white : TWColor.ink2)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 7)
@@ -275,13 +275,13 @@ struct GoalSheet: View {
                           index: Int, note: String) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title)
-                .font(.system(size: 14, weight: .bold))
+                .font(.tw(14, .bold))
                 .foregroundStyle(TWColor.ink)
             HStack(spacing: 8) {
                 TextField("", text: text)
                     .keyboardType(.decimalPad)
                     .focused($focused, equals: index)
-                    .font(.system(size: 19, weight: .heavy))
+                    .font(.tw(19, .heavy))
                     .foregroundStyle(TWColor.ink)
                     .monospacedDigit()
                     .padding(.horizontal, 12)
@@ -291,12 +291,12 @@ struct GoalSheet: View {
                             .fill(TWColor.glass(0.62))
                     }
                 Text(unit)
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.tw(12, .semibold))
                     .foregroundStyle(TWColor.ink3)
                     .lineLimit(1)
             }
             Text(note)
-                .font(.system(size: 11.5))
+                .font(.tw(11.5))
                 .foregroundStyle(TWColor.ink3)
                 .fixedSize(horizontal: false, vertical: true)
         }

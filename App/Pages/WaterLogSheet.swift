@@ -48,11 +48,11 @@ struct WaterLogSheet: View {
     private var headerRow: some View {
         HStack(alignment: .firstTextBaseline) {
             Text("记一笔饮水")
-                .font(.system(size: 20, weight: .heavy))
+                .font(.tw(20, .heavy))
                 .foregroundStyle(TWColor.ink)
             Spacer(minLength: 0)
             Button("关闭") { dismiss() }
-                .font(.system(size: 13, weight: .bold))
+                .font(.tw(13, .bold))
                 .foregroundStyle(TWColor.ink2)
         }
     }
@@ -60,7 +60,7 @@ struct WaterLogSheet: View {
     private var quickCard: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("常见容量")
-                .font(.system(size: 13, weight: .bold))
+                .font(.tw(13, .bold))
                 .foregroundStyle(TWColor.ink2)
             HStack(spacing: 7) {
                 ForEach(quick, id: \.self) { v in
@@ -69,7 +69,7 @@ struct WaterLogSheet: View {
                         withAnimation(.snappy(duration: 0.18)) { text = "\(v)" }
                     } label: {
                         Text("\(v)")
-                            .font(.system(size: 12.5, weight: amount == v ? .bold : .medium, design: .rounded))
+                            .font(.tw(12.5, amount == v ? .bold : .medium, .rounded))
                             .foregroundStyle(amount == v ? .white : TWColor.ink2)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 10)
@@ -85,7 +85,7 @@ struct WaterLogSheet: View {
                 }
             }
             Text("小半杯 120、一罐 330、一瓶 550 都能直接填")
-                .font(.system(size: 11))
+                .font(.tw(11))
                 .foregroundStyle(TWColor.ink3)
         }
         .padding(15)
@@ -96,15 +96,15 @@ struct WaterLogSheet: View {
         VStack(alignment: .leading, spacing: 11) {
             HStack {
                 Text("喝了多少")
-                    .font(.system(size: 14, weight: .bold))
+                    .font(.tw(14, .bold))
                     .foregroundStyle(TWColor.ink)
                 Spacer(minLength: 0)
                 Text("ml")
-                    .font(.system(size: 12, weight: .bold))
+                    .font(.tw(12, .bold))
                     .foregroundStyle(TWColor.ink3)
             }
             TextField("自己填，1–2000", text: $text)
-                .font(.system(size: 28, weight: .heavy, design: .rounded))
+                .font(.tw(28, .heavy, .rounded))
                 .keyboardType(.numberPad)
                 .multilineTextAlignment(.center)
                 .foregroundStyle(TWColor.ink)
@@ -123,11 +123,11 @@ struct WaterLogSheet: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text("喝完之后")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.tw(12, .semibold))
                     .foregroundStyle(TWColor.ink3)
                 Spacer(minLength: 0)
                 Text("\(previewTotal) / \(store.waterTargetML) ml")
-                    .font(.system(size: 15, weight: .heavy, design: .rounded))
+                    .font(.tw(15, .heavy, .rounded))
                     .foregroundStyle(TWColor.blue)
                     .contentTransition(.numericText())
             }
@@ -144,7 +144,7 @@ struct WaterLogSheet: View {
             }
             .frame(height: 8)
             Text(previewNote)
-                .font(.system(size: 11.5))
+                .font(.tw(11.5))
                 .foregroundStyle(TWColor.ink3)
         }
         .padding(15)
@@ -159,7 +159,7 @@ struct WaterLogSheet: View {
             dismiss()
         } label: {
             Text(amount == nil ? "先填个数字" : "记入 \(amount!) ml")
-                .font(.system(size: 16, weight: .bold))
+                .font(.tw(16, .bold))
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 14)

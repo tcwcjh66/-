@@ -34,10 +34,10 @@ struct BarcodeNoteSheet: View {
                     HStack(alignment: .top) {
                         VStack(alignment: .leading, spacing: 3) {
                             Text("给这个条码建个档")
-                                .font(.system(size: 21, weight: .heavy))
+                                .font(.tw(21, .heavy))
                                 .foregroundStyle(TWColor.ink)
                             Text(code)
-                                .font(.system(size: 12.5, weight: .semibold))
+                                .font(.tw(12.5, .semibold))
                                 .foregroundStyle(TWColor.purple)
                                 .textSelection(.enabled)
                         }
@@ -47,7 +47,7 @@ struct BarcodeNoteSheet: View {
                             dismiss()
                         } label: {
                             Image(systemName: "xmark")
-                                .font(.system(size: 13, weight: .bold))
+                                .font(.tw(13, .bold))
                                 .foregroundStyle(TWColor.ink2)
                                 .frame(width: 34, height: 34)
                                 .background { Circle().fill(TWColor.glass(0.55)) }
@@ -56,7 +56,7 @@ struct BarcodeNoteSheet: View {
                     }
 
                     Text("包装背面「营养成分表」里每 100 克的数字，照抄就行。只在这一台手机上存着。")
-                        .font(.system(size: 11.5))
+                        .font(.tw(11.5))
                         .foregroundStyle(TWColor.ink3)
                         .lineSpacing(2.5)
                         .fixedSize(horizontal: false, vertical: true)
@@ -76,7 +76,7 @@ struct BarcodeNoteSheet: View {
 
                     if !warn.isEmpty {
                         Text(warn)
-                            .font(.system(size: 12))
+                            .font(.tw(12))
                             .foregroundStyle(TWColor.amber)
                     }
 
@@ -84,7 +84,7 @@ struct BarcodeNoteSheet: View {
                         save()
                     } label: {
                         Text("存进本机条码库")
-                            .font(.system(size: 15.5, weight: .bold))
+                            .font(.tw(15.5, .bold))
                             .foregroundStyle(.white)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 13)
@@ -98,7 +98,7 @@ struct BarcodeNoteSheet: View {
                     .padding(.top, 2)
 
                     Text("只填热量也能用，蛋白碳水脂肪空着当 0。国产零食在 Open Food Facts 上基本查不到，这条库是给自己攒的。")
-                        .font(.system(size: 11))
+                        .font(.tw(11))
                         .foregroundStyle(TWColor.ink3)
                         .lineSpacing(2.5)
                         .fixedSize(horizontal: false, vertical: true)
@@ -118,10 +118,10 @@ struct BarcodeNoteSheet: View {
                        placeholder: String, kb: UIKeyboardType) -> some View {
         VStack(alignment: .leading, spacing: 5) {
             Text(title)
-                .font(.system(size: 11.5, weight: .semibold))
+                .font(.tw(11.5, .semibold))
                 .foregroundStyle(TWColor.ink3)
             TextField(placeholder, text: text)
-                .font(.system(size: 15))
+                .font(.tw(15))
                 .keyboardType(kb)
                 .focused($focus, equals: f)
                 .padding(.horizontal, 12)
@@ -136,10 +136,10 @@ struct BarcodeNoteSheet: View {
     private func numField(_ title: String, text: Binding<String>, focus f: Field) -> some View {
         VStack(alignment: .leading, spacing: 5) {
             Text(title)
-                .font(.system(size: 11, weight: .semibold))
+                .font(.tw(11, .semibold))
                 .foregroundStyle(TWColor.ink3)
             TextField("0", text: text)
-                .font(.system(size: 16, weight: .semibold))
+                .font(.tw(16, .semibold))
                 .keyboardType(.decimalPad)
                 .focused($focus, equals: f)
                 .padding(.horizontal, 12)

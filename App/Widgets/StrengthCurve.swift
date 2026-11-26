@@ -12,12 +12,12 @@ struct StrengthCurveCard: View {
         VStack(alignment: .leading, spacing: 9) {
             HStack(alignment: .firstTextBaseline, spacing: 6) {
                 Text("力量曲线")
-                    .font(.system(size: 13.5, weight: .bold))
+                    .font(.tw(13.5, .bold))
                     .foregroundStyle(TWColor.ink2)
                 Spacer(minLength: 0)
                 if points.count >= 2 {
                     Text(delta >= 0 ? "+\(fmt(delta)) kg" : "\(fmt(delta)) kg")
-                        .font(.system(size: 11.5, weight: .bold))
+                        .font(.tw(11.5, .bold))
                         .foregroundStyle(delta >= 0 ? TWColor.mint : TWColor.coral)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 3.5)
@@ -29,7 +29,7 @@ struct StrengthCurveCard: View {
 
             if points.count < 2 {
                 Text("再练 1 次就能画出来了。每记一组都会算一次 e1RM（按重量和次数估的 1RM），攒够两次就成线。")
-                    .font(.system(size: 11.5))
+                    .font(.tw(11.5))
                     .foregroundStyle(TWColor.ink3)
                     .fixedSize(horizontal: false, vertical: true)
             } else {
@@ -44,7 +44,7 @@ struct StrengthCurveCard: View {
                     Spacer()
                     Text(short(points.last?.date ?? ""))
                 }
-                .font(.system(size: 10))
+                .font(.tw(10))
                 .foregroundStyle(TWColor.ink3)
             }
         }
@@ -100,6 +100,15 @@ struct StrengthCurveCard: View {
                 }
             }
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(achLabel)
+    }
+
+    private var achLabel: String {
+        guard points.count >= 2, let f = points.first, let l = points.last else {
+            return "力量曲线：还不够两次训练，先练满两次再看"
+        }
+        return "力量曲线：\(points.count) 次训练，从 \(fmt(f.kg)) 公斤到 \(fmt(l.kg)) 公斤"
     }
 
     private struct Pt { var x: CGFloat; var y: CGFloat }

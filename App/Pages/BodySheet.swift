@@ -24,7 +24,7 @@ struct BodySheet: View {
                     .padding(.bottom, 10)
 
                 Text("记录身体数据")
-                    .font(.system(size: 19, weight: .heavy))
+                    .font(.tw(19, .heavy))
                     .foregroundStyle(TWColor.ink)
                     .padding(.bottom, 12)
 
@@ -44,7 +44,7 @@ struct BodySheet: View {
                         field(title: "臀围", text: $hip, unit: "cm", placeholder: "如 94")
 
                         Text("体重按天记录，同一天再记会覆盖；只填想更新的项也行。目标体重会画在体重趋势图上。")
-                            .font(.system(size: 11.5))
+                            .font(.tw(11.5))
                             .foregroundStyle(TWColor.ink3)
                             .multilineTextAlignment(.center)
                             .padding(.top, 4)
@@ -58,7 +58,7 @@ struct BodySheet: View {
                     dismiss()
                 } label: {
                     Text("保存")
-                        .font(.system(size: 16, weight: .bold))
+                        .font(.tw(16, .bold))
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 13)
@@ -79,7 +79,7 @@ struct BodySheet: View {
     private func sectionTitle(_ t: String) -> some View {
         HStack {
             Text(t)
-                .font(.system(size: 12, weight: .bold))
+                .font(.tw(12, .bold))
                 .foregroundStyle(TWColor.ink3)
             Spacer()
         }
@@ -88,12 +88,12 @@ struct BodySheet: View {
     private func field(title: String, text: Binding<String>, unit: String, placeholder: String) -> some View {
         HStack(spacing: 9) {
             Text(title)
-                .font(.system(size: 13.5, weight: .semibold))
+                .font(.tw(13.5, .semibold))
                 .foregroundStyle(TWColor.ink2)
                 .frame(width: 58, alignment: .leading)
 
             TextField(placeholder, text: text)
-                .font(.system(size: 16, weight: .semibold))
+                .font(.tw(16, .semibold))
                 .keyboardType(.decimalPad)
                 .foregroundStyle(TWColor.ink)
                 .padding(.horizontal, 11)
@@ -104,7 +104,7 @@ struct BodySheet: View {
                 }
 
             Text(unit)
-                .font(.system(size: 12, weight: .semibold))
+                .font(.tw(12, .semibold))
                 .foregroundStyle(TWColor.ink3)
                 .frame(width: 28, alignment: .leading)
         }

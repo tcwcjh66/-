@@ -40,10 +40,10 @@ struct WaterSheet: View {
                 .frame(width: 34, height: 4)
                 .padding(.top, 8)
             Text("饮水设置")
-                .font(.system(size: 20, weight: .heavy))
+                .font(.tw(20, .heavy))
                 .foregroundStyle(TWColor.ink)
             Text("按你自己的杯子来算，不用迁就默认的 250ml")
-                .font(.system(size: 12))
+                .font(.tw(12))
                 .foregroundStyle(TWColor.ink3)
         }
         .padding(.top, 4)
@@ -53,14 +53,14 @@ struct WaterSheet: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Image(systemName: "cup.and.saucer.fill")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.tw(14, .semibold))
                     .foregroundStyle(TWColor.blue)
                 Text("每杯容量")
-                    .font(.system(size: 15, weight: .bold))
+                    .font(.tw(15, .bold))
                     .foregroundStyle(TWColor.ink)
                 Spacer()
                 Text("\(cup) ml")
-                    .font(.system(size: 15, weight: .heavy, design: .rounded))
+                    .font(.tw(15, .heavy, .rounded))
                     .foregroundStyle(TWColor.blue)
                     .contentTransition(.numericText())
             }
@@ -75,7 +75,7 @@ struct WaterSheet: View {
                         }
                     } label: {
                         Text("\(v)")
-                            .font(.system(size: 12, weight: .bold, design: .rounded))
+                            .font(.tw(12, .bold, .rounded))
                             .foregroundStyle(cup == v ? .white : TWColor.ink2)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 9)
@@ -93,10 +93,10 @@ struct WaterSheet: View {
 
             HStack(spacing: 8) {
                 Text("自定义")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.tw(12, .semibold))
                     .foregroundStyle(TWColor.ink3)
                 TextField("如 280", text: $customText)
-                    .font(.system(size: 15, weight: .bold, design: .rounded))
+                    .font(.tw(15, .bold, .rounded))
                     .keyboardType(.numberPad)
                     .multilineTextAlignment(.center)
                     .foregroundStyle(TWColor.ink)
@@ -110,7 +110,7 @@ struct WaterSheet: View {
                         if let v = Int(newValue), v >= 50, v <= 1000 { cup = v }
                     }
                 Text("ml")
-                    .font(.system(size: 12, weight: .bold))
+                    .font(.tw(12, .bold))
                     .foregroundStyle(TWColor.ink3)
                 Spacer()
             }
@@ -123,14 +123,14 @@ struct WaterSheet: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Image(systemName: "target")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.tw(14, .semibold))
                     .foregroundStyle(TWColor.purple)
                 Text("每天几杯")
-                    .font(.system(size: 15, weight: .bold))
+                    .font(.tw(15, .bold))
                     .foregroundStyle(TWColor.ink)
                 Spacer()
                 Text("\(target) 杯")
-                    .font(.system(size: 15, weight: .heavy, design: .rounded))
+                    .font(.tw(15, .heavy, .rounded))
                     .foregroundStyle(TWColor.purple)
                     .contentTransition(.numericText())
             }
@@ -141,7 +141,7 @@ struct WaterSheet: View {
                     withAnimation(.snappy(duration: 0.18)) { target = max(2, target - 1) }
                 } label: {
                     Image(systemName: "minus")
-                        .font(.system(size: 15, weight: .bold))
+                        .font(.tw(15, .bold))
                         .foregroundStyle(TWColor.ink2)
                         .frame(width: 46, height: 42)
                         .background {
@@ -168,7 +168,7 @@ struct WaterSheet: View {
                     withAnimation(.snappy(duration: 0.18)) { target = min(16, target + 1) }
                 } label: {
                     Image(systemName: "plus")
-                        .font(.system(size: 15, weight: .bold))
+                        .font(.tw(15, .bold))
                         .foregroundStyle(TWColor.ink2)
                         .frame(width: 46, height: 42)
                         .background {
@@ -180,7 +180,7 @@ struct WaterSheet: View {
             }
 
             Text("一般成年人每天 1500–2000 ml，训练日加 500 ml。天热或出汗多就再往上加。")
-                .font(.system(size: 11.5))
+                .font(.tw(11.5))
                 .foregroundStyle(TWColor.ink3)
                 .lineSpacing(2.5)
                 .fixedSize(horizontal: false, vertical: true)
@@ -192,20 +192,20 @@ struct WaterSheet: View {
     private var totalCard: some View {
         VStack(spacing: 6) {
             Text("每日目标")
-                .font(.system(size: 11.5, weight: .semibold))
+                .font(.tw(11.5, .semibold))
                 .foregroundStyle(TWColor.ink3)
             HStack(alignment: .firstTextBaseline, spacing: 4) {
                 Text("\(target * cup)")
-                    .font(.system(size: 34, weight: .heavy, design: .rounded))
+                    .font(.tw(34, .heavy, .rounded))
                     .foregroundStyle(TWColor.ink)
                     .contentTransition(.numericText())
                     .monospacedDigit()
                 Text("ml")
-                    .font(.system(size: 13, weight: .bold))
+                    .font(.tw(13, .bold))
                     .foregroundStyle(TWColor.ink3)
             }
             Text("\(target) 杯 × \(cup) ml")
-                .font(.system(size: 11.5))
+                .font(.tw(11.5))
                 .foregroundStyle(TWColor.ink3)
         }
         .padding(16)
@@ -221,7 +221,7 @@ struct WaterSheet: View {
             dismiss()
         } label: {
             Text("保存")
-                .font(.system(size: 16, weight: .bold))
+                .font(.tw(16, .bold))
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 14)

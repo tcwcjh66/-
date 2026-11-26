@@ -151,19 +151,19 @@ struct WeeklyReportPage: View {
 
                     VStack(alignment: .leading, spacing: 4) {
                         Text("本周报告")
-                            .font(.system(size: 24, weight: .heavy))
+                            .font(.tw(24, .heavy))
                             .foregroundStyle(TWColor.ink)
                         Text("\(keys.first ?? "") 至 \(keys.last ?? "")")
-                            .font(.system(size: 12))
+                            .font(.tw(12))
                             .foregroundStyle(TWColor.ink3)
                             .monospacedDigit()
                         Text(verdict)
-                            .font(.system(size: 13, weight: .semibold))
+                            .font(.tw(13, .semibold))
                             .foregroundStyle(TWColor.purple)
                             .padding(.top, 4)
 
                         Text(insight)
-                            .font(.system(size: 11.5))
+                            .font(.tw(11.5))
                             .foregroundStyle(TWColor.ink3)
                             .lineSpacing(2.5)
                             .fixedSize(horizontal: false, vertical: true)
@@ -172,10 +172,10 @@ struct WeeklyReportPage: View {
                         if let v = vsLastWeek {
                             HStack(alignment: .top, spacing: 5) {
                                 Image(systemName: "arrow.left.arrow.right")
-                                    .font(.system(size: 9, weight: .bold))
+                                    .font(.tw(9, .bold))
                                     .padding(.top, 2)
                                 Text("比上周 " + v)
-                                    .font(.system(size: 11))
+                                    .font(.tw(11))
                                     .fixedSize(horizontal: false, vertical: true)
                             }
                             .foregroundStyle(TWColor.purple.opacity(0.85))
@@ -195,7 +195,7 @@ struct WeeklyReportPage: View {
                     // 每天组数柱
                     VStack(alignment: .leading, spacing: 12) {
                         Text("每天做了几组")
-                            .font(.system(size: 13, weight: .bold))
+                            .font(.tw(13, .bold))
                             .foregroundStyle(TWColor.ink2)
 
                         let peak = max(1, days.map { sets(on: dayFormatter.string(from: $0)) }.max() ?? 1)
@@ -205,7 +205,7 @@ struct WeeklyReportPage: View {
                                 let v = sets(on: key)
                                 VStack(spacing: 5) {
                                     Text(v > 0 ? "\(v)" : "")
-                                        .font(.system(size: 10, weight: .bold))
+                                        .font(.tw(10, .bold))
                                         .foregroundStyle(TWColor.purple)
                                         .monospacedDigit()
                                     RoundedRectangle(cornerRadius: 6, style: .continuous)
@@ -213,7 +213,7 @@ struct WeeklyReportPage: View {
                                                              startPoint: .bottom, endPoint: .top))
                                         .frame(height: max(6, CGFloat(v) / CGFloat(peak) * 78))
                                     Text(weekName(d))
-                                        .font(.system(size: 10, weight: .medium))
+                                        .font(.tw(10, .medium))
                                         .foregroundStyle(Calendar.current.isDateInToday(d) ? TWColor.purple : TWColor.ink3)
                                 }
                                 .frame(maxWidth: .infinity)
@@ -223,11 +223,11 @@ struct WeeklyReportPage: View {
 
                         if let b = bestDay {
                             Text("练得最多的是 \(b.0)，\(b.1) 组")
-                                .font(.system(size: 11.5))
+                                .font(.tw(11.5))
                                 .foregroundStyle(TWColor.ink3)
                         } else {
                             Text("这周还没有训练记录")
-                                .font(.system(size: 11.5))
+                                .font(.tw(11.5))
                                 .foregroundStyle(TWColor.ink3)
                         }
                     }
@@ -253,7 +253,7 @@ struct WeeklyReportPage: View {
                     .padding(.horizontal, 18)
 
                     Text("周报只统计本机已有的记录；没连手表或没记饮食的日子不参与平均。")
-                        .font(.system(size: 11))
+                        .font(.tw(11))
                         .foregroundStyle(TWColor.ink3)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 28)
@@ -263,7 +263,7 @@ struct WeeklyReportPage: View {
                         dismiss()
                     } label: {
                         Text("关掉")
-                            .font(.system(size: 15, weight: .bold))
+                            .font(.tw(15, .bold))
                             .foregroundStyle(TWColor.ink2)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 14)
@@ -299,11 +299,11 @@ struct WeeklyReportPage: View {
     private func big(_ v: String, _ unit: String, _ tint: Color) -> some View {
         VStack(spacing: 3) {
             Text(v)
-                .font(.system(size: 24, weight: .heavy))
+                .font(.tw(24, .heavy))
                 .foregroundStyle(tint)
                 .monospacedDigit()
             Text(unit)
-                .font(.system(size: 11, weight: .semibold))
+                .font(.tw(11, .semibold))
                 .foregroundStyle(TWColor.ink3)
         }
         .frame(maxWidth: .infinity)
@@ -317,11 +317,11 @@ struct WeeklyReportPage: View {
     private func row(_ k: String, _ v: String) -> some View {
         HStack {
             Text(k)
-                .font(.system(size: 12.5, weight: .medium))
+                .font(.tw(12.5, .medium))
                 .foregroundStyle(TWColor.ink3)
             Spacer(minLength: 8)
             Text(v)
-                .font(.system(size: 12.5, weight: .semibold))
+                .font(.tw(12.5, .semibold))
                 .foregroundStyle(TWColor.ink)
                 .multilineTextAlignment(.trailing)
         }

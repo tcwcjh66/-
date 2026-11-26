@@ -61,7 +61,7 @@ struct FoodSearchSheet: View {
                         HStack(spacing: 8) {
                             ProgressView()
                             Text("正在查 Open Food Facts…")
-                                .font(.system(size: 12.5))
+                                .font(.tw(12.5))
                                 .foregroundStyle(TWColor.ink3)
                         }
                         .padding(.vertical, 10)
@@ -72,7 +72,7 @@ struct FoodSearchSheet: View {
                             Image(systemName: "exclamationmark.circle.fill")
                                 .foregroundStyle(TWColor.amber)
                             Text(e)
-                                .font(.system(size: 12))
+                                .font(.tw(12))
                                 .foregroundStyle(TWColor.ink2)
                             Spacer(minLength: 0)
                         }
@@ -142,10 +142,10 @@ struct FoodSearchSheet: View {
     private var searchBar: some View {
         HStack(spacing: 9) {
             Image(systemName: "magnifyingglass")
-                .font(.system(size: 14, weight: .semibold))
+                .font(.tw(14, .semibold))
                 .foregroundStyle(TWColor.ink3)
             TextField("搜食物或零食，例如 薯片 / 可乐 / 鸡胸", text: $query)
-                .font(.system(size: 14.5))
+                .font(.tw(14.5))
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
             if !query.isEmpty {
@@ -153,7 +153,7 @@ struct FoodSearchSheet: View {
                     query = ""
                 } label: {
                     Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 14))
+                        .font(.tw(14))
                         .foregroundStyle(TWColor.ink3)
                 }
                 .buttonStyle(.plain)
@@ -174,17 +174,17 @@ struct FoodSearchSheet: View {
         } label: {
             HStack(spacing: 9) {
                 Image(systemName: "barcode.viewfinder")
-                    .font(.system(size: 18, weight: .bold))
+                    .font(.tw(18, .bold))
                 VStack(alignment: .leading, spacing: 2) {
                     Text("扫包装条码")
-                        .font(.system(size: 14.5, weight: .bold))
+                        .font(.tw(14.5, .bold))
                     Text("包装零食最准：直接读到厂商申报的营养表和配料")
-                        .font(.system(size: 11))
+                        .font(.tw(11))
                         .opacity(0.8)
                 }
                 Spacer(minLength: 0)
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 11, weight: .bold))
+                    .font(.tw(11, .bold))
                     .opacity(0.7)
             }
             .foregroundStyle(.white)
@@ -202,7 +202,7 @@ struct FoodSearchSheet: View {
     private func sectionTitle(_ t: String) -> some View {
         HStack {
             Text(t)
-                .font(.system(size: 11.5, weight: .bold))
+                .font(.tw(11.5, .bold))
                 .foregroundStyle(TWColor.ink3)
             Spacer()
         }
@@ -222,17 +222,17 @@ struct FoodSearchSheet: View {
             HStack(alignment: .center, spacing: 11) {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(f.name)
-                        .font(.system(size: 14.5, weight: .semibold))
+                        .font(.tw(14.5, .semibold))
                         .foregroundStyle(TWColor.ink)
                     Text(f.macroLine)
-                        .font(.system(size: 10.5))
+                        .font(.tw(10.5))
                         .foregroundStyle(TWColor.ink3)
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
                 }
                 Spacer(minLength: 0)
                 Text("\(Int(f.portion))g")
-                    .font(.system(size: 11, weight: .bold))
+                    .font(.tw(11, .bold))
                     .foregroundStyle(TWColor.purple)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
@@ -272,18 +272,18 @@ struct FoodSearchSheet: View {
                 }
                 VStack(alignment: .leading, spacing: 3) {
                     Text(f.brand.isEmpty ? f.name : "\(f.brand) · \(f.name)")
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.tw(14, .semibold))
                         .foregroundStyle(TWColor.ink)
                         .lineLimit(2)
                     Text(f.macroLine)
-                        .font(.system(size: 10.5))
+                        .font(.tw(10.5))
                         .foregroundStyle(TWColor.ink3)
                         .lineLimit(1)
                         .minimumScaleFactor(0.75)
                 }
                 Spacer(minLength: 0)
                 Image(systemName: "plus.circle.fill")
-                    .font(.system(size: 17))
+                    .font(.tw(17))
                     .foregroundStyle(TWColor.purple)
             }
             .padding(14)
@@ -295,10 +295,10 @@ struct FoodSearchSheet: View {
     private var tipCard: some View {
         VStack(alignment: .leading, spacing: 7) {
             Text("怎么搜才准")
-                .font(.system(size: 13, weight: .bold))
+                .font(.tw(13, .bold))
                 .foregroundStyle(TWColor.ink2)
             Text("散装食物（米饭、鸡胸、苹果）用本地库，都是标准成分表数值。\n包装零食（薯片、可乐、饼干）直接扫条码，拿的是厂商官方营养表和配料，一条不差。\n搜不到就换关键词：搜“可乐”不如搜“百事可乐”。")
-                .font(.system(size: 11.5))
+                .font(.tw(11.5))
                 .foregroundStyle(TWColor.ink3)
                 .lineSpacing(3)
                 .fixedSize(horizontal: false, vertical: true)

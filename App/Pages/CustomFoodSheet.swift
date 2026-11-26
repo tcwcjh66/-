@@ -25,11 +25,11 @@ struct CustomFoodSheet: View {
                     .padding(.top, 8)
 
                 Text("自定义食物")
-                    .font(.system(size: 19, weight: .heavy))
+                    .font(.tw(19, .heavy))
                     .foregroundStyle(TWColor.ink)
 
                 Text("按每 100g 填写，记入时按分量自动换算")
-                    .font(.system(size: 12))
+                    .font(.tw(12))
                     .foregroundStyle(TWColor.ink3)
 
                 row(title: "名称", text: $name, unit: "", placeholder: "如 食堂红烧肉", decimal: false)
@@ -48,10 +48,10 @@ struct CustomFoodSheet: View {
                                 } label: {
                                     HStack(spacing: 4) {
                                         Text(f.name)
-                                            .font(.system(size: 11.5, weight: .semibold))
+                                            .font(.tw(11.5, .semibold))
                                             .foregroundStyle(TWColor.ink2)
                                         Image(systemName: "xmark")
-                                            .font(.system(size: 9, weight: .bold))
+                                            .font(.tw(9, .bold))
                                             .foregroundStyle(TWColor.ink3)
                                     }
                                     .padding(.horizontal, 10)
@@ -79,7 +79,7 @@ struct CustomFoodSheet: View {
                     dismiss()
                 } label: {
                     Text("保存到常吃")
-                        .font(.system(size: 16, weight: .bold))
+                        .font(.tw(16, .bold))
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 13)
@@ -102,12 +102,12 @@ struct CustomFoodSheet: View {
     private func row(title: String, text: Binding<String>, unit: String, placeholder: String, decimal: Bool) -> some View {
         HStack(spacing: 9) {
             Text(title)
-                .font(.system(size: 13.5, weight: .semibold))
+                .font(.tw(13.5, .semibold))
                 .foregroundStyle(TWColor.ink2)
                 .frame(width: 38, alignment: .leading)
 
             TextField(placeholder, text: text)
-                .font(.system(size: 15, weight: .semibold))
+                .font(.tw(15, .semibold))
                 .foregroundStyle(TWColor.ink)
                 .keyboardType(decimal ? .decimalPad : .default)
                 .padding(.horizontal, 11)
@@ -118,7 +118,7 @@ struct CustomFoodSheet: View {
                 }
 
             Text(unit)
-                .font(.system(size: 12, weight: .semibold))
+                .font(.tw(12, .semibold))
                 .foregroundStyle(TWColor.ink3)
                 .frame(width: 30, alignment: .leading)
         }

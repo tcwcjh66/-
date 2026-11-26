@@ -37,10 +37,10 @@ struct SwapMoveSheet: View {
                     HStack(alignment: .top, spacing: 10) {
                         VStack(alignment: .leading, spacing: 3) {
                             Text("换一个动作")
-                                .font(.system(size: 21, weight: .heavy))
+                                .font(.tw(21, .heavy))
                                 .foregroundStyle(TWColor.ink)
                             Text("现在练的是「\(current)」")
-                                .font(.system(size: 12.5))
+                                .font(.tw(12.5))
                                 .foregroundStyle(TWColor.ink3)
                         }
                         Spacer(minLength: 0)
@@ -49,7 +49,7 @@ struct SwapMoveSheet: View {
                             dismiss()
                         } label: {
                             Image(systemName: "xmark")
-                                .font(.system(size: 13, weight: .bold))
+                                .font(.tw(13, .bold))
                                 .foregroundStyle(TWColor.ink2)
                                 .frame(width: 34, height: 34)
                                 .background { Circle().fill(TWColor.glass(0.55)) }
@@ -80,13 +80,13 @@ struct SwapMoveSheet: View {
 
                     if altNames.isEmpty && sameGroup.isEmpty {
                         Text("这个动作没有登记替代，去动作库翻翻同部位的动作。")
-                            .font(.system(size: 13))
+                            .font(.tw(13))
                             .foregroundStyle(TWColor.ink3)
                             .fixedSize(horizontal: false, vertical: true)
                     }
 
                     Text("换掉只影响这次训练，不动你的计划模板。下次还是原来的动作。")
-                        .font(.system(size: 11.5))
+                        .font(.tw(11.5))
                         .foregroundStyle(TWColor.ink3)
                         .padding(.top, 2)
                 }
@@ -101,7 +101,7 @@ struct SwapMoveSheet: View {
 
     private func head(_ t: String) -> some View {
         Text(t)
-            .font(.system(size: 12, weight: .bold))
+            .font(.tw(12, .bold))
             .foregroundStyle(TWColor.ink3)
             .padding(.top, 4)
     }
@@ -114,7 +114,7 @@ struct SwapMoveSheet: View {
         } label: {
             HStack(spacing: 11) {
                 Image(systemName: "arrow.triangle.2.circlepath")
-                    .font(.system(size: 12, weight: .bold))
+                    .font(.tw(12, .bold))
                     .foregroundStyle(tint)
                     .frame(width: 30, height: 30)
                     .background {
@@ -123,17 +123,17 @@ struct SwapMoveSheet: View {
                     }
                 VStack(alignment: .leading, spacing: 2) {
                     Text(name)
-                        .font(.system(size: 14.5, weight: .semibold))
+                        .font(.tw(14.5, .semibold))
                         .foregroundStyle(TWColor.ink)
                         .lineLimit(1)
                     Text(detail)
-                        .font(.system(size: 11))
+                        .font(.tw(11))
                         .foregroundStyle(TWColor.ink3)
                         .lineLimit(1)
                 }
                 Spacer(minLength: 0)
                 Text(tag)
-                    .font(.system(size: 10, weight: .bold))
+                    .font(.tw(10, .bold))
                     .foregroundStyle(tint)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)

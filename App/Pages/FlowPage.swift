@@ -182,9 +182,9 @@ struct FlowPage: View {
     private func toolChip(_ text: String, icon: String, active: Bool) -> some View {
         HStack(spacing: 5) {
             Image(systemName: icon)
-                .font(.system(size: 11, weight: .bold))
+                .font(.tw(11, .bold))
             Text(text)
-                .font(.system(size: 11.5, weight: .bold))
+                .font(.tw(11.5, .bold))
         }
         .foregroundStyle(active ? TWColor.purple : TWColor.ink2)
         .padding(.horizontal, 11)
@@ -215,10 +215,10 @@ struct FlowPage: View {
                     } label: {
                         VStack(alignment: .leading, spacing: 3) {
                             Text(pair.element.name)
-                                .font(.system(size: 14, weight: planIndex == pair.offset ? .heavy : .bold))
+                                .font(.tw(14, planIndex == pair.offset ? .heavy : .bold))
                                 .foregroundStyle(planIndex == pair.offset ? .white : TWColor.ink)
                             Text("\(pair.element.daysPerWeek) 天/周 · \(pair.element.level)")
-                                .font(.system(size: 11, weight: .medium))
+                                .font(.tw(11, .medium))
                                 .foregroundStyle(planIndex == pair.offset ? TWColor.glass(0.80) : TWColor.ink3)
                         }
                         .padding(.horizontal, 14)
@@ -252,7 +252,7 @@ struct FlowPage: View {
                     }
                 } label: {
                     Text(pair.element.title)
-                        .font(.system(size: 13.5, weight: dayIndex == pair.offset ? .bold : .medium))
+                        .font(.tw(13.5, dayIndex == pair.offset ? .bold : .medium))
                         .foregroundStyle(dayIndex == pair.offset ? TWColor.purple : TWColor.ink3)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 9)
@@ -278,7 +278,7 @@ struct FlowPage: View {
                 } label: {
                     HStack(spacing: 11) {
                         Image(systemName: "target")
-                            .font(.system(size: 16, weight: .bold))
+                            .font(.tw(16, .bold))
                             .foregroundStyle(TWColor.mint)
                             .frame(width: 36, height: 36)
                             .background {
@@ -288,11 +288,11 @@ struct FlowPage: View {
 
                         VStack(alignment: .leading, spacing: 2) {
                             Text(tip.days.map { "距上次练\(tip.group) \($0) 天" } ?? "还没练过\(tip.group)")
-                                .font(.system(size: 14, weight: .bold))
+                                .font(.tw(14, .bold))
                                 .foregroundStyle(TWColor.ink)
                                 .lineLimit(1)
                             Text(tip.urgent ? "恢复够了，今天正好安排\(tip.group)" : "\(tip.group)还在恢复，先把别的练完")
-                                .font(.system(size: 11))
+                                .font(.tw(11))
                                 .foregroundStyle(TWColor.ink3)
                                 .lineLimit(1)
                         }
@@ -300,7 +300,7 @@ struct FlowPage: View {
                         Spacer(minLength: 4)
 
                         Text("切到这天")
-                            .font(.system(size: 11, weight: .bold))
+                            .font(.tw(11, .bold))
                             .foregroundStyle(.white)
                             .padding(.horizontal, 10)
                             .padding(.vertical, 6)
@@ -331,11 +331,11 @@ struct FlowPage: View {
                 HStack(spacing: 10) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("训练中")
-                            .font(.system(size: 13, weight: .bold))
+                            .font(.tw(13, .bold))
                             .foregroundStyle(TWColor.purple)
                         Text("已 \(store.sessionSets) 组 · \(elapsed(from: start))" +
                              (store.sessionTonnage > 0 ? " · \(Int(store.sessionTonnage)) kg 总量" : ""))
-                            .font(.system(size: 12.5, weight: .medium))
+                            .font(.tw(12.5, .medium))
                             .foregroundStyle(TWColor.ink3)
                     }
                     Spacer(minLength: 0)
@@ -347,7 +347,7 @@ struct FlowPage: View {
                         }
                     } label: {
                         Text("记一组")
-                            .font(.system(size: 14, weight: .bold))
+                            .font(.tw(14, .bold))
                             .foregroundStyle(.white)
                             .padding(.horizontal, 16)
                             .padding(.vertical, 10)
@@ -377,7 +377,7 @@ struct FlowPage: View {
                         }
                     } label: {
                         Text("结束")
-                            .font(.system(size: 14, weight: .bold))
+                            .font(.tw(14, .bold))
                             .foregroundStyle(TWColor.ink2)
                             .padding(.horizontal, 14)
                             .padding(.vertical, 10)
@@ -405,9 +405,9 @@ struct FlowPage: View {
                 } label: {
                     HStack(spacing: 7) {
                         Image(systemName: "play.circle.fill")
-                            .font(.system(size: 17, weight: .bold))
+                            .font(.tw(17, .bold))
                         Text("开始今天的训练")
-                            .font(.system(size: 15, weight: .bold))
+                            .font(.tw(15, .bold))
                     }
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
@@ -494,21 +494,21 @@ struct FlowPage: View {
                           plus: @escaping () -> Void) -> some View {
         HStack(spacing: 6) {
             Text(title)
-                .font(.system(size: 10.5, weight: .semibold))
+                .font(.tw(10.5, .semibold))
                 .foregroundStyle(TWColor.ink3)
             Button {
                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
                 minus()
             } label: {
                 Image(systemName: "minus")
-                    .font(.system(size: 10, weight: .heavy))
+                    .font(.tw(10, .heavy))
                     .foregroundStyle(TWColor.ink2)
                     .frame(width: 22, height: 22)
                     .background { Circle().fill(TWColor.glass(0.6)) }
             }
             .buttonStyle(.plain)
             Text(value)
-                .font(.system(size: 12.5, weight: .bold))
+                .font(.tw(12.5, .bold))
                 .foregroundStyle(TWColor.ink)
                 .monospacedDigit()
                 .frame(minWidth: 44)
@@ -517,7 +517,7 @@ struct FlowPage: View {
                 plus()
             } label: {
                 Image(systemName: "plus")
-                    .font(.system(size: 10, weight: .heavy))
+                    .font(.tw(10, .heavy))
                     .foregroundStyle(.white)
                     .frame(width: 22, height: 22)
                     .background { Circle().fill(TWColor.purple.opacity(0.85)) }
@@ -536,10 +536,10 @@ struct FlowPage: View {
             HStack {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(day.focus)
-                        .font(.system(size: 15.5, weight: .bold))
+                        .font(.tw(15.5, .bold))
                         .foregroundStyle(TWColor.ink)
                     Text(plan.summary)
-                        .font(.system(size: 12, weight: .regular))
+                        .font(.tw(12, .regular))
                         .foregroundStyle(TWColor.ink3)
                         .lineLimit(2)
                         .fixedSize(horizontal: false, vertical: true)
@@ -572,11 +572,11 @@ struct FlowPage: View {
                                     .frame(width: 24, height: 24)
                                 if done {
                                     Image(systemName: "checkmark")
-                                        .font(.system(size: 11, weight: .bold))
+                                        .font(.tw(11, .bold))
                                         .foregroundStyle(.white)
                                 } else {
                                     Text("\(pair.offset + 1)")
-                                        .font(.system(size: 12, weight: .bold))
+                                        .font(.tw(12, .bold))
                                         .foregroundStyle(.white)
                                 }
                             }
@@ -587,13 +587,13 @@ struct FlowPage: View {
 
                         VStack(alignment: .leading, spacing: 2) {
                             Text(nm)
-                                .font(.system(size: 14.5, weight: .semibold))
+                                .font(.tw(14.5, .semibold))
                                 .foregroundStyle(done ? TWColor.ink3 : TWColor.ink)
                                 .strikethrough(done, color: TWColor.ink3)
                                 .lineLimit(1)
                             if let last = store.lastRecord(move: nm) {
                                 Text("上次 \(fmtKg(last.weight))kg × \(last.reps) 次")
-                                    .font(.system(size: 10.5, weight: .medium))
+                                    .font(.tw(10.5, .medium))
                                     .foregroundStyle(TWColor.ink3)
                                     .lineLimit(1)
                             }
@@ -611,7 +611,7 @@ struct FlowPage: View {
                                 }
                             } label: {
                                 Text("建议 \(fmtKg(sug))kg")
-                                    .font(.system(size: 10.5, weight: .bold))
+                                    .font(.tw(10.5, .bold))
                                     .foregroundStyle(TWColor.mint)
                                     .padding(.horizontal, 7)
                                     .padding(.vertical, 3)
@@ -628,9 +628,9 @@ struct FlowPage: View {
                         } label: {
                             HStack(spacing: 2) {
                                 Image(systemName: "arrow.triangle.2.circlepath")
-                                    .font(.system(size: 9, weight: .bold))
+                                    .font(.tw(9, .bold))
                                 Text(swapped[pair.element.name] == nil ? "换" : "已换")
-                                    .font(.system(size: 9.5, weight: .bold))
+                                    .font(.tw(9.5, .bold))
                             }
                             .foregroundStyle(swapped[pair.element.name] == nil ? TWColor.ink3 : TWColor.mint)
                             .padding(.horizontal, 6)
@@ -640,7 +640,7 @@ struct FlowPage: View {
                         .buttonStyle(.plain)
 
                         Text("\(pair.element.sets) × \(pair.element.reps)")
-                            .font(.system(size: 12.5, weight: .bold))
+                            .font(.tw(12.5, .bold))
                             .foregroundStyle(done ? TWColor.ink3 : TWColor.purple)
                             .lineLimit(1)
                     }
@@ -665,11 +665,11 @@ struct FlowPage: View {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(restFrom.isEmpty ? "组间休息" : "\(restFrom) 之后的休息")
-                        .font(.system(size: 14.5, weight: .semibold))
+                        .font(.tw(14.5, .semibold))
                         .foregroundStyle(TWColor.ink2)
                     if !restNext.isEmpty {
                         Text("下一个：\(restNext)")
-                            .font(.system(size: 11.5, weight: .regular))
+                            .font(.tw(11.5, .regular))
                             .foregroundStyle(TWColor.ink3)
                     }
                 }
@@ -688,12 +688,12 @@ struct FlowPage: View {
 
                 VStack(spacing: 2) {
                     Text(clock)
-                        .font(.system(size: 48, weight: .heavy))
+                        .font(.tw(48, .heavy))
                         .foregroundStyle(TWColor.ink)
                         .monospacedDigit()
                         .contentTransition(.numericText(countsDown: true))
                     Text("剩余")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(.tw(12, .semibold))
                         .tracking(2)
                         .foregroundStyle(TWColor.ink3)
                 }
@@ -713,9 +713,9 @@ struct FlowPage: View {
                 } label: {
                     HStack(spacing: 6) {
                         Image(systemName: running ? "pause.fill" : "play.fill")
-                            .font(.system(size: 14, weight: .bold))
+                            .font(.tw(14, .bold))
                         Text(running ? "暂停" : (remain == 0 ? (restNext.isEmpty ? "再来一组" : "开始下一组") : "继续"))
-                            .font(.system(size: 15, weight: .bold))
+                            .font(.tw(15, .bold))
                     }
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
@@ -737,7 +737,7 @@ struct FlowPage: View {
                     }
                 } label: {
                     Image(systemName: "arrow.counterclockwise")
-                        .font(.system(size: 16, weight: .bold))
+                        .font(.tw(16, .bold))
                         .foregroundStyle(TWColor.ink2)
                         .frame(width: 48)
                         .padding(.vertical, 13)
@@ -761,7 +761,7 @@ struct FlowPage: View {
                         }
                     } label: {
                         Text("\(s)s")
-                            .font(.system(size: 13, weight: total == s ? .bold : .medium))
+                            .font(.tw(13, total == s ? .bold : .medium))
                             .foregroundStyle(total == s ? TWColor.purple : TWColor.ink3)
                             .padding(.horizontal, 12)
                             .padding(.vertical, 7)
@@ -803,7 +803,7 @@ struct FlowPage: View {
         return VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text("最近 7 天")
-                    .font(.system(size: 15.5, weight: .bold))
+                    .font(.tw(15.5, .bold))
                     .foregroundStyle(TWColor.ink)
                 Spacer()
                 GlassPill(text: "练了 \(count) 天", tint: count > 0 ? TWColor.mint : TWColor.ink3)
@@ -816,7 +816,7 @@ struct FlowPage: View {
                     let wd = Calendar.current.component(.weekday, from: d) - 1
                     VStack(spacing: 5) {
                         Text(weekdayNames[max(0, min(wd, 6))])
-                            .font(.system(size: 10.5, weight: .medium))
+                            .font(.tw(10.5, .medium))
                             .foregroundStyle(TWColor.ink3)
                         ZStack {
                             Circle()
@@ -827,7 +827,7 @@ struct FlowPage: View {
                                 .frame(width: 32, height: 32)
                             if done {
                                 Image(systemName: "checkmark")
-                                    .font(.system(size: 13, weight: .bold))
+                                    .font(.tw(13, .bold))
                                     .foregroundStyle(.white)
                             } else {
                                 Circle()
@@ -836,7 +836,7 @@ struct FlowPage: View {
                             }
                         }
                         Text("\(Calendar.current.component(.day, from: d))")
-                            .font(.system(size: 10, weight: .semibold))
+                            .font(.tw(10, .semibold))
                             .foregroundStyle(TWColor.ink3)
                     }
                     .frame(maxWidth: .infinity)
@@ -853,7 +853,7 @@ struct FlowPage: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text("训练记录")
-                    .font(.system(size: 15.5, weight: .bold))
+                    .font(.tw(15.5, .bold))
                     .foregroundStyle(TWColor.ink)
                 Spacer()
                 GlassPill(text: "\(store.sessions.count) 次", tint: TWColor.mint)
@@ -861,7 +861,7 @@ struct FlowPage: View {
 
             if store.sessions.isEmpty {
                 Text("完成一次训练并点「结束」后，记录会出现在这里。")
-                    .font(.system(size: 12.5))
+                    .font(.tw(12.5))
                     .foregroundStyle(TWColor.ink3)
                     .fixedSize(horizontal: false, vertical: true)
             } else {
@@ -875,19 +875,19 @@ struct FlowPage: View {
                                 Text(pair.element.day.isEmpty
                                      ? pair.element.plan
                                      : "\(pair.element.plan) · \(pair.element.day)")
-                                    .font(.system(size: 13.5, weight: .semibold))
+                                    .font(.tw(13.5, .semibold))
                                     .foregroundStyle(TWColor.ink)
                                     .lineLimit(1)
                                 Text("\(pair.element.sets) 组 · \(pair.element.minutes) 分钟 · \(pair.element.moves) 个动作")
-                                    .font(.system(size: 11.5))
+                                    .font(.tw(11.5))
                                     .foregroundStyle(TWColor.ink3)
                             }
                             Spacer(minLength: 4)
                             Text(shortDate(pair.element.date))
-                                .font(.system(size: 11.5, weight: .semibold))
+                                .font(.tw(11.5, .semibold))
                                 .foregroundStyle(TWColor.ink3)
                             Image(systemName: "chevron.right")
-                                .font(.system(size: 10, weight: .bold))
+                                .font(.tw(10, .bold))
                                 .foregroundStyle(TWColor.ink3.opacity(0.6))
                         }
                         .padding(.vertical, 7)
@@ -919,16 +919,16 @@ struct FlowPage: View {
         VStack(alignment: .leading, spacing: 9) {
             HStack(spacing: 7) {
                 Image(systemName: "chart.line.uptrend.xyaxis")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.tw(14, .semibold))
                     .foregroundStyle(TWColor.mint)
                 Text("怎么加重量")
-                    .font(.system(size: 15, weight: .bold))
+                    .font(.tw(15, .bold))
                     .foregroundStyle(TWColor.ink)
                 Spacer()
                 GlassPill(text: plan.cycle, tint: TWColor.mint)
             }
             Text(plan.progression)
-                .font(.system(size: 13.5))
+                .font(.tw(13.5))
                 .foregroundStyle(TWColor.ink2)
                 .lineSpacing(3)
                 .fixedSize(horizontal: false, vertical: true)
