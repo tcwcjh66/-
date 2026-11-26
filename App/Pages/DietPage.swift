@@ -8,6 +8,7 @@ struct DietPage: View {
     @State private var pick: PhotosPickerItem?
     @State private var analyzing = false
     @State private var hits: [FoodHit] = []
+    @State private var shotWords: [String] = []
     @State private var showResult = false
     @State private var showAI = false
     @State private var copiedCount: Int?
@@ -83,7 +84,7 @@ struct DietPage: View {
             .presentationCornerRadius(28)
         }
         .sheet(isPresented: $showResult) {
-            ShotResultSheet(hits: hits, defaultSlot: autoSlot,
+            ShotResultSheet(hits: hits, defaultSlot: autoSlot, words: shotWords,
                             onGoSearch: { afterDismiss { showFoodSearch = true } },
                             onGoScan: { afterDismiss { showScanSheet = true } }) { hit in
                 store.addMeal(MealEntry(
@@ -158,10 +159,11 @@ struct DietPage: View {
                     }
                     // 读包装上的字要跑 Vision，放后台，别卡住转圈
                     let found = await Task.detached(priority: .userInitiated) {
-                        FoodVision.analyze(img)
+                        FoodVision.analyzeDetailed(img)
                     }.value
                     await MainActor.run {
-                        hits = found
+                        hits = found.hits
+                        shotWords = found.words
                         analyzing = false
                         showResult = true
                     }
@@ -1195,6 +1197,8 @@ struct FoodPicker: View {
 struct ShotResultSheet: View {
     var hits: [FoodHit]
     var defaultSlot: String = "午餐"
+    /// 这一轮相机实际读到的字，认不出时摆出来给用户看
+    var words: [String] = []
     var onGoSearch: (() -> Void)? = nil
     var onGoScan: (() -> Void)? = nil
     var onAdd: (FoodHit) -> Void
@@ -1343,6 +1347,23 @@ struct ShotResultSheet: View {
                             }
 
                         if hits.isEmpty {
+                            if !words.isEmpty {
+                                VStack(alignment: .leading, spacing: 6) {
+                                    Text("相机读到了这些字，只是库里没对上")
+                                        .font(.tw(11.5, .bold))
+                                        .foregroundStyle(TWColor.ink3)
+                                    Text(words.prefix(6).joined(separator: " · "))
+                                        .font(.tw(11.5))
+                                        .foregroundStyle(TWColor.ink2)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+                                .padding(10)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .background {
+                                    RoundedRectangle(cornerRadius: 11, style: .continuous)
+                                        .fill(TWColor.blue.opacity(0.08))
+                                }
+                            }
                             emptyActions
                         }
 
@@ -1386,8 +1407,7 @@ struct ShotResultSheet: View {
                                             .font(.tw(12))
                                         Text(h.source)
                                             .font(.tw(10, .semibold))
-                                            .foregroundStyle(TWColor.mint)
-                                            .foregroundStyle(TWColor.ink3)
+                                            .foregroundStyle(h.source.contains("读包装") ? TWColor.mint : TWColor.ink3)
                                     }
                                     Spacer(minLength: 0)
                                     Image(systemName: selected.contains(h.id) ? "checkmark.circle.fill" : "circle")

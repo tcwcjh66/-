@@ -21,27 +21,32 @@ struct FoodHit: Identifiable {
 enum FoodVision {
 
     static func analyze(_ image: UIImage) -> [FoodHit] {
+        analyzeDetailed(image).hits
+    }
+
+    /// 除了结果，还把这回读到的字一并带回去：认不出时把它们摆给用户看，
+    /// 比只说一句「没认出来」有用得多，用户会更正拍法或报个准名字。
+    static func analyzeDetailed(_ image: UIImage) -> (hits: [FoodHit], words: [String]) {
         let words = FoodOCR.texts(in: image)
-        let matched = FoodOCR.hits(from: words)
+        let matched = FoodOCR.match(words)
         if !matched.isEmpty {
-            let hits: [FoodHit] = matched.map { pair in
-                let f = pair.0
-                let g = max(1, f.portion)
+            let hits: [FoodHit] = matched.map { m in
+                let g = max(1, m.grams)
                 let r = g / 100
-                return FoodHit(name: f.name,
+                return FoodHit(name: m.food.name,
                                grams: g,
-                               kcal: f.kcal * r,
-                               protein: f.protein * r,
-                               carb: f.carb * r,
-                               fat: f.fat * r,
+                               kcal: m.food.kcal * r,
+                               protein: m.food.protein * r,
+                               carb: m.food.carb * r,
+                               fat: m.food.fat * r,
                                veg: 0,
-                               confidence: 0.93,
-                               source: "读包装「\(pair.1)」")
+                               confidence: min(0.99, max(0.4, m.score / 100)),
+                               source: m.note)
             }
-            return hits.sorted { $0.confidence > $1.confidence }
+            return (hits.sorted { $0.confidence > $1.confidence }, words)
         }
 
-        guard let cg = image.cgImage else { return [] }
+        guard let cg = image.cgImage else { return ([], words) }
         let w = 40
         let h = 40
         guard let ctx = CGContext(
@@ -52,11 +57,11 @@ enum FoodVision {
             bytesPerRow: w * 4,
             space: CGColorSpaceCreateDeviceRGB(),
             bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
-        ) else { return [] }
+        ) else { return ([], words) }
 
         ctx.interpolationQuality = .medium
         ctx.draw(cg, in: CGRect(x: 0, y: 0, width: w, height: h))
-        guard let raw = ctx.data else { return [] }
+        guard let raw = ctx.data else { return ([], words) }
         let buf = raw.assumingMemoryBound(to: UInt8.self)
 
         var white = 0
@@ -91,11 +96,11 @@ enum FoodVision {
             }
         }
 
-        guard total > 0 else { return [] }
+        guard total > 0 else { return ([], words) }
 
         // 一堆彩色包装袋：平均饱和度很高，这时候按颜色猜只会猜出「白米饭 + 青菜」这种废话
         let avgSat = satSum / Double(total)
-        if avgSat > 0.42 { return [] }
+        if avgSat > 0.42 { return ([], words) }
 
         let pw = Double(white) / Double(total)
         let pg = Double(green) / Double(total)
@@ -160,7 +165,7 @@ enum FoodVision {
             ))
         }
 
-        return hits.sorted { $0.confidence > $1.confidence }
+        return (hits.sorted { $0.confidence > $1.confidence }, words)
     }
 
     private static func clamp(_ v: Double, _ lo: Double, _ hi: Double) -> Double {
