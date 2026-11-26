@@ -1,18 +1,26 @@
 import UIKit
 import Vision
 import ImageIO
+import CoreImage
 
-/// 一条识别候选：命中哪款、命中分数、按多少克算、这句话怎么解释给用户
+/// 一个字和它在图上的位置。位置是分组的关键：一包零食上的字凑在一起。
+struct OCRWord {
+    var text: String
+    var box: CGRect
+}
+
 struct FoodMatch {
     var food: LocalFood
     var score: Double
     var keyword: String
     var grams: Double
     var note: String
+    /// 这一组是几包（同款出现两次就记 2 份）
+    var portions: Int = 1
 }
 
-/// 读照片里的字，再按「别名 > 名字 > 品牌」三级去库里对。
-/// 包装零食、现制饮品没有形状可言，只有字是最硬的证据。
+/// 读包装上的字，按位置拆成一包一包，再分别去库里对。
+/// 一桌五包零食，不能把二十个词搅在一起排名，那样永远只出四条。
 enum FoodOCR {
 
     private static let noise = [
@@ -28,60 +36,44 @@ enum FoodOCR {
         "蜜桃", "乌龙", "抹茶", "咖啡", "生椰", "厚乳", "血糯米", "杨枝甘露"
     ]
 
-    // MARK: - 读字
+    private static let ciContext = CIContext(options: [.useSoftwareRenderer: false])
 
-    static func texts(in image: UIImage) -> [String] {
-        let scaled = image.preparingThumbnail(of: CGSize(width: 1200, height: 1200)) ?? image
+    // MARK: - 一、读字
+
+    static func read(_ image: UIImage) -> [OCRWord] {
+        let scaled = image.preparingThumbnail(of: CGSize(width: 1440, height: 1440)) ?? image
         guard let cg = scaled.cgImage else { return [] }
         let orient = scaled.imageOrientation.cgOrientation
 
-        var found: [String] = []
-        found += read(cg, orient)
+        var words = scan(cg, orient)
 
-        // 全图读到的中文太少，说明字很小或者聚在桌面那一片，再切两刀放大读
-        let meaningful = found.filter { han($0) >= 2 }
-        if meaningful.count < 5 {
+        // 中文不到六条，多半是小字、反光或逆光。提对比度再读一遍，再把下半张裁出来放大
+        if words.filter({ han($0.text) >= 2 }).count < 6 {
+            words += scan(enhanced(cg) ?? cg, orient)
             let w = cg.width
             let h = cg.height
             if let lower = cg.cropping(to: CGRect(x: 0, y: h / 2, width: w, height: h / 2)) {
-                found += read(lower, orient)
-            }
-            if let mid = cg.cropping(to: CGRect(x: 0, y: h / 3, width: w, height: h / 3)) {
-                found += read(mid, orient)
+                words += scan(enhanced(lower) ?? lower, orient)
             }
         }
 
-        // 同一行字常被切成两段（「魔芋」+「爽」），拼起来才算一个整词
-        if found.count > 1 {
-            var joined: [String] = []
-            for i in 0..<(found.count - 1) {
-                let a = clean(found[i])
-                let b = clean(found[i + 1])
-                if a.count >= 2, a.count <= 7, b.count >= 2, b.count <= 7 {
-                    joined.append(a + b)
-                }
-            }
-            found += joined
-        }
-
-        // 去重后按长度排，长词信息量大
         var seen = Set<String>()
-        var out: [String] = []
-        for t in found {
-            let k = clean(t)
-            guard k.count >= 2, !seen.contains(k) else { continue }
+        return words.filter { w in
+            let k = clean(w.text)
+                + "|" + String(Int(w.box.midX * 80))
+                + "|" + String(Int(w.box.midY * 80))
+            guard !k.isEmpty, !seen.contains(k) else { return false }
             seen.insert(k)
-            out.append(t)
+            return true
         }
-        return out.sorted { clean($0).count > clean($1).count }
     }
 
-    private static func read(_ cg: CGImage, _ orient: CGImagePropertyOrientation) -> [String] {
+    private static func scan(_ cg: CGImage, _ orient: CGImagePropertyOrientation) -> [OCRWord] {
         let req = VNRecognizeTextRequest()
         req.recognitionLevel = .accurate
         req.recognitionLanguages = ["zh-Hans", "en-US"]
         req.usesLanguageCorrection = false
-        req.minimumTextHeight = 0.008
+        req.minimumTextHeight = 0.006
 
         let handler = VNImageRequestHandler(cgImage: cg, orientation: orient, options: [:])
         do {
@@ -90,20 +82,114 @@ enum FoodOCR {
             return []
         }
         return (req.results ?? []).compactMap { obs in
-            obs.topCandidates(1).first?.string.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard let top = obs.topCandidates(1).first else { return nil }
+            let t = top.string.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !t.isEmpty else { return nil }
+            return OCRWord(text: t, box: obs.boundingBox)
         }
     }
 
-    // MARK: - 对库
+    /// 降低饱和度 + 提对比度：彩印包装上的小字会清楚很多
+    private static func enhanced(_ cg: CGImage) -> CGImage? {
+        let input = CIImage(cgImage: cg)
+        guard let f = CIFilter(name: "CIColorControls") else { return nil }
+        f.setValue(input, forKey: kCIInputImageKey)
+        f.setValue(1.24, forKey: kCIInputContrastKey)
+        f.setValue(0.0, forKey: kCIInputSaturationKey)
+        f.setValue(0.04, forKey: kCIInputBrightnessKey)
+        guard let out = f.outputImage else { return nil }
+        return ciContext.createCGImage(out, from: out.extent)
+    }
 
-    static func match(_ texts: [String]) -> [FoodMatch] {
-        var best: [String: FoodMatch] = [:]
+    /// 给空态回显用的干净词表：去掉营养表之类的噪音，长词优先
+    static func readable(_ words: [OCRWord]) -> [String] {
+        words.map { $0.text }
+            .filter { t in
+                let c = clean(t)
+                guard c.count >= 2, c.count <= 12 else { return false }
+                return !noise.contains(where: { c.contains($0) })
+            }
+            .sorted { $0.count > $1.count }
+    }
+
+    // MARK: - 二、按位置拆成一包一组
+
+    static func clusters(_ words: [OCRWord]) -> [[OCRWord]] {
+        var groups: [[OCRWord]] = []
+        for w in words.sorted(by: { $0.box.midY > $1.box.midY }) {
+            var placed = false
+            for i in groups.indices {
+                let near = groups[i].contains { o in
+                    abs(o.box.midY - w.box.midY) < 0.115
+                        && abs(o.box.midX - w.box.midX) < 0.33
+                }
+                if near {
+                    groups[i].append(w)
+                    placed = true
+                    break
+                }
+            }
+            if !placed { groups.append([w]) }
+        }
+        return groups
+    }
+
+    // MARK: - 三、一组一组去对库
+
+    static func match(_ words: [OCRWord]) -> [FoodMatch] {
+        var out: [FoodMatch] = []
+
+        var centers: [String: [CGFloat]] = [:]
+
+        for g in clusters(words) {
+            let best = matchGroup(g)
+            guard let top = best.first, top.score >= 40 else { continue }
+            let cx = g.map { $0.box.midX }.reduce(0, +) / CGFloat(max(1, g.count))
+
+            if let i = out.firstIndex(where: { $0.food.name == top.food.name }) {
+                // 横向隔得开才是另一包；同一包上下两段读到同款不算两份
+                if let cs = centers[top.food.name], cs.allSatisfy({ abs($0 - cx) > 0.18 }) {
+                    out[i].portions += 1
+                }
+                centers[top.food.name, default: []].append(cx)
+            } else {
+                out.append(top)
+                centers[top.food.name] = [cx]
+            }
+
+            // 这一组认得很勉强，把它组里的备选也摆上来，让用户自己挑
+            if top.score < 62, best.count > 1, !out.contains(where: { $0.food.name == best[1].food.name }) {
+                out.append(best[1])
+            }
+        }
+
+        let strong = out.filter { $0.score >= 62 }.sorted { $0.score > $1.score }
+        let weak = out.filter { $0.score < 62 }.sorted { $0.score > $1.score }
+        if strong.isEmpty { return Array(weak.prefix(4)) }
+        return Array((strong + Array(weak.prefix(2))).prefix(6))
+    }
+
+    private static func matchGroup(_ group: [OCRWord]) -> [FoodMatch] {
+        let ordered = group.sorted { $0.box.midX < $1.box.midX }
+        var texts: [String] = ordered.map { $0.text }
+
+        // 同一行被切成两段（「魔芋」+「爽」），拼起来才算一个整词
+        if ordered.count > 1 {
+            for i in 0..<(ordered.count - 1) {
+                let a = clean(ordered[i].text)
+                let b = clean(ordered[i + 1].text)
+                if a.count >= 2, a.count <= 7, b.count >= 2, b.count <= 7 {
+                    texts.append(a + b)
+                }
+            }
+        }
+
         let net = netWeight(texts)
         let learned = FoodLearn.snapshot()
+        var best: [String: FoodMatch] = [:]
 
         func offer(_ f: LocalFood, _ score: Double, _ key: String) {
             var s = score
-            // 文字里带口味词、食物名里也有，多半就是这一款
             if flavors.contains(where: { key.contains($0) && f.name.contains($0) }) { s += 6 }
             if let old = best[f.name], old.score >= s { return }
             let isBrandOnly = s < 60
@@ -118,10 +204,8 @@ enum FoodOCR {
             guard c.count >= 2, c.count <= 16 else { continue }
             guard !noise.contains(where: { c.contains($0) }) else { continue }
             guard han(c) >= 2 else { continue }
-            // 一整句读者须知之类，不像商品名
             if c.count > 10 && !looksLikeProduct(c) { continue }
 
-            // 上一回你亲手确认过的，优先级压在别名之上
             if let name = learned[c], let f = FoodBase.byName[name] {
                 offer(f, 97, c)
                 continue
@@ -138,28 +222,24 @@ enum FoodOCR {
             }
         }
 
-        let all = best.values.sorted { $0.score > $1.score }
-        let strong = all.filter { $0.score >= 62 }
-        var picked = strong.isEmpty ? Array(all.prefix(4)) : Array(strong.prefix(4))
+        var picked = Array(best.values.sorted { $0.score > $1.score }.prefix(2))
 
-        // 读到净含量就按实际规格算，别一律按库里默认那份
+        // 净含量只算这一包自己的，不跨包乱套
         if let net, net >= 5, net <= 800, !picked.isEmpty {
-            for i in 0..<min(2, picked.count) {
-                picked[i].grams = net
-                picked[i].note += " · 净含量 \(Int(net))g"
-            }
+            picked[0].grams = net
+            picked[0].note += " · 净含量 \(Int(net))g"
         }
         return picked
     }
 
-    /// 从「净含量 45g」「净重：45 克」里抠出真实规格
+    // MARK: - 小工具
+
     private static func netWeight(_ texts: [String]) -> Double? {
         for t in texts {
             let c = clean(t)
             guard c.contains("净含") || c.contains("净重") || c.contains("规格") else { continue }
             let nums = c.split(whereSeparator: { !"0123456789.".contains($0) })
                 .compactMap { Double($0) }
-            // 排除「100g」这种营养成分表的每百克基准
             if let v = nums.first(where: { $0 >= 5 && $0 <= 800 && $0 != 100 }) {
                 return v
             }
@@ -168,13 +248,10 @@ enum FoodOCR {
     }
 
     private static func looksLikeProduct(_ c: String) -> Bool {
-        // 商品名一般含品牌字或口味字，读者须知多半是「本产品…」「如有…」
         if c.hasPrefix("本") || c.hasPrefix("如") || c.hasPrefix("请") || c.contains("有限") { return false }
         return flavors.contains(where: { c.contains($0) })
             || ["薯", "糖", "面", "茶", "奶", "片", "条", "干", "饼", "果", "冻", "肠", "爪", "酥", "糕"].contains(where: { c.contains($0) })
     }
-
-    // MARK: - 小工具
 
     private static func clean(_ raw: String) -> String {
         raw.replacingOccurrences(of: " ", with: "")

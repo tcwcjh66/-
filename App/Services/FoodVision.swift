@@ -29,11 +29,12 @@ enum FoodVision {
     /// 除了结果，还把这回读到的字一并带回去：认不出时把它们摆给用户看，
     /// 比只说一句「没认出来」有用得多，用户会更正拍法或报个准名字。
     static func analyzeDetailed(_ image: UIImage) -> (hits: [FoodHit], words: [String]) {
-        let words = FoodOCR.texts(in: image)
-        let matched = FoodOCR.match(words)
+        let scanned = FoodOCR.read(image)
+        let words = FoodOCR.readable(scanned)
+        let matched = FoodOCR.match(scanned)
         if !matched.isEmpty {
             let hits: [FoodHit] = matched.map { m in
-                let g = max(1, m.grams)
+                let g = max(1, m.grams) * Double(max(1, m.portions))
                 let r = g / 100
                 return FoodHit(name: m.food.name,
                                grams: g,
@@ -43,7 +44,9 @@ enum FoodVision {
                                fat: m.food.fat * r,
                                veg: 0,
                                confidence: min(0.99, max(0.4, m.score / 100)),
-                               source: m.note,
+                               source: m.portions > 1
+                                   ? "\(m.note) · ×\(m.portions) 袋"
+                                   : m.note,
                                keyword: m.keyword)
             }
             return (hits.sorted { $0.confidence > $1.confidence }, words)
