@@ -285,6 +285,9 @@ struct CustomPlan: Identifiable, Codable, Hashable {
 }
 
 final class TWStore: ObservableObject {
+    /// Siri / 快捷指令在 App 没起时也要能改数据，所以只留一个实例，界面也用这个
+    static let shared = TWStore()
+
     /// 高频数值挪到 TWLive，这里只做转发——Store 自己的 objectWillChange
     /// 不再被步数、心率、三环的跳动牵动，其余四个页面就不会跟着重绘了。
     let live = TWLive()

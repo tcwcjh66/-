@@ -22,8 +22,10 @@ targets:
     platform: iOS
     sources:
       - path: App
+      - path: Shared
     dependencies:
       - target: TianCaiWeiWatch
+      - target: TianCaiWeiWidget
     info:
       path: App/Info.plist
       properties:
@@ -38,6 +40,9 @@ targets:
         NSMotionUsageDescription: 用于读取 iPhone 运动芯片的实时步数、距离与爬楼层数。
         NSCameraUsageDescription: 用于拍摄食物照片并识别其中的热量与营养。
         NSPhotoLibraryUsageDescription: 用于从相册选择餐食照片进行识别。
+        NSPhotoLibraryAddUsageDescription: 用于把训练成绩单存进相簿。
+        NSSupportsLiveActivities: true
+        NSSupportsLiveActivitiesFrequentUpdates: true
         NSHealthShareUsageDescription: 用于读取手表回传的心率、HRV、睡眠与训练记录。
         UIBackgroundModes:
           - audio
@@ -72,3 +77,21 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.tiancaiwei.app.watchkitapp
         INFOPLIST_KEY_WKCompanionAppBundleIdentifier: com.tiancaiwei.app
+
+  TianCaiWeiWidget:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Widget
+      - path: Shared
+    info:
+      path: Widget/Info.plist
+      properties:
+        CFBundleDisplayName: 天才威
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.tiancaiwei.app.widget
+        SKIP_INSTALL: "YES"
+        APPLICATION_EXTENSION_API_ONLY: "YES"

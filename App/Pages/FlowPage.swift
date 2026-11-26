@@ -82,6 +82,7 @@ struct FlowPage: View {
                 running = false
                 // 前台自己响（系统不会弹横幅），顺带撤掉还没触发的那条通知
                 TWNotify.cancelRest()
+                TWRestLive.endAll()
                 TWNotify.playRestAlert()
             }
         }
@@ -475,6 +476,7 @@ struct FlowPage: View {
             }
             // 就算把手机揣兜里、切出去刷视频，到点也会响
             TWNotify.scheduleRest(after: sec, move: name)
+            TWRestLive.start(seconds: sec, move: name, next: next)
         }
     }
 
@@ -707,8 +709,10 @@ struct FlowPage: View {
                     // 暂停就撤通知，继续就按剩余秒数重约一条
                     if running {
                         TWNotify.scheduleRest(after: remain, move: restFrom)
+                        TWRestLive.start(seconds: remain, move: restFrom, next: restNext)
                     } else {
                         TWNotify.cancelRest()
+                        TWRestLive.endAll()
                     }
                 } label: {
                     HStack(spacing: 6) {

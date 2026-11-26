@@ -8,6 +8,7 @@ struct SessionSummarySheet: View {
     @EnvironmentObject var store: TWStore
     @Environment(\.dismiss) private var dismiss
     @State private var appeared = false
+    @State private var cardMsg: String? = nil
 
     private var setDelta: Int? {
         guard let p = prev else { return nil }
@@ -24,6 +25,21 @@ struct SessionSummarySheet: View {
         if entry.sets >= 15 { return "节奏很稳" }
         if entry.sets >= 8 { return "完成得不错" }
         return "开了个头"
+    }
+
+    @MainActor
+    private func saveCard() {
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        guard cardMsg == nil else { return }
+        guard let img = TWShareCard.render(entry: entry, streak: streak, headline: headline, subline: subline) else {
+            cardMsg = "渲染失败，再试一次"
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) { cardMsg = nil }
+            return
+        }
+        TWShareCard.save(img) { ok in
+            cardMsg = ok ? "已存进相簿" : "没存成，去设置给相册权限"
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.2) { cardMsg = nil }
+        }
     }
 
     private var subline: String {
@@ -117,6 +133,24 @@ struct SessionSummarySheet: View {
                     }
                     .padding(16)
                     .twGlass()
+
+                    Button { saveCard() } label: {
+                        HStack(spacing: 7) {
+                            Image(systemName: cardMsg == nil ? "square.and.arrow.down" : "checkmark.circle.fill")
+                                .font(.tw(14, .bold))
+                            Text(cardMsg ?? "存一张成绩单")
+                                .font(.tw(15, .bold))
+                        }
+                        .foregroundStyle(TWColor.purple)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 13)
+                        .background {
+                            RoundedRectangle(cornerRadius: 15, style: .continuous)
+                                .fill(TWColor.purple.opacity(0.12))
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.horizontal, 18)
 
                     Button {
                         UIImpactFeedbackGenerator(style: .medium).impactOccurred()

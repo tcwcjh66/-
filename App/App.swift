@@ -3,7 +3,7 @@ import Combine
 
 @main
 struct TianCaiWeiApp: App {
-    @StateObject private var store = TWStore()
+    @StateObject private var store = TWStore.shared
     @Environment(\.scenePhase) private var scenePhase
     /// 前台每 5 分钟把当下数值写进今天这一格，这样没训练的日子图里也有点
     private let ticker = Timer.publish(every: 300, on: .main, in: .common).autoconnect()

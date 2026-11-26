@@ -9,6 +9,7 @@ struct SettingsSheet: View {
     @State private var showReset = false
     @State private var showCopied = false
     @State private var showGoal = false
+    @State private var showStatus = false
     @State private var exportURL: URL?
     @State private var notifyDenied = false
     @State private var showImporter = false
@@ -55,11 +56,18 @@ struct SettingsSheet: View {
                     sideloadCard
                     goalCard
                     dataCard
+                    statusCard
                     aboutCard
                 }
                 .padding(.horizontal, 18)
                 .padding(.bottom, 30)
             }
+        }
+        .sheet(isPresented: $showStatus) {
+            SystemStatusSheet()
+                .environmentObject(store)
+                .presentationDetents([.large])
+                .presentationCornerRadius(28)
         }
         .sheet(isPresented: $showGoal) {
             GoalSheet()
@@ -370,6 +378,36 @@ struct SettingsSheet: View {
         }
         .padding(16)
         .twGlass()
+    }
+
+    private var statusCard: some View {
+        Button {
+            UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+            showStatus = true
+        } label: {
+            HStack(spacing: 11) {
+                Image(systemName: "stethoscope")
+                    .font(.tw(13, .semibold))
+                    .foregroundStyle(TWColor.mint)
+                    .frame(width: 28, height: 28)
+                    .background { Circle().fill(TWColor.mint.opacity(0.14)) }
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("运行状态")
+                        .font(.tw(13.5, .bold))
+                        .foregroundStyle(TWColor.ink)
+                    Text("备份份数 · 数据体积 · 手表同步 · 剩余天数")
+                        .font(.tw(11))
+                        .foregroundStyle(TWColor.ink3)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right")
+                    .font(.tw(11, .bold))
+                    .foregroundStyle(TWColor.ink3)
+            }
+            .padding(14)
+            .twGlass(radius: 18)
+        }
+        .buttonStyle(.plain)
     }
 
     private var aboutCard: some View {

@@ -34,6 +34,7 @@ struct BioPage: View {
             PageHeader(title: "身体", subtitle: "本机实测 · 不含模拟数据")
 
             weeklyCard
+            heatmapCard
             hrCard
             watchSyncCard
             spo2Card
@@ -758,6 +759,20 @@ struct BioPage: View {
     // MARK: - 数据通路
 
     // MARK: - 心率
+
+    private var heatmapCard: some View {
+        TrainingHeatmap(values: trainingHeat)
+    }
+
+    /// 每次训练的总吨位，没记吨位的老记录按组数折算一下，不然整格是空的
+    private var trainingHeat: [String: Double] {
+        var out: [String: Double] = [:]
+        for s in store.sessions {
+            let v = (s.tonnage ?? 0) > 0 ? (s.tonnage ?? 0) : Double(s.sets) * 10
+            out[s.date, default: 0] += v
+        }
+        return out
+    }
 
     private var hrCard: some View {
         VStack(alignment: .leading, spacing: 14) {
