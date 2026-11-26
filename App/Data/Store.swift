@@ -1,5 +1,6 @@
 import SwiftUI
 import Combine
+import UIKit
 
 enum TWTab: String, CaseIterable, Identifiable {
     // 顺序即底栏顺序：今天 → 训练 → 饮食 → 身体 → 动作库
@@ -120,6 +121,20 @@ struct GirthLog: Codable, Identifiable, Hashable {
     var arm: Double
     var thigh: Double
     var hip: Double
+}
+
+/// 一条可以撤销的删除：text 是提示语，run 是恢复动作
+struct TWUndoAction: Identifiable {
+    let id = UUID()
+    let text: String
+    let run: () -> Void
+}
+
+/// 训练时该用多重：kg + 次数 + 一句话理由
+struct WeightSuggestion {
+    let kg: Double
+    let reps: Int
+    let note: String
 }
 
 /// 一晚睡眠记录：acts 是每 30 秒一个的体动强度（0-100），报告全部由此现算。
@@ -365,6 +380,10 @@ final class TWStore: ObservableObject {
     @Published var fat: Double = 0
     @Published var veg: Double = 0
     @Published var meals: [MealEntry] = []
+    /// 最近一次删除，6 秒内可以撤销
+    @Published var undo: TWUndoAction?
+    private var undoCommit: (() -> Void)?
+    private var undoWork: DispatchWorkItem?
     /// 餐食照片：日期 → 文件名（存在 Documents/mealPhotos 里，只留最近 40 天）
     @Published var mealPhotos: [String: [String]] = [:]
 
@@ -684,6 +703,18 @@ final class TWStore: ObservableObject {
         moveKcal = max(0, moveKcal - m.kcal * 0.06)
         syncMealHistory()
         persistSoon()
+        offerUndo("已删除「\(m.name)」") { [weak self] in
+            guard let self else { return }
+            self.meals.insert(m, at: min(idx, self.meals.count))
+            self.dietKcal += m.kcal
+            self.protein += m.protein
+            self.carb += m.carb
+            self.fat += m.fat
+            self.veg += m.veg
+            self.moveKcal += m.kcal * 0.06
+            self.syncMealHistory()
+            self.persist()
+        }
     }
 
     func toggleFav(_ name: String) {
@@ -1426,6 +1457,27 @@ final class TWStore: ObservableObject {
         return last.reps >= targetReps ? min(500, last.weight + 2.5) : last.weight
     }
 
+    /// 带说明的建议：重量、次数、以及为什么是这个数
+    func suggestFor(move: String, targetReps: Int) -> WeightSuggestion? {
+        guard let last = lastRecord(move: move), last.weight > 0 else { return nil }
+        let t = max(1, targetReps)
+        var kg = last.weight
+        var note: String
+        if last.reps >= t {
+            kg = min(500, last.weight + 2.5)
+            note = "上次 \(String(format: "%g", last.weight))kg × \(last.reps) 次做满了，这组加到 \(String(format: "%g", kg))kg"
+        } else {
+            note = "上次只做到 \(last.reps) 次，先守住 \(String(format: "%g", kg))kg 把 \(t) 次做满"
+        }
+        if let best = e1rmPoints(move: move, limit: 3).max(by: { $0.kg < $1.kg }) {
+            let est = best.kg / (1 + Double(t) / 30)
+            if est >= kg + 5 {
+                note += "；按最近最好成绩还能到 \(String(format: "%.1f", est))kg"
+            }
+        }
+        return WeightSuggestion(kg: kg, reps: t, note: note)
+    }
+
     /// 从今天往前数，连续有训练记录的天数。今天还没练时允许从昨天起算。
     var trainingStreak: Int {
         let f = DateFormatter()
@@ -1447,6 +1499,35 @@ final class TWStore: ObservableObject {
             day = prev
         }
         return streak
+    }
+
+    // MARK: - 删除撤销
+
+    /// 删除后给 6 秒反悔时间。commit 是过期后真正落地的动作（比如真删文件）
+    func offerUndo(_ text: String, restore: @escaping () -> Void, commit: (() -> Void)? = nil) {
+        // 上一条还没过期就先把它的收尾动作执行掉
+        undoCommit?()
+        undoWork?.cancel()
+        undoCommit = commit
+
+        withAnimation(.snappy(duration: 0.25)) { undo = TWUndoAction(text: text, run: restore) }
+
+        let w = DispatchWorkItem { [weak self] in
+            self?.undoCommit?()
+            self?.undoCommit = nil
+            withAnimation(.snappy(duration: 0.25)) { self?.undo = nil }
+        }
+        undoWork = w
+        DispatchQueue.main.asyncAfter(deadline: .now() + 6, execute: w)
+    }
+
+    func runUndo() {
+        undoWork?.cancel()
+        undoCommit = nil
+        undo?.run()
+        withAnimation(.snappy(duration: 0.25)) { undo = nil }
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
+        persistSoon()
     }
 
     // MARK: - 进度照
@@ -1501,10 +1582,18 @@ final class TWStore: ObservableObject {
     }
 
     func deleteProgressPhoto(_ p: ProgressPhoto) {
-        try? FileManager.default.removeItem(at: progressDir.appendingPathComponent(p.file))
-        Self.progressCache.removeObject(forKey: p.file as NSString)
         progressPhotos.removeAll { $0.id == p.id }
         persistSoon()
+        offerUndo("已删除这张进度照", restore: { [weak self] in
+            guard let self else { return }
+            self.progressPhotos.append(p)
+            self.progressPhotos.sort { $0.date > $1.date }
+            self.persist()
+        }, commit: { [weak self] in
+            guard let self else { return }
+            try? FileManager.default.removeItem(at: self.progressDir.appendingPathComponent(p.file))
+            Self.progressCache.removeObject(forKey: p.file as NSString)
+        })
     }
 
     // MARK: - 餐食照片

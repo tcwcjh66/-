@@ -66,6 +66,7 @@ struct DietPage: View {
             aiCard
             kcalCard
             macroCard
+            fixCard
             addCard
             searchCard
             if !store.todayPhotos.isEmpty { photoCard }
@@ -426,6 +427,116 @@ struct DietPage: View {
 
     private var proteinHint: String {
         proteinLeft <= 0 ? "蛋白已达标" : "还差 \(Int(proteinLeft))g 蛋白"
+    }
+
+    // MARK: - 缺口补什么
+
+    private var fixPicks: [FoodPick] {
+        let pGap = max(0, store.proteinGoal - store.protein)
+        let kGap = max(0, store.dietTarget - store.dietKcal)
+        guard pGap > 8 || kGap > 200 else { return [] }
+
+        let eaten = Set(store.meals.map { $0.name })
+        let pool = FoodBase.items.filter { f in
+            !eaten.contains(f.name) && f.portion > 0 && f.kcal > 0 && f.protein > 0
+        }
+        // 每 1 kcal 能换到多少蛋白，越高越适合补缺口
+        let ranked = pool.sorted { a, b in
+            let ra = a.protein * 4 / max(1, a.kcal)
+            let rb = b.protein * 4 / max(1, b.kcal)
+            if abs(ra - rb) > 0.02 { return ra > rb }
+            return a.kcal < b.kcal
+        }
+
+        var picks: [FoodPick] = []
+        var groups = Set<String>()
+        for f in ranked where picks.count < 3 {
+            if groups.contains(f.group) { continue }
+            picks.append(FoodPick(food: f, grams: f.portion))
+            groups.insert(f.group)
+        }
+        return picks
+    }
+
+    private var fixCard: some View {
+        let picks = fixPicks
+        let pGap = max(0, store.proteinGoal - store.protein)
+        let kGap = max(0, store.dietTarget - store.dietKcal)
+        return VStack(alignment: .leading, spacing: 11) {
+            HStack(spacing: 7) {
+                Image(systemName: "fork.knife.circle")
+                    .font(.tw(14, .semibold))
+                    .foregroundStyle(TWColor.amber)
+                Text("缺口补什么")
+                    .font(.tw(15, .bold))
+                    .foregroundStyle(TWColor.ink)
+                Spacer()
+                GlassPill(text: pGap > 8 ? "差 \(Int(pGap))g 蛋白" : (kGap > 200 ? "差 \(Int(kGap)) kcal" : "差不多够了"),
+                          tint: pGap > 8 ? TWColor.coral : TWColor.mint)
+            }
+
+            if picks.isEmpty {
+                Text("今天蛋白和热量都到位了，不用再加。")
+                    .font(.tw(12.5))
+                    .foregroundStyle(TWColor.ink3)
+            } else {
+                ForEach(picks) { pick in
+                    HStack(spacing: 10) {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(pick.food.name)
+                                .font(.tw(13.5, .semibold))
+                                .foregroundStyle(TWColor.ink)
+                                .lineLimit(1)
+                            Text("\(Int(pick.grams))g · 蛋白 +\(one(pick.proteinG))g · \(Int(pick.kcalTotal)) kcal")
+                                .font(.tw(10.5, .regular))
+                                .foregroundStyle(TWColor.ink3)
+                                .lineLimit(1)
+                        }
+                        Spacer(minLength: 0)
+                        Button {
+                            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                            store.addMeal(MealEntry(
+                                name: pick.food.name,
+                                grams: pick.grams,
+                                kcal: pick.kcalTotal,
+                                protein: pick.proteinG,
+                                carb: pick.carbG,
+                                fat: pick.fatG,
+                                veg: 0,
+                                slot: autoSlot,
+                                time: Date()
+                            ))
+                        } label: {
+                            HStack(spacing: 3) {
+                                Image(systemName: "plus")
+                                    .font(.tw(9, .bold))
+                                Text("加")
+                                    .font(.tw(11, .bold))
+                            }
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background {
+                                Capsule().fill(LinearGradient(colors: [TWColor.amber, TWColor.coral],
+                                                             startPoint: .topLeading, endPoint: .bottomTrailing))
+                            }
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .padding(.vertical, 2)
+                }
+
+                Text("按蛋白密度排的三样，都不是今天已经吃过的。")
+                    .font(.tw(10, .regular))
+                    .foregroundStyle(TWColor.ink3.opacity(0.85))
+            }
+        }
+        .padding(16)
+        .twGlass()
+    }
+
+    private func one(_ v: Double) -> String {
+        String(format: "%.1f", v)
     }
 
     private var macroCard: some View {
@@ -1410,4 +1521,16 @@ struct DietDaySheet: View {
             .padding(18)
         }
     }
+}
+
+/// 缺口推荐里的一条：食物 + 建议份量
+struct FoodPick: Identifiable {
+    let food: LocalFood
+    let grams: Double
+
+    var id: String { food.name + "\(grams)" }
+    var kcalTotal: Double { food.kcal * grams / 100 }
+    var proteinG: Double { food.protein * grams / 100 }
+    var carbG: Double { food.carb * grams / 100 }
+    var fatG: Double { food.fat * grams / 100 }
 }

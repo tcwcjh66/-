@@ -34,6 +34,8 @@ struct FlowPage: View {
     /// 这组自己的秒表：组间休息管“歇多久”，它管“这一组做了多久”
     @State private var setRun = false
     @State private var setElapsed = 0
+    @State private var tempoOn = TWTempo.isOn
+    @State private var weightNote = ""
 
     private var planIndex: Int {
         min(max(store.planPick, 0), max(store.allPlans.count - 1, 0))
@@ -474,6 +476,7 @@ struct FlowPage: View {
             // 这组结束，秒表归零，接着走休息倒计时
             setRun = false
             setElapsed = 0
+            weightNote = ""
             store.addSet(weight: setWeight, reps: setReps, move: name)
             // 按这个动作自己的 rest 起休息倒计时，不用再手调
             let sec = store.restOverride > 0 ? store.restOverride : restSeconds(rest)
@@ -614,16 +617,18 @@ struct FlowPage: View {
 
                         Spacer(minLength: 4)
 
-                        if !done, let sug = store.suggestWeight(move: nm,
-                                                               targetReps: firstInt(pair.element.reps)) {
+                        if !done, let sug = store.suggestFor(move: nm,
+                                                             targetReps: firstInt(pair.element.reps)) {
                             Button {
                                 UIImpactFeedbackGenerator(style: .soft).impactOccurred()
                                 withAnimation(.snappy(duration: 0.2)) {
-                                    setWeight = sug
+                                    setWeight = sug.kg
+                                    setReps = sug.reps
                                     activeMove = nm
+                                    weightNote = sug.note
                                 }
                             } label: {
-                                Text("建议 \(fmtKg(sug))kg")
+                                Text("建议 \(fmtKg(sug.kg))kg × \(sug.reps)")
                                     .font(.tw(10.5, .bold))
                                     .foregroundStyle(TWColor.mint)
                                     .padding(.horizontal, 7)
@@ -680,9 +685,24 @@ struct FlowPage: View {
         String(format: "%d:%02d", setElapsed / 60, setElapsed % 60)
     }
 
+    /// 3 秒下放、1 秒停、2 秒推起
+    private var tempoPhaseText: String {
+        let m = setElapsed % 6
+        switch m {
+        case 0, 1, 2: return "下放 \(3 - m) 秒"
+        case 3:       return "停 1 秒"
+        default:      return "推起 \(6 - m) 秒"
+        }
+    }
+
     private func tickSet() {
         guard setRun else { return }
         setElapsed += 1
+        if tempoOn {
+            // 6 秒一个循环：0-2 下放（低音），3 停（不响），4-5 推起（高音）
+            let m = setElapsed % 6
+            if m != 3 { TWTempo.beat(hi: m >= 4) }
+        }
         if setElapsed == setTarget {
             setRun = false
             UINotificationFeedbackGenerator().notificationOccurred(.warning)
@@ -703,8 +723,30 @@ struct FlowPage: View {
                          : "目标 \(setTarget) 秒 · 按 \(setReps) 次估")
                         .font(.tw(11.5, .regular))
                         .foregroundStyle(setElapsed >= setTarget ? TWColor.amber : TWColor.ink3)
+                    if !weightNote.isEmpty {
+                        Text(weightNote)
+                            .font(.tw(10.5, .regular))
+                            .foregroundStyle(TWColor.mint)
+                            .lineLimit(2)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
                 Spacer()
+                Button {
+                    UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                    tempoOn.toggle()
+                    TWTempo.isOn = tempoOn
+                } label: {
+                    Image(systemName: tempoOn ? "waveform" : "waveform.slash")
+                        .font(.tw(13, .bold))
+                        .foregroundStyle(tempoOn ? TWColor.blue : TWColor.ink3)
+                        .frame(width: 30, height: 30)
+                        .background {
+                            Circle().fill(tempoOn ? TWColor.blue.opacity(0.13) : TWColor.ink3.opacity(0.08))
+                        }
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(tempoOn ? "关掉节拍器" : "打开节拍器")
                 GlassPill(text: setRun ? "计时中" : (setElapsed >= setTarget ? "到点" : (setElapsed > 0 ? "已 \(setElapsed) 秒" : "待开始")),
                           tint: setRun ? TWColor.mint : (setElapsed >= setTarget ? TWColor.amber : TWColor.ink3))
             }
@@ -728,6 +770,13 @@ struct FlowPage: View {
                     }
                 }
                 .frame(height: 7)
+            }
+
+            if tempoOn && setRun {
+                Text(tempoPhaseText)
+                    .font(.tw(11.5, .bold))
+                    .foregroundStyle(TWColor.blue)
+                    .contentTransition(.numericText())
             }
 
             HStack(spacing: 10) {

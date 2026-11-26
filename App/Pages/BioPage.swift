@@ -41,6 +41,7 @@ struct BioPage: View {
             spo2Card
             stepCard
             sleepCard
+            sleepTrainCard
             bodyCard
             progressCard
             girthCard
@@ -440,6 +441,96 @@ struct BioPage: View {
         case 65..<80: return TWColor.blue
         case 50..<65: return TWColor.amber
         default: return TWColor.coral
+        }
+    }
+
+    // MARK: - 睡眠对训练
+
+    /// 每一场有容量的训练，配当天或前一晚的睡眠时长
+    private var sleepTrainData: [(h: Double, ton: Double)] {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        var out: [(h: Double, ton: Double)] = []
+        for s in store.sessions {
+            guard let ton = s.tonnage, ton > 0 else { continue }
+            var prev = ""
+            if let d = f.date(from: s.date),
+               let p = Calendar.current.date(byAdding: .day, value: -1, to: d) {
+                prev = f.string(from: p)
+            }
+            let log = store.sleepLogs.first { $0.date == s.date }
+                ?? store.sleepLogs.first { $0.date == prev }
+            if let log {
+                out.append((h: Double(log.durationMinutes) / 60, ton: ton))
+            }
+        }
+        return out
+    }
+
+    private var sleepTrainVerdict: String {
+        let d = sleepTrainData
+        let short = d.filter { $0.h < 6 }.map { $0.ton }
+        let good = d.filter { $0.h >= 7 }.map { $0.ton }
+        guard short.count >= 2, good.count >= 2 else {
+            let need = max(0, 2 - short.count) + max(0, 2 - good.count)
+            return "再记 \(need) 场「睡够 / 没睡够」的训练，就能看出差了。"
+        }
+        let a = short.reduce(0, +) / Double(short.count)
+        let b = good.reduce(0, +) / Double(good.count)
+        guard b > 0 else { return "样本还不够。" }
+        let drop = (b - a) / b * 100
+        if drop >= 8 { return "睡不到 6 小时那几天，平均容量比睡够时低 \(Int(drop))%。" }
+        if drop <= -8 { return "睡得少反而练得多——注意别硬撑，疲劳是攒出来的。" }
+        return "睡得少和睡够的容量差不多，你的恢复力还行。"
+    }
+
+    @ViewBuilder
+    private var sleepTrainCard: some View {
+        let d = sleepTrainData
+        if !d.isEmpty {
+            let short = d.filter { $0.h < 6 }.map { $0.ton }
+            let good = d.filter { $0.h >= 7 }.map { $0.ton }
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 7) {
+                    Image(systemName: "bed.double.fill")
+                        .font(.tw(14, .semibold))
+                        .foregroundStyle(TWColor.purple)
+                    Text("睡眠对训练")
+                        .font(.tw(15, .bold))
+                        .foregroundStyle(TWColor.ink)
+                    Spacer()
+                    GlassPill(text: "\(d.count) 场有睡眠数据", tint: TWColor.ink3)
+                }
+
+                HStack(spacing: 0) {
+                    VStack(spacing: 2) {
+                        Text(good.isEmpty ? "—" : "\(Int(good.reduce(0, +) / Double(good.count)))")
+                            .font(.tw(20, .heavy))
+                            .foregroundStyle(TWColor.mint)
+                        Text("睡够时容量 kg")
+                            .font(.tw(10, .regular))
+                            .foregroundStyle(TWColor.ink3)
+                    }
+                    .frame(maxWidth: .infinity)
+                    Rectangle().fill(TWColor.ink3.opacity(0.12)).frame(width: 0.7, height: 30)
+                    VStack(spacing: 2) {
+                        Text(short.isEmpty ? "—" : "\(Int(short.reduce(0, +) / Double(short.count)))")
+                            .font(.tw(20, .heavy))
+                            .foregroundStyle(TWColor.coral)
+                        Text("睡不足 6h 时")
+                            .font(.tw(10, .regular))
+                            .foregroundStyle(TWColor.ink3)
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+
+                Text(sleepTrainVerdict)
+                    .font(.tw(12, .regular))
+                    .foregroundStyle(TWColor.ink2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(16)
+            .twGlass()
         }
     }
 

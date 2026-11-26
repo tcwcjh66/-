@@ -23,6 +23,18 @@ struct SwapMoveSheet: View {
         return allMoves.filter { $0.group == c.group && $0.name != current }
     }
 
+    /// 器械被占时最有用的就是「换个器械也能练同一块肌肉」
+    private var diffEquip: [MoveItem] {
+        guard let c = cur else { return [] }
+        return sameGroup.filter { $0.equipment != c.equipment }
+    }
+
+    /// 同器械的，用来换角度、换握距、加练
+    private var sameEquip: [MoveItem] {
+        guard let c = cur else { return [] }
+        return sameGroup.filter { $0.equipment == c.equipment }
+    }
+
     var body: some View {
         ZStack {
             AuroraBG()
@@ -68,9 +80,19 @@ struct SwapMoveSheet: View {
                         }
                     }
 
-                    if !sameGroup.isEmpty {
-                        head("同肌群 · \(cur?.group ?? "")")
-                        ForEach(sameGroup) { m in
+                    if !diffEquip.isEmpty {
+                        head("器械被占？换器械照样练 \(cur?.group ?? "")")
+                        ForEach(diffEquip) { m in
+                            row(name: m.name,
+                                detail: "\(m.equipment) · \(m.level)",
+                                tag: "换器械",
+                                tint: TWColor.mint)
+                        }
+                    }
+
+                    if !sameEquip.isEmpty {
+                        head("同器械 · 换角度或加练")
+                        ForEach(sameEquip) { m in
                             row(name: m.name,
                                 detail: "\(m.equipment) · \(m.level)",
                                 tag: m.equipment,
@@ -78,7 +100,7 @@ struct SwapMoveSheet: View {
                         }
                     }
 
-                    if altNames.isEmpty && sameGroup.isEmpty {
+                    if altNames.isEmpty && diffEquip.isEmpty && sameEquip.isEmpty {
                         Text("这个动作没有登记替代，去动作库翻翻同部位的动作。")
                             .font(.tw(13))
                             .foregroundStyle(TWColor.ink3)

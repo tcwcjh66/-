@@ -51,6 +51,10 @@ struct RootView: View {
             GlassTabBar(selected: $tab)
                 .padding(.horizontal, 18)
                 .padding(.bottom, 6)
+
+            if let u = store.undo {
+                undoBar(u)
+            }
         }
         .environment(\.twScrollPause, isScrolling)
         .ignoresSafeArea(edges: .bottom)
@@ -161,6 +165,39 @@ struct RootView: View {
 
         UINotificationFeedbackGenerator().notificationOccurred(.success)
         withAnimation(.snappy(duration: 0.28)) { tab = .bio }
+    }
+}
+
+extension RootView {
+    /// 删除后的 6 秒反悔条，浮在底栏上方
+    fileprivate func undoBar(_ u: TWUndoAction) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: "trash")
+                .font(.tw(12, .bold))
+                .foregroundStyle(.white.opacity(0.8))
+            Text(u.text)
+                .font(.tw(12.5, .medium))
+                .foregroundStyle(.white)
+                .lineLimit(1)
+            Spacer(minLength: 0)
+            Button {
+                store.runUndo()
+            } label: {
+                Text("撤销")
+                    .font(.tw(12.5, .heavy))
+                    .foregroundStyle(TWColor.mint)
+                    .padding(.horizontal, 11)
+                    .padding(.vertical, 5)
+                    .background { Capsule().fill(.white.opacity(0.16)) }
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 15)
+        .padding(.vertical, 10)
+        .background { Capsule().fill(.black.opacity(0.68)) }
+        .padding(.horizontal, 20)
+        .padding(.bottom, 88)
+        .transition(.move(edge: .bottom).combined(with: .opacity))
     }
 }
 
