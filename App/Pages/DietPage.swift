@@ -431,7 +431,7 @@ struct DietPage: View {
 
     // MARK: - 缺口补什么
 
-    private var fixPicks: [FoodPick] {
+    private var fixPicks: [MealFixPick] {
         let pGap = max(0, store.proteinGoal - store.protein)
         let kGap = max(0, store.dietTarget - store.dietKcal)
         guard pGap > 8 || kGap > 200 else { return [] }
@@ -448,11 +448,11 @@ struct DietPage: View {
             return a.kcal < b.kcal
         }
 
-        var picks: [FoodPick] = []
+        var picks: [MealFixPick] = []
         var groups = Set<String>()
         for f in ranked where picks.count < 3 {
             if groups.contains(f.group) { continue }
-            picks.append(FoodPick(food: f, grams: f.portion))
+            picks.append(MealFixPick(food: f, grams: f.portion))
             groups.insert(f.group)
         }
         return picks
@@ -1524,7 +1524,7 @@ struct DietDaySheet: View {
 }
 
 /// 缺口推荐里的一条：食物 + 建议份量
-struct FoodPick: Identifiable {
+struct MealFixPick: Identifiable {
     let food: LocalFood
     let grams: Double
 
