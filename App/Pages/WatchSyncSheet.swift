@@ -11,6 +11,7 @@ struct WatchSyncSheet: View {
     @State private var copied = false
     @State private var copiedSteps = false
     @State private var copiedFull = false
+    @State private var showGuide = false
 
     /// 最快能用的一条：心率 + 步数 + 活动能量 + 睡眠 + 血氧
     private let quickTemplate = "twfit://sync?hr=[心率]&steps=[步数]&kcal=[活动能量]&sleep=[睡眠分钟]&spo2=[血氧]"
@@ -26,6 +27,7 @@ struct WatchSyncSheet: View {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 16) {
                     header
+                    guideEntry
                     oneTapCard
                     statusCard
                     quickCard
@@ -40,6 +42,44 @@ struct WatchSyncSheet: View {
                 .padding(.bottom, 34)
             }
         }
+        .sheet(isPresented: $showGuide) {
+            ShortcutGuideSheet()
+                .presentationDetents([.large])
+                .presentationCornerRadius(28)
+        }
+    }
+
+    /// 只要心率的两步图解入口
+    private var guideEntry: some View {
+        Button {
+            UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+            showGuide = true
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "rectangle.stack.badge.plus")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(TWColor.purple)
+                    .frame(width: 34, height: 34)
+                    .background { Circle().fill(TWColor.purple.opacity(0.13)) }
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("只要心率 · 两步图解")
+                        .font(.system(size: 14.5, weight: .bold))
+                        .foregroundStyle(TWColor.ink)
+                    Text("比下面的五步少一半，照着图点")
+                        .font(.system(size: 11.5))
+                        .foregroundStyle(TWColor.ink3)
+                }
+
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(TWColor.ink3)
+            }
+            .padding(14)
+            .twGlass(radius: 18)
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: - 头部
