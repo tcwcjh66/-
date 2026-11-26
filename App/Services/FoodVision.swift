@@ -28,10 +28,11 @@ enum FoodVision {
 
     /// 除了结果，还把这回读到的字一并带回去：认不出时把它们摆给用户看，
     /// 比只说一句「没认出来」有用得多，用户会更正拍法或报个准名字。
-    static func analyzeDetailed(_ image: UIImage) -> (hits: [FoodHit], words: [String]) {
+    static func analyzeDetailed(_ image: UIImage,
+                                boost: [String: Double] = [:]) -> (hits: [FoodHit], words: [String]) {
         let scanned = FoodOCR.read(image)
         let words = FoodOCR.readable(scanned)
-        let matched = FoodOCR.match(scanned)
+        let matched = FoodOCR.match(scanned, boost: boost)
         if !matched.isEmpty {
             let hits: [FoodHit] = matched.map { m in
                 let g = max(1, m.grams) * Double(max(1, m.portions))

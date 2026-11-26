@@ -336,6 +336,8 @@ struct BarcodeScanSheet: View {
     /// 查不到时准备建档的条码（String 不是 Identifiable，包一层给 sheet 用）
     @State private var noteTarget: NoteTarget?
     @State private var lastCode = ""
+    /// 这条是从本机缓存直接出来的，没联网
+    @State private var fromCache = false
 
     var body: some View {
         NavigationStack {
@@ -519,6 +521,19 @@ struct BarcodeScanSheet: View {
                 Spacer(minLength: 0)
             }
 
+            if fromCache {
+                HStack(spacing: 4) {
+                    Image(systemName: "internaldrive")
+                        .font(.tw(9, .bold))
+                    Text("本机记录 · 不联网秒出")
+                        .font(.tw(10, .bold))
+                }
+                .foregroundStyle(TWColor.mint)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background { Capsule().fill(TWColor.mint.opacity(0.12)) }
+            }
+
             Text(r.macroLine)
                 .font(.tw(11.5))
                 .foregroundStyle(TWColor.ink2)
@@ -573,6 +588,7 @@ struct BarcodeScanSheet: View {
         // 1) 先查本机条码库：扫过的码不用再联网
         if let n = store.barcodeNote(clean) {
             searching = false
+            fromCache = true
             result = RemoteFood(code: n.code, name: n.name, brand: n.brand,
                                 kcal100: n.kcal100, protein100: n.protein100,
                                 carb100: n.carb100, fat100: n.fat100,
@@ -590,6 +606,7 @@ struct BarcodeScanSheet: View {
                 await MainActor.run {
                     result = f
                     searching = false
+                    fromCache = false
                     // 联网查到的也留一份在本机，下次秒出、断网也能用
                     store.saveBarcodeNote(BarcodeNote(
                         code: clean, name: f.name, brand: f.brand,

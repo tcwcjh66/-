@@ -7,6 +7,8 @@ import CoreImage
 struct OCRWord {
     var text: String
     var box: CGRect
+    /// 这张是图像旋转 90° 后读出来的竖排字，位置不可靠，单独成组
+    var rotated: Bool = false
 }
 
 struct FoodMatch {
@@ -54,6 +56,21 @@ enum FoodOCR {
             let h = cg.height
             if let lower = cg.cropping(to: CGRect(x: 0, y: h / 2, width: w, height: h / 2)) {
                 words += scan(enhanced(lower) ?? lower, orient)
+            }
+        }
+
+        // 竖排字：窄而高，Vision 横向读基本读不出来，把整图转 90° 再读一遍
+        let vertical = words.filter {
+            $0.box.height > $0.box.width * 1.6
+                && $0.box.width < 0.14
+                && han($0.text) >= 2
+        }
+        if !vertical.isEmpty,
+           words.filter({ han($0.text) >= 2 }).count < 10,
+           let rc = rotated(cg) {
+            for var w in scan(rc, orient) where han(w.text) >= 2 {
+                w.rotated = true
+                words.append(w)
             }
         }
 
@@ -112,11 +129,33 @@ enum FoodOCR {
             .sorted { $0.count > $1.count }
     }
 
+    private static func rotated(_ cg: CGImage) -> CGImage? {
+        let w = cg.width
+        let h = cg.height
+        guard let ctx = CGContext(data: nil, width: h, height: w,
+                                  bitsPerComponent: 8, bytesPerRow: 0,
+                                  space: CGColorSpaceCreateDeviceRGB(),
+                                  bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return nil }
+        ctx.translateBy(x: CGFloat(h) / 2, y: CGFloat(w) / 2)
+        ctx.rotate(by: .pi / 2)
+        ctx.draw(cg, in: CGRect(x: -CGFloat(w) / 2, y: -CGFloat(h) / 2,
+                                width: CGFloat(w), height: CGFloat(h)))
+        return ctx.makeImage()
+    }
+
     // MARK: - 二、按位置拆成一包一组
 
     static func clusters(_ words: [OCRWord]) -> [[OCRWord]] {
         var groups: [[OCRWord]] = []
-        for w in words.sorted(by: { $0.box.midY > $1.box.midY }) {
+        var vertical = words.filter { $0.rotated }
+        if !vertical.isEmpty {
+            // 竖排词按横坐标分桶，一桶一包，别把五包的字搅在一组
+            var buckets: [Int: [OCRWord]] = [:]
+            for w in vertical { buckets[Int(w.box.midX / 0.25), default: []].append(w) }
+            for (_, v) in buckets { groups.append(v) }
+            vertical.removeAll()
+        }
+        for w in words.filter({ !$0.rotated }).sorted(by: { $0.box.midY > $1.box.midY }) {
             var placed = false
             for i in groups.indices {
                 let near = groups[i].contains { o in
@@ -136,13 +175,13 @@ enum FoodOCR {
 
     // MARK: - 三、一组一组去对库
 
-    static func match(_ words: [OCRWord]) -> [FoodMatch] {
+    static func match(_ words: [OCRWord], boost: [String: Double] = [:]) -> [FoodMatch] {
         var out: [FoodMatch] = []
 
         var centers: [String: [CGFloat]] = [:]
 
         for g in clusters(words) {
-            let best = matchGroup(g)
+            let best = matchGroup(g, boost: boost)
             guard let top = best.first, top.score >= 40 else { continue }
             let cx = g.map { $0.box.midX }.reduce(0, +) / CGFloat(max(1, g.count))
 
@@ -169,7 +208,7 @@ enum FoodOCR {
         return Array((strong + Array(weak.prefix(2))).prefix(6))
     }
 
-    private static func matchGroup(_ group: [OCRWord]) -> [FoodMatch] {
+    private static func matchGroup(_ group: [OCRWord], boost: [String: Double]) -> [FoodMatch] {
         let ordered = group.sorted { $0.box.midX < $1.box.midX }
         var texts: [String] = ordered.map { $0.text }
 
@@ -189,7 +228,8 @@ enum FoodOCR {
         var best: [String: FoodMatch] = [:]
 
         func offer(_ f: LocalFood, _ score: Double, _ key: String) {
-            var s = score
+            // 你近一个月常吃的东西，模糊时优先给它；上限 6 分，不越级抢确定结果
+            var s = score + min(6, boost[f.name] ?? 0)
             if flavors.contains(where: { key.contains($0) && f.name.contains($0) }) { s += 6 }
             if let old = best[f.name], old.score >= s { return }
             let isBrandOnly = s < 60

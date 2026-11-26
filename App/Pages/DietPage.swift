@@ -5,7 +5,7 @@ import PhotosUI
 struct DietPage: View {
     @EnvironmentObject var store: TWStore
     @State private var showPicker = false
-    @State private var pick: PhotosPickerItem?
+    @State private var picks: [PhotosPickerItem] = []
     @State private var analyzing = false
     @State private var hits: [FoodHit] = []
     @State private var shotWords: [String] = []
@@ -147,31 +147,66 @@ struct DietPage: View {
                 .presentationDetents([.large])
                 .presentationCornerRadius(28)
         }
-        .onChange(of: pick) { _, newValue in
-            guard let newValue else { return }
+        .onChange(of: picks) { _, newValue in
+            guard !newValue.isEmpty else { return }
             analyzing = true
+            let boost = eatBoost
+            let items = Array(newValue.prefix(3))
             Task {
-                if let data = try? await newValue.loadTransferable(type: Data.self),
-                   let img = UIImage(data: data) {
-                    // 顺便把这张照片存进今天的餐食照片，不靠识别也能留个证据
-                    if let jpeg = img.jpegData(compressionQuality: 0.75) {
-                        await MainActor.run { _ = store.saveMealPhoto(data: jpeg) }
+                var all: [FoodHit] = []
+                var words: [String] = []
+                for item in items {
+                    if let data = try? await item.loadTransferable(type: Data.self),
+                       let img = UIImage(data: data) {
+                        // 顺便把这张照片存进今天的餐食照片，不靠识别也能留个证据
+                        if let jpeg = img.jpegData(compressionQuality: 0.75) {
+                            await MainActor.run { _ = store.saveMealPhoto(data: jpeg) }
+                        }
+                        // 读包装上的字要跑 Vision，放后台，别卡住转圈
+                        let found = await Task.detached(priority: .userInitiated) {
+                            FoodVision.analyzeDetailed(img, boost: boost)
+                        }.value
+                        all = mergeHits(all, found.hits)
+                        words += found.words
                     }
-                    // 读包装上的字要跑 Vision，放后台，别卡住转圈
-                    let found = await Task.detached(priority: .userInitiated) {
-                        FoodVision.analyzeDetailed(img)
-                    }.value
-                    await MainActor.run {
-                        hits = found.hits
-                        shotWords = found.words
-                        analyzing = false
-                        showResult = true
-                    }
-                } else {
-                    await MainActor.run { analyzing = false }
+                }
+                await MainActor.run {
+                    hits = all
+                    shotWords = words
+                    analyzing = false
+                    picks = []
+                    showResult = true
                 }
             }
         }
+    }
+
+    /// 近 30 天常吃的，模糊命中时优先推它，最多加 6 分
+    private var eatBoost: [String: Double] {
+        let cutoff = Date().addingTimeInterval(-30 * 86400)
+        var c: [String: Int] = [:]
+        for m in store.meals where m.time > cutoff { c[m.name, default: 0] += 1 }
+        guard let top = c.values.max(), top > 0 else { return [:] }
+        return c.mapValues { min(6, Double($0) * 6 / Double(top)) }
+    }
+
+    /// 多张照片各认各的，同款把克数和热量加起来
+    private func mergeHits(_ base: [FoodHit], _ add: [FoodHit]) -> [FoodHit] {
+        var out = base
+        for h in add {
+            if let i = out.firstIndex(where: { $0.name == h.name }) {
+                out[i].grams += h.grams
+                out[i].kcal += h.kcal
+                out[i].protein += h.protein
+                out[i].carb += h.carb
+                out[i].fat += h.fat
+                out[i].veg += h.veg
+                out[i].confidence = max(out[i].confidence, h.confidence)
+            } else {
+                out.append(h)
+            }
+        }
+        return out
     }
 
     /// 关掉当前弹窗再开下一个，SwiftUI 不允许两个 sheet 叠着开
@@ -461,18 +496,18 @@ struct DietPage: View {
             return a.kcal < b.kcal
         }
 
-        var picks: [MealFixPick] = []
+        var out: [MealFixPick] = []
         var groups = Set<String>()
-        for f in ranked where picks.count < 3 {
+        for f in ranked where out.count < 3 {
             if groups.contains(f.group) { continue }
-            picks.append(MealFixPick(food: f, grams: f.portion))
+            out.append(MealFixPick(food: f, grams: f.portion))
             groups.insert(f.group)
         }
-        return picks
+        return out
     }
 
     private var fixCard: some View {
-        let picks = fixPicks
+        let suggests = fixPicks
         let pGap = max(0, store.proteinGoal - store.protein)
         let kGap = max(0, store.dietTarget - store.dietKcal)
         return VStack(alignment: .leading, spacing: 11) {
@@ -488,12 +523,12 @@ struct DietPage: View {
                           tint: pGap > 8 ? TWColor.coral : TWColor.mint)
             }
 
-            if picks.isEmpty {
+            if suggests.isEmpty {
                 Text("今天蛋白和热量都到位了，不用再加。")
                     .font(.tw(12.5))
                     .foregroundStyle(TWColor.ink3)
             } else {
-                ForEach(picks) { pick in
+                ForEach(suggests) { pick in
                     HStack(spacing: 10) {
                         VStack(alignment: .leading, spacing: 3) {
                             Text(pick.food.name)
@@ -658,7 +693,7 @@ struct DietPage: View {
             }
             .buttonStyle(.plain)
 
-            PhotosPicker(selection: $pick, matching: .images, photoLibrary: .shared()) {
+            PhotosPicker(selection: $picks, maxSelectionCount: 3, matching: .images, photoLibrary: .shared()) {
                 VStack(spacing: 4) {
                     Image(systemName: "camera.fill").font(.tw(17, .bold))
                     Text(analyzing ? "识别中" : "拍照识别").font(.tw(12, .semibold))
@@ -1207,6 +1242,8 @@ struct ShotResultSheet: View {
     @State private var selected: Set<UUID> = []
     /// 每条结果的份量可以逐 20g 调，小袋 20g 和大袋 100g 差别是五倍热量
     @State private var gramsOverride: [UUID: Double] = [:]
+    /// 认不出时直接在这儿打字，边打边从库里出候选
+    @State private var manualQuery = ""
     @State private var showAI = false
     @State private var savedToast = false
 
@@ -1291,6 +1328,73 @@ struct ShotResultSheet: View {
         .background {
             RoundedRectangle(cornerRadius: 15, style: .continuous)
                 .fill(TWColor.glass(on ? 0.85 : 0.42))
+        }
+    }
+
+    private var manualEntry: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("认不出来就自己填")
+                .font(.tw(11.5, .bold))
+                .foregroundStyle(TWColor.ink3)
+
+            HStack(spacing: 8) {
+                Image(systemName: "magnifyingglass")
+                    .font(.tw(12, .semibold))
+                    .foregroundStyle(TWColor.ink3)
+                TextField("这包叫什么？", text: $manualQuery)
+                    .font(.tw(13.5))
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+            }
+            .padding(.horizontal, 11)
+            .padding(.vertical, 9)
+            .background {
+                RoundedRectangle(cornerRadius: 11, style: .continuous)
+                    .fill(TWColor.glass(0.55))
+            }
+
+            if !manualQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                ForEach(FoodBase.search(manualQuery, limit: 5)) { f in
+                    Button {
+                        UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                        let g = max(1, f.portion)
+                        let r = g / 100
+                        FoodLearn.remember(word: manualQuery, food: f.name)
+                        onAdd(FoodHit(name: f.name, grams: g,
+                                      kcal: f.kcal * r, protein: f.protein * r,
+                                      carb: f.carb * r, fat: f.fat * r,
+                                      veg: 0, confidence: 1.0,
+                                      source: "你打的名字", keyword: manualQuery))
+                        dismiss()
+                    } label: {
+                        HStack(spacing: 8) {
+                            Text(f.name)
+                                .font(.tw(13, .semibold))
+                                .foregroundStyle(TWColor.ink)
+                            Text("\(Int(f.kcal)) kcal/100g")
+                                .font(.tw(10.5))
+                                .foregroundStyle(TWColor.ink3)
+                            Spacer(minLength: 0)
+                            Image(systemName: "plus.circle.fill")
+                                .font(.tw(14, .bold))
+                                .foregroundStyle(TWColor.purple)
+                        }
+                        .padding(.horizontal, 11)
+                        .padding(.vertical, 8)
+                        .background {
+                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                .fill(TWColor.purple.opacity(0.08))
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background {
+            RoundedRectangle(cornerRadius: 13, style: .continuous)
+                .fill(TWColor.glass(0.4))
         }
     }
 
@@ -1490,6 +1594,9 @@ struct ShotResultSheet: View {
                         ForEach(hits) { h in
                             resultRow(h)
                         }
+
+                        manualEntry
+                            .padding(.top, 2)
                     }
                     .padding(.horizontal, 18)
                     .padding(.top, 12)
