@@ -1205,6 +1205,8 @@ struct ShotResultSheet: View {
     @EnvironmentObject var store: TWStore
     @Environment(\.dismiss) private var dismiss
     @State private var selected: Set<UUID> = []
+    /// 每条结果的份量可以逐 20g 调，小袋 20g 和大袋 100g 差别是五倍热量
+    @State private var gramsOverride: [UUID: Double] = [:]
     @State private var showAI = false
     @State private var savedToast = false
 
@@ -1215,6 +1217,101 @@ struct ShotResultSheet: View {
 
     /// 认不出来时的三条正经出路，比让人重拍一张强
     private var recentMeals: [MealEntry] { Array(store.meals.reversed().prefix(6)) }
+
+    // MARK: - 结果行（份量可调）
+
+    private func gramsOf(_ h: FoodHit) -> Double { gramsOverride[h.id] ?? h.grams }
+    private func rateOf(_ h: FoodHit) -> Double { max(0.1, gramsOf(h) / max(1, h.grams)) }
+
+    /// 按用户调过的份量重算一条
+    private func scaled(_ h: FoodHit) -> FoodHit {
+        let r = rateOf(h)
+        return FoodHit(name: h.name, grams: gramsOf(h),
+                       kcal: h.kcal * r, protein: h.protein * r,
+                       carb: h.carb * r, fat: h.fat * r,
+                       veg: h.veg, confidence: h.confidence,
+                       source: h.source, keyword: h.keyword)
+    }
+
+    private func resultRow(_ h: FoodHit) -> some View {
+        let on = selected.contains(h.id)
+        let g = gramsOf(h)
+        let r = rateOf(h)
+        return VStack(spacing: 0) {
+            Button {
+                if selected.contains(h.id) { selected.remove(h.id) }
+                else { selected.insert(h.id) }
+            } label: {
+                HStack(spacing: 10) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(h.name)
+                            .font(.tw(15, .semibold))
+                            .foregroundStyle(TWColor.ink)
+                        Text("\(Int(g))g · \(Int(h.kcal * r)) kcal · 蛋白 \(Int(h.protein * r))g")
+                            .font(.tw(12))
+                            .foregroundStyle(TWColor.ink2)
+                        Text(h.source)
+                            .font(.tw(10, .semibold))
+                            .foregroundStyle(h.source.contains("读包装") || h.source.contains("读到品牌")
+                                             ? TWColor.mint : TWColor.ink3)
+                    }
+                    Spacer(minLength: 0)
+                    Image(systemName: on ? "checkmark.circle.fill" : "circle")
+                        .font(.tw(20, .semibold))
+                        .foregroundStyle(TWColor.purple)
+                }
+                .padding(14)
+                .contentShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
+            }
+            .buttonStyle(.plain)
+
+            if on {
+                HStack(spacing: 8) {
+                    Text("份量")
+                        .font(.tw(11.5, .bold))
+                        .foregroundStyle(TWColor.ink3)
+                    gramsStep("minus") { bump(h, -20) }
+                    Text("\(Int(g))g")
+                        .font(.tw(13, .bold))
+                        .foregroundStyle(TWColor.ink)
+                        .frame(minWidth: 46)
+                    gramsStep("plus") { bump(h, 20) }
+                    if gramsOf(h) != h.grams {
+                        Button("还原") { gramsOverride[h.id] = nil }
+                            .font(.tw(11, .bold))
+                            .foregroundStyle(TWColor.ink3)
+                            .buttonStyle(.plain)
+                    }
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, 14)
+                .padding(.bottom, 12)
+            }
+        }
+        .background {
+            RoundedRectangle(cornerRadius: 15, style: .continuous)
+                .fill(TWColor.glass(on ? 0.85 : 0.42))
+        }
+    }
+
+    private func bump(_ h: FoodHit, _ delta: Double) {
+        UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+        gramsOverride[h.id] = min(800, max(5, gramsOf(h) + delta))
+    }
+
+    private func gramsStep(_ icon: String, _ action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: icon)
+                .font(.tw(11, .bold))
+                .foregroundStyle(TWColor.purple)
+                .frame(width: 32, height: 30)
+                .background {
+                    RoundedRectangle(cornerRadius: 9, style: .continuous)
+                        .fill(TWColor.glass(0.6))
+                }
+        }
+        .buttonStyle(.plain)
+    }
 
     private var emptyActions: some View {
         VStack(alignment: .leading, spacing: 9) {
@@ -1391,37 +1488,7 @@ struct ShotResultSheet: View {
                         }
 
                         ForEach(hits) { h in
-                            Button {
-                                if selected.contains(h.id) {
-                                    selected.remove(h.id)
-                                } else {
-                                    selected.insert(h.id)
-                                }
-                            } label: {
-                                HStack(spacing: 10) {
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text(h.name)
-                                            .font(.tw(15, .semibold))
-                                            .foregroundStyle(TWColor.ink)
-                                        Text("\(Int(h.grams))g · \(Int(h.kcal)) kcal · 蛋白 \(Int(h.protein))g")
-                                            .font(.tw(12))
-                                        Text(h.source)
-                                            .font(.tw(10, .semibold))
-                                            .foregroundStyle(h.source.contains("读包装") ? TWColor.mint : TWColor.ink3)
-                                    }
-                                    Spacer(minLength: 0)
-                                    Image(systemName: selected.contains(h.id) ? "checkmark.circle.fill" : "circle")
-                                        .font(.tw(20, .semibold))
-                                        .foregroundStyle(TWColor.purple)
-                                }
-                                .padding(14)
-                                .background {
-                                    RoundedRectangle(cornerRadius: 15, style: .continuous)
-                                        .fill(TWColor.glass(selected.contains(h.id) ? 0.85 : 0.42))
-                                }
-                                .contentShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
-                            }
-                            .buttonStyle(.plain)
+                            resultRow(h)
                         }
                     }
                     .padding(.horizontal, 18)
@@ -1432,8 +1499,8 @@ struct ShotResultSheet: View {
                     HStack(spacing: 6) {
                         Button {
                             UIImpactFeedbackGenerator(style: .soft).impactOccurred()
-                            let picked = hits.filter { selected.contains($0.id) }
-                            store.saveAsCustom(picked.isEmpty ? hits : picked)
+                            let chosen = hits.filter { selected.contains($0.id) }
+                            store.saveAsCustom((chosen.isEmpty ? hits : chosen).map { scaled($0) })
                             withAnimation(.snappy(duration: 0.2)) { savedToast = true }
                             DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) {
                                 withAnimation(.snappy(duration: 0.2)) { savedToast = false }
@@ -1486,7 +1553,8 @@ struct ShotResultSheet: View {
                             return
                         }
                         for h in hits where selected.contains(h.id) {
-                            onAdd(h)
+                            if !h.keyword.isEmpty { FoodLearn.remember(word: h.keyword, food: h.name) }
+                            onAdd(scaled(h))
                         }
                         dismiss()
                     } label: {

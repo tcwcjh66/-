@@ -838,4 +838,11 @@ enum FoodBase {
         var seen = Set<String>()
         return (baseItems + extraItems).filter { seen.insert($0.name).inserted }
     }()
+
+    /// 按名字直取，识别匹配时要反复查，别每次都线性扫七百多条
+    static let byName: [String: LocalFood] = {
+        var m: [String: LocalFood] = [:]
+        for f in items where m[f.name] == nil { m[f.name] = f }
+        return m
+    }()
 }

@@ -12,6 +12,8 @@ struct FoodHit: Identifiable {
     var confidence: Double
     /// 这条结果是哪来的：读包装上的字，还是按颜色猜的
     var source: String = "按颜色猜"
+    /// 命中的那个词，用户确认后拿去记进学习表
+    var keyword: String = ""
 }
 
 /// 本机食物识别，两步走：
@@ -41,7 +43,8 @@ enum FoodVision {
                                fat: m.food.fat * r,
                                veg: 0,
                                confidence: min(0.99, max(0.4, m.score / 100)),
-                               source: m.note)
+                               source: m.note,
+                               keyword: m.keyword)
             }
             return (hits.sorted { $0.confidence > $1.confidence }, words)
         }
@@ -68,6 +71,8 @@ enum FoodVision {
         var green = 0
         var meat = 0
         var yellow = 0
+        var orange = 0
+        var brown = 0
         var total = 0
         var satSum = 0.0
 
@@ -92,6 +97,10 @@ enum FoodVision {
                     meat += 1
                 } else if r > 0.62 && g > 0.52 && b < 0.52 && s > 0.22 {
                     yellow += 1
+                } else if r > 0.70 && g > 0.38 && g < 0.68 && b < 0.40 && (r - b) > 0.35 {
+                    orange += 1
+                } else if r > 0.30 && r < 0.58 && g > 0.16 && g < 0.44 && b < 0.30 && s > 0.24 {
+                    brown += 1
                 }
             }
         }
@@ -106,6 +115,8 @@ enum FoodVision {
         let pg = Double(green) / Double(total)
         let pm = Double(meat) / Double(total)
         let py = Double(yellow) / Double(total)
+        let po = Double(orange) / Double(total)
+        let pb = Double(brown) / Double(total)
 
         var hits: [FoodHit] = []
 
@@ -162,6 +173,34 @@ enum FoodVision {
                 fat: grams * 0.060,
                 veg: 0,
                 confidence: min(0.85, 0.46 + py * 0.8)
+            ))
+        }
+
+        if po > 0.09 && hits.count < 3 {
+            let grams = clamp(roundTo5(po * 420 + 40), 40, 200)
+            hits.append(FoodHit(
+                name: "胡萝卜 / 番茄 / 南瓜",
+                grams: grams,
+                kcal: grams * 0.32,
+                protein: grams * 0.011,
+                carb: grams * 0.065,
+                fat: grams * 0.004,
+                veg: grams,
+                confidence: min(0.82, 0.45 + po * 0.9)
+            ))
+        }
+
+        if pb > 0.08 && hits.count < 3 {
+            let grams = clamp(roundTo5(pb * 500 + 45), 45, 220)
+            hits.append(FoodHit(
+                name: "酱汁 / 红烧肉",
+                grams: grams,
+                kcal: grams * 1.90,
+                protein: grams * 0.13,
+                carb: grams * 0.06,
+                fat: grams * 0.13,
+                veg: 0,
+                confidence: min(0.80, 0.44 + pb * 0.8)
             ))
         }
 

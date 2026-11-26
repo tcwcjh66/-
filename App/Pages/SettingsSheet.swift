@@ -12,6 +12,7 @@ struct SettingsSheet: View {
     @State private var showStatus = false
     @State private var exportURL: URL?
     @State private var csvURL: URL?
+    @State private var learnCount = FoodLearn.count
     @State private var notifyDenied = false
     @State private var showImporter = false
     @State private var importAlert = false
@@ -319,6 +320,38 @@ struct SettingsSheet: View {
             .buttonStyle(.plain)
 
             Rectangle().fill(TWColor.ink3.opacity(0.12)).frame(height: 0.7)
+
+            HStack(spacing: 11) {
+                Image(systemName: "sparkles")
+                    .font(.tw(15, .semibold))
+                    .foregroundStyle(TWColor.amber)
+                    .frame(width: 34, height: 34)
+                    .background {
+                        RoundedRectangle(cornerRadius: 9, style: .continuous)
+                            .fill(TWColor.amber.opacity(0.12))
+                    }
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("识别学习")
+                        .font(.tw(14.5, .semibold))
+                        .foregroundStyle(TWColor.ink)
+                    Text(learnCount == 0
+                         ? "认过并确认的包装词会记在这里，下次直接命中"
+                         : "已记住 \(learnCount) 个包装词，认得越来越准")
+                        .font(.tw(11.5))
+                        .foregroundStyle(TWColor.ink3)
+                }
+                Spacer(minLength: 0)
+                if learnCount > 0 {
+                    Button("清空") {
+                        FoodLearn.forgetAll()
+                        learnCount = 0
+                        UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                    }
+                    .font(.tw(12, .bold))
+                    .foregroundStyle(TWColor.ink3)
+                    .buttonStyle(.plain)
+                }
+            }
 
             if let csvURL {
                 ShareLink(item: csvURL, subject: Text("天才威数据 CSV")) {

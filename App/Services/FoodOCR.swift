@@ -51,7 +51,20 @@ enum FoodOCR {
             }
         }
 
-        // 同一行字会被切成几段，去重后按长度排，长词信息量大
+        // 同一行字常被切成两段（「魔芋」+「爽」），拼起来才算一个整词
+        if found.count > 1 {
+            var joined: [String] = []
+            for i in 0..<(found.count - 1) {
+                let a = clean(found[i])
+                let b = clean(found[i + 1])
+                if a.count >= 2, a.count <= 7, b.count >= 2, b.count <= 7 {
+                    joined.append(a + b)
+                }
+            }
+            found += joined
+        }
+
+        // 去重后按长度排，长词信息量大
         var seen = Set<String>()
         var out: [String] = []
         for t in found {
@@ -86,6 +99,7 @@ enum FoodOCR {
     static func match(_ texts: [String]) -> [FoodMatch] {
         var best: [String: FoodMatch] = [:]
         let net = netWeight(texts)
+        let learned = FoodLearn.snapshot()
 
         func offer(_ f: LocalFood, _ score: Double, _ key: String) {
             var s = score
@@ -106,6 +120,12 @@ enum FoodOCR {
             guard han(c) >= 2 else { continue }
             // 一整句读者须知之类，不像商品名
             if c.count > 10 && !looksLikeProduct(c) { continue }
+
+            // 上一回你亲手确认过的，优先级压在别名之上
+            if let name = learned[c], let f = FoodBase.byName[name] {
+                offer(f, 97, c)
+                continue
+            }
 
             for f in FoodBase.items {
                 if f.name == c { offer(f, 100, c); continue }
