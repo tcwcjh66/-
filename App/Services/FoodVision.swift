@@ -10,13 +10,37 @@ struct FoodHit: Identifiable {
     var fat: Double
     var veg: Double
     var confidence: Double
+    /// 这条结果是哪来的：读包装上的字，还是按颜色猜的
+    var source: String = "按颜色猜"
 }
 
-/// 本机食物识别：把照片缩到 40×40 采样，按像素色相/明度/饱和度分类，
-/// 再用各颜色占据的比例换算分量。不做云端推理，断网也能出结果。
+/// 本机食物识别，两步走：
+/// 1. 先用 Vision 读包装上印的字（零食、饮料、连锁品牌全靠这个），读到就去库里对名字；
+/// 2. 读不到字才退回颜色分析（白/绿/红/黄的像素比例估米饭、青菜、肉）。
+/// 包装袋颜色又艳又杂，这种情况宁可不给结果，也不硬猜成米饭。
 enum FoodVision {
 
     static func analyze(_ image: UIImage) -> [FoodHit] {
+        let words = FoodOCR.texts(in: image)
+        let matched = FoodOCR.hits(from: words)
+        if !matched.isEmpty {
+            let hits: [FoodHit] = matched.map { pair in
+                let f = pair.0
+                let g = max(1, f.portion)
+                let r = g / 100
+                return FoodHit(name: f.name,
+                               grams: g,
+                               kcal: f.kcal * r,
+                               protein: f.protein * r,
+                               carb: f.carb * r,
+                               fat: f.fat * r,
+                               veg: 0,
+                               confidence: 0.93,
+                               source: "读包装「\(pair.1)」")
+            }
+            return hits.sorted { $0.confidence > $1.confidence }
+        }
+
         guard let cg = image.cgImage else { return [] }
         let w = 40
         let h = 40
@@ -40,6 +64,7 @@ enum FoodVision {
         var meat = 0
         var yellow = 0
         var total = 0
+        var satSum = 0.0
 
         for y in 3..<(h - 3) {
             for x in 3..<(w - 3) {
@@ -52,6 +77,7 @@ enum FoodVision {
                 let s = v > 0.001 ? (v - mn) / v : 0
 
                 total += 1
+                satSum += s
 
                 if v > 0.80 && s < 0.15 {
                     white += 1
@@ -66,6 +92,11 @@ enum FoodVision {
         }
 
         guard total > 0 else { return [] }
+
+        // 一堆彩色包装袋：平均饱和度很高，这时候按颜色猜只会猜出「白米饭 + 青菜」这种废话
+        let avgSat = satSum / Double(total)
+        if avgSat > 0.42 { return [] }
+
         let pw = Double(white) / Double(total)
         let pg = Double(green) / Double(total)
         let pm = Double(meat) / Double(total)

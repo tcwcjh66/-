@@ -83,7 +83,9 @@ struct DietPage: View {
             .presentationCornerRadius(28)
         }
         .sheet(isPresented: $showResult) {
-            ShotResultSheet(hits: hits, defaultSlot: autoSlot) { hit in
+            ShotResultSheet(hits: hits, defaultSlot: autoSlot,
+                            onGoSearch: { afterDismiss { showFoodSearch = true } },
+                            onGoScan: { afterDismiss { showScanSheet = true } }) { hit in
                 store.addMeal(MealEntry(
                     name: hit.name,
                     grams: hit.grams,
@@ -154,7 +156,10 @@ struct DietPage: View {
                     if let jpeg = img.jpegData(compressionQuality: 0.75) {
                         await MainActor.run { _ = store.saveMealPhoto(data: jpeg) }
                     }
-                    let found = FoodVision.analyze(img)
+                    // 读包装上的字要跑 Vision，放后台，别卡住转圈
+                    let found = await Task.detached(priority: .userInitiated) {
+                        FoodVision.analyze(img)
+                    }.value
                     await MainActor.run {
                         hits = found
                         analyzing = false
@@ -165,6 +170,12 @@ struct DietPage: View {
                 }
             }
         }
+    }
+
+    /// 关掉当前弹窗再开下一个，SwiftUI 不允许两个 sheet 叠着开
+    private func afterDismiss(_ action: @escaping () -> Void) {
+        showResult = false
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45, execute: action)
     }
 
     // MARK: - 饮食月历
@@ -1184,6 +1195,8 @@ struct FoodPicker: View {
 struct ShotResultSheet: View {
     var hits: [FoodHit]
     var defaultSlot: String = "午餐"
+    var onGoSearch: (() -> Void)? = nil
+    var onGoScan: (() -> Void)? = nil
     var onAdd: (FoodHit) -> Void
     @EnvironmentObject var store: TWStore
     @Environment(\.dismiss) private var dismiss
@@ -1195,6 +1208,106 @@ struct ShotResultSheet: View {
     @State private var slot: String = ""
 
     private var activeSlot: String { slot.isEmpty ? defaultSlot : slot }
+
+    /// 认不出来时的三条正经出路，比让人重拍一张强
+    private var recentMeals: [MealEntry] { Array(store.meals.reversed().prefix(6)) }
+
+    private var emptyActions: some View {
+        VStack(alignment: .leading, spacing: 9) {
+            Text("认不出来的时候")
+                .font(.tw(11.5, .bold))
+                .foregroundStyle(TWColor.ink3)
+
+            if let onGoScan {
+                Button {
+                    UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                    dismiss()
+                    onGoScan()
+                } label: {
+                    quickRow("barcode.viewfinder", "扫包装上的条码",
+                             "条码直接对应厂商申报的营养表，最准", TWColor.mint)
+                }
+                .buttonStyle(.plain)
+            }
+
+            if let onGoSearch {
+                Button {
+                    UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                    dismiss()
+                    onGoSearch()
+                } label: {
+                    quickRow("magnifyingglass", "按名字搜",
+                             "库里已经有魔芋爽、咪咪虾条、卫龙、蜜雪冰城这些", TWColor.blue)
+                }
+                .buttonStyle(.plain)
+            }
+
+            if !recentMeals.isEmpty {
+                Text("最近吃过的")
+                    .font(.tw(11.5, .bold))
+                    .foregroundStyle(TWColor.ink3)
+                    .padding(.top, 2)
+                LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
+                    ForEach(recentMeals) { m in
+                        Button {
+                            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                            onAdd(FoodHit(name: m.name, grams: m.grams, kcal: m.kcal,
+                                          protein: m.protein, carb: m.carb, fat: m.fat,
+                                          veg: m.veg, confidence: 1.0, source: "上次吃过"))
+                            dismiss()
+                        } label: {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(m.name)
+                                    .font(.tw(12.5, .semibold))
+                                    .foregroundStyle(TWColor.ink)
+                                    .lineLimit(1)
+                                Text("\(Int(m.grams))g · \(Int(m.kcal)) kcal")
+                                    .font(.tw(10))
+                                    .foregroundStyle(TWColor.ink3)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(10)
+                            .background {
+                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    .fill(TWColor.glass(0.5))
+                            }
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(TWColor.glass(0.35))
+        }
+    }
+
+    private func quickRow(_ icon: String, _ title: String, _ sub: String, _ tint: Color) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: icon)
+                .font(.tw(14, .semibold))
+                .foregroundStyle(tint)
+                .frame(width: 30, height: 30)
+                .background { RoundedRectangle(cornerRadius: 8).fill(tint.opacity(0.13)) }
+            VStack(alignment: .leading, spacing: 1) {
+                Text(title)
+                    .font(.tw(13, .semibold))
+                    .foregroundStyle(TWColor.ink)
+                Text(sub)
+                    .font(.tw(10))
+                    .foregroundStyle(TWColor.ink3)
+                    .lineLimit(1)
+            }
+            Spacer(minLength: 0)
+            Image(systemName: "chevron.right")
+                .font(.tw(10, .bold))
+                .foregroundStyle(TWColor.ink3)
+        }
+    }
+
 
     var body: some View {
         ZStack {
@@ -1228,6 +1341,10 @@ struct ShotResultSheet: View {
                                 RoundedRectangle(cornerRadius: 11, style: .continuous)
                                     .fill(TWColor.amber.opacity(0.10))
                             }
+
+                        if hits.isEmpty {
+                            emptyActions
+                        }
 
                         HStack(spacing: 7) {
                             ForEach(slots, id: \.self) { s in
@@ -1267,6 +1384,9 @@ struct ShotResultSheet: View {
                                             .foregroundStyle(TWColor.ink)
                                         Text("\(Int(h.grams))g · \(Int(h.kcal)) kcal · 蛋白 \(Int(h.protein))g")
                                             .font(.tw(12))
+                                        Text(h.source)
+                                            .font(.tw(10, .semibold))
+                                            .foregroundStyle(TWColor.mint)
                                             .foregroundStyle(TWColor.ink3)
                                     }
                                     Spacer(minLength: 0)
@@ -1340,12 +1460,17 @@ struct ShotResultSheet: View {
                     .buttonStyle(.plain)
 
                     Button {
+                        if hits.isEmpty {
+                            dismiss()
+                            onGoSearch?()
+                            return
+                        }
                         for h in hits where selected.contains(h.id) {
                             onAdd(h)
                         }
                         dismiss()
                     } label: {
-                        Text("记入\(activeSlot)")
+                        Text(hits.isEmpty ? "去搜食物" : "记入\(activeSlot)")
                             .font(.tw(16, .bold))
                             .foregroundStyle(.white)
                             .frame(maxWidth: .infinity)
