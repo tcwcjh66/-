@@ -9,6 +9,7 @@ struct SettingsSheet: View {
     @State private var showReset = false
     @State private var showCopied = false
     @State private var showGoal = false
+    @State private var showAccess = false
     @State private var showStatus = false
     @State private var exportURL: URL?
     @State private var csvURL: URL?
@@ -64,6 +65,11 @@ struct SettingsSheet: View {
                 .padding(.horizontal, 18)
                 .padding(.bottom, 30)
             }
+        }
+        .sheet(isPresented: $showAccess) {
+            AccessCardSheet()
+                .presentationDetents([.large])
+                .presentationCornerRadius(28)
         }
         .sheet(isPresented: $showStatus) {
             SystemStatusSheet()
@@ -351,6 +357,36 @@ struct SettingsSheet: View {
                     .foregroundStyle(TWColor.ink3)
                     .buttonStyle(.plain)
                 }
+            }
+
+            Rectangle().fill(TWColor.ink3.opacity(0.12)).frame(height: 0.7)
+
+            HStack(spacing: 11) {
+                Image(systemName: "key.horizontal.fill")
+                    .font(.tw(15, .semibold))
+                    .foregroundStyle(TWColor.blue)
+                    .frame(width: 34, height: 34)
+                    .background {
+                        RoundedRectangle(cornerRadius: 9, style: .continuous)
+                            .fill(TWColor.blue.opacity(0.12))
+                    }
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("门禁卡")
+                        .font(.tw(14.5, .semibold))
+                        .foregroundStyle(TWColor.ink)
+                    Text("iPhone 不能复制门禁卡，但卡号能记下来交给物业")
+                        .font(.tw(11.5))
+                        .foregroundStyle(TWColor.ink3)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right")
+                    .font(.tw(11, .bold))
+                    .foregroundStyle(TWColor.ink3)
+            }
+            .contentShape(Rectangle())
+            .onTapGesture {
+                UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                showAccess = true
             }
 
             if let csvURL {
