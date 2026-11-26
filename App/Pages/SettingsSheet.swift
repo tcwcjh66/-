@@ -11,6 +11,7 @@ struct SettingsSheet: View {
     @State private var showGoal = false
     @State private var showStatus = false
     @State private var showManualHealth = false
+    @State private var showLog = false
     @State private var exportURL: URL?
     @State private var csvURL: URL?
     @State private var learnCount = FoodLearn.count
@@ -23,7 +24,9 @@ struct SettingsSheet: View {
     private var versionText: String {
         let v = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "3.0"
         let b = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
-        return "\(v)（\(b)）"
+        // 构建号 + commit 前 7 位：手机上装的是哪一版，一眼能对上
+        let c = Bundle.main.infoDictionary?["TWCommit"] as? String ?? ""
+        return c.isEmpty ? "\(v) · build \(b)" : "\(v) · build \(b) · \(c)"
     }
 
     var body: some View {
@@ -61,6 +64,7 @@ struct SettingsSheet: View {
                     goalCard
                     dataCard
                     statusCard
+                    logCard
                     aboutCard
                 }
                 .padding(.horizontal, 18)
@@ -81,6 +85,11 @@ struct SettingsSheet: View {
         .sheet(isPresented: $showManualHealth) {
             ManualHealthSheet()
                 .environmentObject(store)
+                .presentationDetents([.large])
+                .presentationCornerRadius(28)
+        }
+        .sheet(isPresented: $showLog) {
+            LogSheet()
                 .presentationDetents([.large])
                 .presentationCornerRadius(28)
         }
@@ -554,6 +563,41 @@ struct SettingsSheet: View {
             }
             .padding(14)
             .twGlass(radius: 18)
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// 最近发生过什么：识别耗时、备份失败、数据迁移，都在这里
+    private var logCard: some View {
+        Button {
+            UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+            showLog = true
+        } label: {
+            HStack(spacing: 11) {
+                Image(systemName: "doc.text.magnifyingglass")
+                    .font(.tw(14, .semibold))
+                    .foregroundStyle(TWColor.blue)
+                    .frame(width: 32, height: 32)
+                    .background {
+                        RoundedRectangle(cornerRadius: 9, style: .continuous)
+                            .fill(TWColor.blue.opacity(0.12))
+                    }
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("诊断日志")
+                        .font(.tw(14, .semibold))
+                        .foregroundStyle(TWColor.ink)
+                    Text(TWLog.recent.isEmpty ? "还没有记录，出了问题再来这儿看" : "最近 \(TWLog.recent.count) 条 · 点开可复制")
+                        .font(.tw(11))
+                        .foregroundStyle(TWColor.ink3)
+                        .lineLimit(1)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right")
+                    .font(.tw(10, .bold))
+                    .foregroundStyle(TWColor.ink3)
+            }
+            .padding(16)
+            .twGlass()
         }
         .buttonStyle(.plain)
     }

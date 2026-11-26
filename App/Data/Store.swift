@@ -476,6 +476,8 @@ final class TWStore: ObservableObject {
 
     private let d = UserDefaults.standard
     private var saveWork: DispatchWorkItem?
+    /// 三个大数组在后台读。读完之前不许把内存里的空数组写回盘，否则首屏就把它盖没了。
+    private var heavyLoaded = false
 
     private enum Key {
         static let hr = "tw.hr.v2"
@@ -538,6 +540,10 @@ final class TWStore: ObservableObject {
 
     init() {
         load()
+        // 饮食、照片、训练记录这三个大数组放后台解，首屏不等
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            self?.loadHeavy()
+        }
         if logs.isEmpty == false {
             let today = DateFormatter.twDay.string(from: Date())
             if let last = logs.last, last.id != today {
@@ -989,6 +995,10 @@ final class TWStore: ObservableObject {
         var root: [String: Any] = [:]
         root["exportedAt"] = f.string(from: Date())
         root["app"] = "天才威 3.0"
+        // 备份格式版本：以后加字段靠它判断要不要迁移
+        root["schemaVersion"] = 2
+        root["build"] = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "?"
+        root["commit"] = Bundle.main.infoDictionary?["TWCommit"] as? String ?? ""
         root["steps"] = pedometerSteps
         root["distanceM"] = pedometerDistance
         root["hr"] = measuredHR
@@ -1056,8 +1066,14 @@ final class TWStore: ObservableObject {
     func importJSON(_ data: Data) throws -> Int {
         guard let root = try JSONSerialization.jsonObject(with: data) as? [String: Any],
               (root["app"] as? String)?.contains("天才威") == true else {
+            TWLog.add("import", "导入失败：不是天才威的备份文件")
             throw ImportError()
         }
+        // 老备份没有这个字段，按 1 处理；以后加字段靠它判断要不要迁移
+        let schema = (root["schemaVersion"] as? NSNumber)?.intValue ?? 1
+        TWLog.add("import", "开始导入 · schema \(schema)")
+        // 覆盖之前先给当前数据留一份快照，恢复错了还能回滚
+        TWBackup.writeNow(build: exportJSON())
 
         func dec<T: Decodable>(_ key: String, _ type: T.Type) -> T? {
             guard let v = root[key],
@@ -1103,6 +1119,7 @@ final class TWStore: ObservableObject {
 
         lastDayKey = DateFormatter.twDay.string(from: Date())
         persist()
+        TWLog.add("import", "导入完成 · 找回 \(restored) 条")
         return restored
     }
 
@@ -1168,7 +1185,12 @@ final class TWStore: ObservableObject {
         watchSyncCount = 0
         mindfulMin = 0
         mindfulAt = nil
+        mealPhotos = [:]
 
+        // 分文件里的也要清，否则下次启动又读回来
+        TWFiles.removeAll()
+        heavyLoaded = true
+        TWLog.add("store", "已清空全部本机数据")
         persist()
     }
 
@@ -1745,11 +1767,11 @@ final class TWStore: ObservableObject {
         if let at = measuredAt {
             d.set(at.timeIntervalSince1970, forKey: Key.hrAt)
         }
-        if let v = try? JSONEncoder().encode(meals) {
-            d.set(v, forKey: Key.meals)
-        }
-        if let v = try? JSONEncoder().encode(mealPhotos) {
-            d.set(v, forKey: "tw.photos.v3")
+        if heavyLoaded {
+            // 三个大数组走分文件，后台写；没读完之前一律不落盘
+            TWFiles.writeAsync(meals, name: "meals.json")
+            TWFiles.writeAsync(mealPhotos, name: "mealPhotos.json")
+            TWFiles.writeAsync(sessions, name: "sessions.json")
         }
         if let v = try? JSONEncoder().encode(barcodeNotes) {
             d.set(v, forKey: "tw.barcodes.v3")
@@ -1815,9 +1837,6 @@ final class TWStore: ObservableObject {
         if let t = watchSyncAt { d.set(t.timeIntervalSince1970, forKey: Key.wsync) }
         d.set(mindfulMin, forKey: Key.mindmin)
         if let t = mindfulAt { d.set(t.timeIntervalSince1970, forKey: Key.mindat) }
-        if let v = try? JSONEncoder().encode(sessions) {
-            d.set(v, forKey: Key.sess)
-        }
         if let v = try? JSONEncoder().encode(progressPhotos) {
             d.set(v, forKey: "tw.progressPhotos.v1")
         }
@@ -1825,7 +1844,10 @@ final class TWStore: ObservableObject {
         // 每天顺手落一份完整 JSON 到 Documents/twbackup/，plist 坏了还能从这捡回来
         TWBackup.maybeAutoBackup(build: { [weak self] in self?.exportJSON() ?? "{}" }) { [weak self] err in
             guard let self else { return }
-            if let err { self.saveIssue = err }
+            if let err {
+                self.saveIssue = err
+                TWLog.add("backup", err)
+            }
         }
     }
 
@@ -1859,14 +1881,6 @@ final class TWStore: ObservableObject {
         hr = measuredHR
         hrv = measuredHRV
 
-        if let v = d.data(forKey: Key.meals),
-           let decoded = try? JSONDecoder().decode([MealEntry].self, from: v) {
-            meals = decoded
-        }
-        if let v = d.data(forKey: "tw.photos.v3"),
-           let decoded = try? JSONDecoder().decode([String: [String]].self, from: v) {
-            mealPhotos = decoded
-        }
         if let v = d.data(forKey: Key.mhist),
            let decoded = try? JSONDecoder().decode([String: [MealEntry]].self, from: v) {
             mealHistory = decoded
@@ -1938,13 +1952,51 @@ final class TWStore: ObservableObject {
         mindfulMin = d.integer(forKey: Key.mindmin)
         let mindTs = d.double(forKey: Key.mindat)
         mindfulAt = mindTs > 0 ? Date(timeIntervalSince1970: mindTs) : nil
-        if let v = d.data(forKey: Key.sess),
-           let decoded = try? JSONDecoder().decode([SessionLog].self, from: v) {
-            sessions = decoded
-        }
         if let v = d.data(forKey: "tw.progressPhotos.v1"),
            let decoded = try? JSONDecoder().decode([ProgressPhoto].self, from: v) {
             progressPhotos = decoded
+        }
+    }
+
+    /// 大数组的后台加载：先试分文件，没有再读 UserDefaults 老位置，读到就顺手迁过去。
+    /// 以前一次 persist 要把几百条饮食全编码一遍，现在只写变化的那一块。
+    private func loadHeavy() {
+        var newMeals = TWFiles.read("meals.json", as: [MealEntry].self)
+        var newPhotos = TWFiles.read("mealPhotos.json", as: [String: [String]].self)
+        var newSessions = TWFiles.read("sessions.json", as: [SessionLog].self)
+        var migrated = false
+
+        if newMeals == nil,
+           let v = d.data(forKey: Key.meals),
+           let decoded = try? JSONDecoder().decode([MealEntry].self, from: v) {
+            newMeals = decoded
+            migrated = true
+        }
+        if newPhotos == nil,
+           let v = d.data(forKey: "tw.photos.v3"),
+           let decoded = try? JSONDecoder().decode([String: [String]].self, from: v) {
+            newPhotos = decoded
+            migrated = true
+        }
+        if newSessions == nil,
+           let v = d.data(forKey: Key.sess),
+           let decoded = try? JSONDecoder().decode([SessionLog].self, from: v) {
+            newSessions = decoded
+            migrated = true
+        }
+
+        DispatchQueue.main.async {
+            if let v = newMeals { self.meals = v }
+            if let v = newPhotos { self.mealPhotos = v }
+            if let v = newSessions { self.sessions = v }
+            self.heavyLoaded = true
+            TWLog.add("store", "大数组就绪 · 饮食 \(newMeals?.count ?? 0) 条 · 训练 \(newSessions?.count ?? 0) 场"
+                      + (migrated ? " · 已迁到分文件" : ""))
+            if migrated {
+                TWFiles.writeAsync(self.meals, name: "meals.json")
+                TWFiles.writeAsync(self.mealPhotos, name: "mealPhotos.json")
+                TWFiles.writeAsync(self.sessions, name: "sessions.json")
+            }
         }
     }
 }

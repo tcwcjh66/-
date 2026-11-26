@@ -17,6 +17,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Cache build outputs
+        uses: actions/cache@v4
+        with:
+          path: |
+            out
+            ~/Library/Caches/org.swift.swiftpm
+          key: out-${{ hashFiles('project.yml') }}-${{ github.ref_name }}
+          restore-keys: |
+            out-
+
       - name: Select newest Xcode
         run: |
           ls -d /Applications/Xcode*.app || true
@@ -41,6 +51,16 @@ jobs:
           xcodegen generate
           ls -la
 
+      - name: Run logic tests
+        run: |
+          set -o pipefail
+          DEVICE=$(xcrun simctl list devices available | awk -F'(' '/iPhone/ {print $1}' | head -1 | sed 's/^ *//;s/ *$//')
+          echo "simulator: [$DEVICE]"
+          xcodebuild test -project TianCaiWei.xcodeproj \
+            -scheme TianCaiWeiTests \
+            -destination "platform=iOS Simulator,name=$DEVICE" \
+            2>&1 | tee test.log | tail -50
+
       - name: Build iOS app
         run: |
           set -o pipefail
@@ -49,9 +69,13 @@ jobs:
             -sdk iphoneos \
             -configuration Release \
             SYMROOT="$(pwd)/out" \
+            MARKETING_VERSION=3.52 \
+            CURRENT_PROJECT_VERSION=${{ github.run_number }} \
+            TW_COMMIT=$(echo "$GITHUB_SHA" | cut -c1-7) \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
+            -quiet \
             build 2>&1 | tee build.log | tail -60
 
       - name: Package ipa
@@ -75,5 +99,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: build-log
-          path: build.log
+          path: |
+            build.log
+            test.log
           retention-days: 7

@@ -166,9 +166,14 @@ struct DietPage: View {
                             await MainActor.run { _ = store.saveMealPhoto(data: jpeg) }
                         }
                         // 读包装上的字要跑 Vision，放后台，别卡住转圈
+                        let t0 = Date()
                         let found = await Task.detached(priority: .userInitiated) {
                             FoodVision.analyzeDetailed(img, boost: boost)
                         }.value
+                        TWLog.add("ocr", String(format: "识别 %.2fs · 命中 %d 条 · 读到 %d 个字块",
+                                                Date().timeIntervalSince(t0),
+                                                found.hits.count,
+                                                found.words.count))
                         all = mergeHits(all, found.hits)
                         words += found.words
                         diags += found.diag

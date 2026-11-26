@@ -34,6 +34,24 @@ enum TWBackup {
         }
     }
 
+    /// 导入前的一次性快照：名字带 before-import，与日常自动备份区分开。
+    /// 恢复错了还能拿它回滚。
+    static func writeNow(build: String) {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd-HHmmss"
+        let name = "tw-before-import-\(f.string(from: Date())).json"
+        q.async {
+            do {
+                let d = dir()
+                try FileManager.default.createDirectory(at: d, withIntermediateDirectories: true)
+                try build.data(using: .utf8)?.write(to: d.appendingPathComponent(name), options: .atomic)
+                TWLog.add("backup", "导入前快照 → \(name)")
+            } catch {
+                TWLog.add("backup", "导入前快照失败：\(error.localizedDescription)")
+            }
+        }
+    }
+
     private static func prune() {
         guard let fs = try? FileManager.default.contentsOfDirectory(
             at: dir(),
@@ -45,7 +63,7 @@ enum TWBackup {
             let db = (try? b.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
             return da > db
         }
-        for f in sorted.dropFirst(3) {
+        for f in sorted.dropFirst(5) {
             try? FileManager.default.removeItem(at: f)
         }
     }
