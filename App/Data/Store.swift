@@ -849,6 +849,92 @@ final class TWStore: ObservableObject {
         }
     }
 
+    /// 导出一份 CSV：训练、每组明细、饮食、体重、围度五段，Excel / 表格软件直接能开
+    func exportCSV() -> String {
+        func q(_ raw: String) -> String {
+            if raw.contains(",") || raw.contains("\"") || raw.contains("\n") {
+                return "\"" + raw.replacingOccurrences(of: "\"", with: "\"\"") + "\""
+            }
+            return raw
+        }
+
+        var lines: [String] = []
+        lines.append("天才威 数据导出, \(todayKey())")
+        lines.append("")
+
+        lines.append("【训练记录】")
+        lines.append("日期,方案,当天主题,动作数,组数,时长分,总容量kg,动作")
+        for s in sessions {
+            lines.append([s.date, q(s.plan), q(s.day), "\(s.moves)", "\(s.sets)", "\(s.minutes)",
+                          String(format: "%.0f", s.tonnage ?? 0),
+                          q((s.moveNames ?? []).joined(separator: " / "))].joined(separator: ","))
+        }
+        lines.append("")
+
+        lines.append("【每组明细】")
+        lines.append("日期,动作,重量kg,次数")
+        for s in sessions {
+            for r in (s.records ?? []) {
+                lines.append([r.date, q(r.move), String(format: "%.1f", r.weight), "\(r.reps)"].joined(separator: ","))
+            }
+        }
+        lines.append("")
+
+        lines.append("【饮食记录】")
+        lines.append("日期,餐次,食物,克数,热量,蛋白g,碳水g,脂肪g")
+        var mealKeys = mealHistory.keys.sorted()
+        let today = todayKey()
+        if !meals.isEmpty, !mealKeys.contains(today) { mealKeys.append(today) }
+        for k in mealKeys {
+            let list = (k == today && !meals.isEmpty) ? meals : (mealHistory[k] ?? [])
+            for m in list {
+                lines.append([k, q(m.slot ?? "加餐"), q(m.name),
+                              String(format: "%.0f", m.grams),
+                              String(format: "%.0f", m.kcal),
+                              String(format: "%.1f", m.protein),
+                              String(format: "%.1f", m.carb),
+                              String(format: "%.1f", m.fat)].joined(separator: ","))
+            }
+        }
+        lines.append("")
+
+        lines.append("【体重记录】")
+        lines.append("日期,体重kg")
+        for w in weightLogs {
+            lines.append([w.id, String(format: "%.1f", w.kg)].joined(separator: ","))
+        }
+        lines.append("")
+
+        lines.append("【围度记录】")
+        lines.append("日期,胸cm,腰cm,臀cm,臂cm,腿cm")
+        for g in girthLogs {
+            lines.append([g.id,
+                          String(format: "%.1f", g.chest),
+                          String(format: "%.1f", g.waist),
+                          String(format: "%.1f", g.hip),
+                          String(format: "%.1f", g.arm),
+                          String(format: "%.1f", g.thigh)].joined(separator: ","))
+        }
+        return lines.joined(separator: "\n")
+    }
+
+    /// 把 CSV 落成文件，交给分享面板
+    func exportCSVFile() -> URL? {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        let name = "天才威-数据-\(f.string(from: Date())).csv"
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(name)
+        // 带 BOM，Excel 打开中文不乱码
+        let bom = "\u{FEFF}"
+        guard let data = (bom + exportCSV()).data(using: .utf8) else { return nil }
+        do {
+            try data.write(to: url, options: .atomic)
+            return url
+        } catch {
+            return nil
+        }
+    }
+
     /// 上次导出备份的时间；没导过就是 nil
     static var lastExportAt: Date? {
         let t = UserDefaults.standard.double(forKey: "tw.lastExport.v1")

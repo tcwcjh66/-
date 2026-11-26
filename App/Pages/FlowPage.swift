@@ -31,6 +31,10 @@ struct FlowPage: View {
     @State private var swapped: [String: String] = [:]
     @State private var swapTarget: PlanItem?
 
+    /// 这组自己的秒表：组间休息管“歇多久”，它管“这一组做了多久”
+    @State private var setRun = false
+    @State private var setElapsed = 0
+
     private var planIndex: Int {
         min(max(store.planPick, 0), max(store.allPlans.count - 1, 0))
     }
@@ -69,12 +73,14 @@ struct FlowPage: View {
             tipCard
             sessionBar
             sessionCard
+            setCard
             timerCard
             progressionCard
             calendarCard
             historyCard
         }
         .onReceive(tick) { _ in
+            tickSet()
             guard running else { return }
             if remain > 0 {
                 remain -= 1
@@ -465,6 +471,9 @@ struct FlowPage: View {
         } else {
             doneMoves.insert(key)
             activeMove = name
+            // 这组结束，秒表归零，接着走休息倒计时
+            setRun = false
+            setElapsed = 0
             store.addSet(weight: setWeight, reps: setReps, move: name)
             // 按这个动作自己的 rest 起休息倒计时，不用再手调
             let sec = store.restOverride > 0 ? store.restOverride : restSeconds(rest)
@@ -656,6 +665,112 @@ struct FlowPage: View {
                             .frame(height: 0.7)
                     }
                 }
+            }
+        }
+        .padding(16)
+        .twGlass()
+    }
+
+    // MARK: - 这组计时
+
+    /// 一组大约 4 秒一次（下放 3 秒、推起 1 秒），按次数估个目标时长
+    private var setTarget: Int { max(12, setReps * 4) }
+
+    private var setClock: String {
+        String(format: "%d:%02d", setElapsed / 60, setElapsed % 60)
+    }
+
+    private func tickSet() {
+        guard setRun else { return }
+        setElapsed += 1
+        if setElapsed == setTarget {
+            setRun = false
+            UINotificationFeedbackGenerator().notificationOccurred(.warning)
+            TWVoice.speak("这组到点了，\(setReps) 次做完就可以记一组")
+        }
+    }
+
+    private var setCard: some View {
+        VStack(spacing: 13) {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(activeMove.isEmpty ? "这组计时" : "\(activeMove) · 这组")
+                        .font(.tw(14.5, .semibold))
+                        .foregroundStyle(TWColor.ink2)
+                        .lineLimit(1)
+                    Text(setElapsed >= setTarget
+                         ? "超时 \(setElapsed - setTarget) 秒 · 该收了"
+                         : "目标 \(setTarget) 秒 · 按 \(setReps) 次估")
+                        .font(.tw(11.5, .regular))
+                        .foregroundStyle(setElapsed >= setTarget ? TWColor.amber : TWColor.ink3)
+                }
+                Spacer()
+                GlassPill(text: setRun ? "计时中" : (setElapsed >= setTarget ? "到点" : (setElapsed > 0 ? "已 \(setElapsed) 秒" : "待开始")),
+                          tint: setRun ? TWColor.mint : (setElapsed >= setTarget ? TWColor.amber : TWColor.ink3))
+            }
+
+            HStack(spacing: 14) {
+                Text(setClock)
+                    .font(.tw(32, .heavy))
+                    .foregroundStyle(setElapsed >= setTarget ? TWColor.amber : TWColor.ink)
+                    .monospacedDigit()
+                    .frame(width: 92, alignment: .leading)
+
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        Capsule().fill(TWColor.ink3.opacity(0.12))
+                        Capsule()
+                            .fill(LinearGradient(colors: setElapsed >= setTarget
+                                                 ? [TWColor.amber, TWColor.coral]
+                                                 : [TWColor.mint, TWColor.blue],
+                                                 startPoint: .leading, endPoint: .trailing))
+                            .frame(width: geo.size.width * min(1, Double(setElapsed) / Double(setTarget)))
+                    }
+                }
+                .frame(height: 7)
+            }
+
+            HStack(spacing: 10) {
+                Button {
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    if setElapsed >= setTarget { setElapsed = 0 }
+                    withAnimation(.snappy) { setRun.toggle() }
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: setRun ? "pause.fill" : "play.fill")
+                            .font(.tw(13, .bold))
+                        Text(setRun ? "暂停" : (setElapsed > 0 ? "继续" : "开始这组"))
+                            .font(.tw(15, .bold))
+                    }
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background {
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .fill(LinearGradient(colors: [TWColor.mint, TWColor.blue],
+                                                 startPoint: .topLeading, endPoint: .bottomTrailing))
+                    }
+                }
+                .buttonStyle(.plain)
+
+                Button {
+                    UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                    withAnimation(.snappy) {
+                        setRun = false
+                        setElapsed = 0
+                    }
+                } label: {
+                    Image(systemName: "arrow.counterclockwise")
+                        .font(.tw(14, .bold))
+                        .foregroundStyle(TWColor.ink2)
+                        .frame(width: 46, height: 44)
+                        .background {
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .fill(TWColor.ink3.opacity(0.09))
+                        }
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("这组计时归零")
             }
         }
         .padding(16)

@@ -11,6 +11,7 @@ struct SettingsSheet: View {
     @State private var showGoal = false
     @State private var showStatus = false
     @State private var exportURL: URL?
+    @State private var csvURL: URL?
     @State private var notifyDenied = false
     @State private var showImporter = false
     @State private var importAlert = false
@@ -316,6 +317,65 @@ struct SettingsSheet: View {
                 }
             }
             .buttonStyle(.plain)
+
+            Rectangle().fill(TWColor.ink3.opacity(0.12)).frame(height: 0.7)
+
+            if let csvURL {
+                ShareLink(item: csvURL, subject: Text("天才威数据 CSV")) {
+                    HStack(spacing: 11) {
+                        Image(systemName: "tablecells")
+                            .font(.tw(15, .semibold))
+                            .foregroundStyle(TWColor.mint)
+                            .frame(width: 34, height: 34)
+                            .background {
+                                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                                    .fill(TWColor.mint.opacity(0.12))
+                            }
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("导出 CSV 表格")
+                                .font(.tw(14.5, .semibold))
+                                .foregroundStyle(TWColor.ink)
+                            Text("训练 / 饮食 / 体重 / 围度 · Excel 直接打开")
+                                .font(.tw(11.5))
+                                .foregroundStyle(TWColor.ink3)
+                        }
+                        Spacer(minLength: 0)
+                        Image(systemName: "chevron.right")
+                            .font(.tw(11, .bold))
+                            .foregroundStyle(TWColor.ink3)
+                    }
+                }
+                .buttonStyle(.plain)
+            } else {
+                Button {
+                    UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                    csvURL = store.exportCSVFile()
+                } label: {
+                    HStack(spacing: 11) {
+                        Image(systemName: "tablecells")
+                            .font(.tw(15, .semibold))
+                            .foregroundStyle(TWColor.mint)
+                            .frame(width: 34, height: 34)
+                            .background {
+                                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                                    .fill(TWColor.mint.opacity(0.12))
+                            }
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("导出 CSV 表格")
+                                .font(.tw(14.5, .semibold))
+                                .foregroundStyle(TWColor.ink)
+                            Text("点一下生成，再点分享给电脑")
+                                .font(.tw(11.5))
+                                .foregroundStyle(TWColor.ink3)
+                        }
+                        Spacer(minLength: 0)
+                        Image(systemName: "chevron.right")
+                            .font(.tw(11, .bold))
+                            .foregroundStyle(TWColor.ink3)
+                    }
+                }
+                .buttonStyle(.plain)
+            }
 
             Rectangle().fill(TWColor.ink3.opacity(0.12)).frame(height: 0.7)
 

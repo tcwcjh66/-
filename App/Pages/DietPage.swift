@@ -15,6 +15,9 @@ struct DietPage: View {
     @State private var showScanSheet = false
     @State private var previewPhoto = ""
     @State private var showPhoto = false
+    @State private var monthOffset = 0
+    @State private var showDay = false
+    @State private var detailKey = ""
 
     private let slots = ["早餐", "午餐", "晚餐", "加餐"]
 
@@ -67,6 +70,7 @@ struct DietPage: View {
             searchCard
             if !store.todayPhotos.isEmpty { photoCard }
             slotSection
+            monthCard
             trendCard
             weekCard
         }
@@ -128,6 +132,12 @@ struct DietPage: View {
             }
             .presentationBackground(.black)
         }
+        .sheet(isPresented: $showDay) {
+            DietDaySheet(key: detailKey)
+                .environmentObject(store)
+                .presentationDetents([.medium, .large])
+                .presentationCornerRadius(28)
+        }
         .sheet(isPresented: $showAI) {
             AIChatSheet()
                 .presentationDetents([.large])
@@ -154,6 +164,175 @@ struct DietPage: View {
                 }
             }
         }
+    }
+
+    // MARK: - 饮食月历
+
+    private var monthAnchor: Date {
+        Calendar.current.date(byAdding: .month, value: -monthOffset, to: Date()) ?? Date()
+    }
+
+    private var monthTitle: String {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "zh_CN")
+        f.dateFormat = "yyyy 年 M 月"
+        return f.string(from: monthAnchor)
+    }
+
+    /// 周一起头的月格，nil 是月初那几格空位
+    private var monthCells: [Date?] {
+        let cal = Calendar.current
+        guard let first = cal.date(from: cal.dateComponents([.year, .month], from: monthAnchor)),
+              let range = cal.range(of: .day, in: .month, for: first) else { return [] }
+        let weekday = cal.component(.weekday, from: first)
+        let pad = (weekday + 5) % 7
+        var out: [Date?] = Array(repeating: nil, count: pad)
+        for d in range {
+            out.append(cal.date(byAdding: .day, value: d - 1, to: first))
+        }
+        return out
+    }
+
+    private func dayKey(_ d: Date) -> String {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        return f.string(from: d)
+    }
+
+    private func kcalOf(_ d: Date) -> Double? {
+        if Calendar.current.isDateInToday(d) { return store.dietKcal }
+        guard let list = store.mealHistory[dayKey(d)], !list.isEmpty else { return nil }
+        return list.reduce(0) { $0 + $1.kcal }
+    }
+
+    private func cellStyle(_ d: Date) -> (Color, Bool) {
+        guard let k = kcalOf(d), store.dietTarget > 0 else { return (TWColor.ink3.opacity(0.10), false) }
+        let r = k / store.dietTarget
+        if r < 0.5 { return (TWColor.blue.opacity(0.38), true) }
+        if r < 0.88 { return (TWColor.blue.opacity(0.72), true) }
+        if r <= 1.15 { return (TWColor.mint, true) }
+        return (TWColor.coral, true)
+    }
+
+    private var monthStat: (days: Int, hit: Int, avg: Int) {
+        var days = 0
+        var hit = 0
+        var sum = 0.0
+        for c in monthCells {
+            guard let d = c, let k = kcalOf(d) else { continue }
+            days += 1
+            sum += k
+            if store.dietTarget > 0, k >= store.dietTarget * 0.88, k <= store.dietTarget * 1.15 { hit += 1 }
+        }
+        return (days, hit, days > 0 ? Int(sum / Double(days)) : 0)
+    }
+
+    private var monthCard: some View {
+        let stat = monthStat
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 7) {
+                Image(systemName: "calendar")
+                    .font(.tw(14, .semibold))
+                    .foregroundStyle(TWColor.purple)
+                Text("饮食月历")
+                    .font(.tw(15, .bold))
+                    .foregroundStyle(TWColor.ink)
+                Spacer()
+                Button {
+                    UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                    withAnimation(.snappy(duration: 0.2)) { monthOffset = max(0, monthOffset - 1) }
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.tw(11, .bold))
+                        .foregroundStyle(monthOffset == 0 ? TWColor.ink3.opacity(0.4) : TWColor.ink2)
+                        .frame(width: 26, height: 26)
+                }
+                .buttonStyle(.plain)
+                .disabled(monthOffset == 0)
+
+                Text(monthTitle)
+                    .font(.tw(12, .semibold))
+                    .foregroundStyle(TWColor.ink2)
+                    .monospacedDigit()
+
+                Button {
+                    UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                    withAnimation(.snappy(duration: 0.2)) { monthOffset += 1 }
+                } label: {
+                    Image(systemName: "chevron.right")
+                        .font(.tw(11, .bold))
+                        .foregroundStyle(monthOffset == 0 ? TWColor.ink3.opacity(0.4) : TWColor.ink2)
+                        .frame(width: 26, height: 26)
+                }
+                .buttonStyle(.plain)
+                .disabled(monthOffset == 0)
+            }
+
+            HStack(spacing: 0) {
+                ForEach(["一", "二", "三", "四", "五", "六", "日"], id: \.self) { w in
+                    Text(w)
+                        .font(.tw(10.5, .medium))
+                        .foregroundStyle(TWColor.ink3)
+                        .frame(maxWidth: .infinity)
+                }
+            }
+
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 5), count: 7), spacing: 5) {
+                ForEach(Array(monthCells.enumerated()), id: \.offset) { pair in
+                    if let d = pair.element {
+                        Button {
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            detailKey = dayKey(d)
+                            showDay = true
+                        } label: {
+                            dayCell(d)
+                        }
+                        .buttonStyle(.plain)
+                    } else {
+                        Color.clear.frame(height: 34)
+                    }
+                }
+            }
+
+            HStack(spacing: 13) {
+                Text("记录 \(stat.days) 天")
+                    .font(.tw(11.5, .medium))
+                    .foregroundStyle(TWColor.ink3)
+                Text("达标 \(stat.hit) 天")
+                    .font(.tw(11.5, .semibold))
+                    .foregroundStyle(TWColor.mint)
+                if stat.days > 0 {
+                    Text("均 \(stat.avg) kcal")
+                        .font(.tw(11.5, .medium))
+                        .foregroundStyle(TWColor.ink3)
+                }
+                Spacer()
+            }
+
+            Text("灰 = 没记，深蓝 = 吃少了，绿 = 刚好，橙 = 超了")
+                .font(.tw(10, .regular))
+                .foregroundStyle(TWColor.ink3.opacity(0.85))
+        }
+        .padding(16)
+        .twGlass()
+    }
+
+    private func dayCell(_ d: Date) -> some View {
+        let n = Calendar.current.component(.day, from: d)
+        let style = cellStyle(d)
+        let isToday = Calendar.current.isDateInToday(d)
+        return ZStack {
+            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                .fill(style.0)
+            if isToday {
+                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    .strokeBorder(TWColor.purple, lineWidth: 1.4)
+            }
+            Text("\(n)")
+                .font(.tw(11.5, isToday ? .heavy : .medium))
+                .foregroundStyle(style.1 ? .white : TWColor.ink3)
+        }
+        .frame(height: 34)
     }
 
     private var aiCard: some View {
@@ -1115,3 +1294,120 @@ let foodPresets: [FoodPreset] = [
     FoodPreset(name: "三文鱼", emoji: "🐟", kcalPer100: 208, proteinPer100: 20.0, carbPer100: 0, fatPer100: 13.0, vegPer100: 0),
     FoodPreset(name: "红薯", emoji: "🍠", kcalPer100: 86, proteinPer100: 1.6, carbPer100: 20.1, fatPer100: 0.1, vegPer100: 0)
 ]
+
+/// 点饮食月历里某一天弹出来的明细
+struct DietDaySheet: View {
+    let key: String
+    @EnvironmentObject var store: TWStore
+    @Environment(\.dismiss) private var dismiss
+
+    private var items: [MealEntry] {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        if key == f.string(from: Date()) { return store.meals }
+        return store.mealHistory[key] ?? []
+    }
+
+    private var total: Int { Int(items.reduce(0) { $0 + $1.kcal }) }
+
+    private var titleText: String {
+        let p = key.split(separator: "-")
+        guard p.count == 3 else { return key }
+        return "\(p[1]) 月 \(p[2]) 日"
+    }
+
+    private var groups: [(String, [MealEntry])] {
+        ["早餐", "午餐", "晚餐", "加餐"].compactMap { s -> (String, [MealEntry])? in
+            let list = items.filter { ($0.slot ?? "加餐") == s }
+            return list.isEmpty ? nil : (s, list)
+        }
+    }
+
+    private func tint(_ s: String) -> Color {
+        switch s {
+        case "早餐": return TWColor.amber
+        case "午餐": return TWColor.mint
+        case "晚餐": return TWColor.purple
+        default:     return TWColor.blue
+        }
+    }
+
+    var body: some View {
+        ZStack {
+            AuroraBG()
+            VStack(spacing: 14) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(titleText)
+                            .font(.tw(19, .heavy))
+                            .foregroundStyle(TWColor.ink)
+                        Text(items.isEmpty ? "这天没记东西" : "\(items.count) 条 · 共 \(total) kcal")
+                            .font(.tw(11.5, .regular))
+                            .foregroundStyle(TWColor.ink3)
+                    }
+                    Spacer()
+                    Button { dismiss() } label: {
+                        Image(systemName: "xmark")
+                            .font(.tw(12, .bold))
+                            .foregroundStyle(TWColor.ink2)
+                            .frame(width: 34, height: 34)
+                            .background { Circle().fill(TWColor.ink3.opacity(0.1)) }
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                ScrollView {
+                    VStack(spacing: 12) {
+                        ForEach(Array(groups.enumerated()), id: \.offset) { pair in
+                            VStack(alignment: .leading, spacing: 8) {
+                                HStack(spacing: 6) {
+                                    Circle().fill(tint(pair.element.0)).frame(width: 7, height: 7)
+                                    Text(pair.element.0)
+                                        .font(.tw(12, .bold))
+                                        .foregroundStyle(TWColor.ink2)
+                                    Spacer()
+                                    Text("\(Int(pair.element.1.reduce(0) { $0 + $1.kcal })) kcal")
+                                        .font(.tw(11, .medium))
+                                        .foregroundStyle(TWColor.ink3)
+                                }
+                                ForEach(pair.element.1) { m in
+                                    HStack {
+                                        Text(m.name)
+                                            .font(.tw(13, .medium))
+                                            .foregroundStyle(TWColor.ink)
+                                            .lineLimit(1)
+                                        Spacer()
+                                        Text(String(format: "%.0fg", m.grams))
+                                            .font(.tw(10.5, .regular))
+                                            .foregroundStyle(TWColor.ink3)
+                                        Text("\(Int(m.kcal)) kcal")
+                                            .font(.tw(11.5, .semibold))
+                                            .foregroundStyle(TWColor.ink2)
+                                    }
+                                    .padding(.vertical, 5)
+                                }
+                            }
+                            .padding(13)
+                            .twGlass(radius: 16)
+                        }
+
+                        if items.isEmpty {
+                            VStack(spacing: 8) {
+                                Image(systemName: "fork.knife")
+                                    .font(.tw(24, .regular))
+                                    .foregroundStyle(TWColor.ink3)
+                                Text("这天没有记录")
+                                    .font(.tw(13, .medium))
+                                    .foregroundStyle(TWColor.ink3)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 40)
+                        }
+                    }
+                    .padding(.bottom, 20)
+                }
+            }
+            .padding(18)
+        }
+    }
+}

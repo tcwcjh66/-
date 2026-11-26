@@ -44,6 +44,7 @@ struct BioPage: View {
             bodyCard
             progressCard
             girthCard
+            girthCompareCard
             achievementCard
             waterCard
             sourceCard
@@ -697,6 +698,115 @@ struct BioPage: View {
         }
         .padding(18)
         .twGlass()
+    }
+
+    // MARK: - 围度首尾对比
+
+    @ViewBuilder
+    private var girthCompareCard: some View {
+        let sorted = store.girthLogs.sorted { $0.id < $1.id }
+        if sorted.count >= 2, let first = sorted.first, let last = sorted.last {
+            let span = spanText(from: first.id, to: last.id)
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 7) {
+                    Image(systemName: "ruler")
+                        .font(.tw(14, .semibold))
+                        .foregroundStyle(TWColor.mint)
+                    Text("这段时间的变化")
+                        .font(.tw(15, .bold))
+                        .foregroundStyle(TWColor.ink)
+                    Spacer()
+                    GlassPill(text: span, tint: TWColor.ink3)
+                }
+
+                Text("第一次 \(shortDay(first.id)) → 最近 \(shortDay(last.id))")
+                    .font(.tw(11, .regular))
+                    .foregroundStyle(TWColor.ink3)
+
+                VStack(spacing: 9) {
+                    if first.chest > 0, last.chest > 0 {
+                        girthRow("胸", first.chest, last.chest, goodUp: true)
+                    }
+                    if first.waist > 0, last.waist > 0 {
+                        girthRow("腰", first.waist, last.waist, goodUp: false)
+                    }
+                    if first.hip > 0, last.hip > 0 {
+                        girthRow("臀", first.hip, last.hip, goodUp: false)
+                    }
+                    if first.arm > 0, last.arm > 0 {
+                        girthRow("臂", first.arm, last.arm, goodUp: true)
+                    }
+                    if first.thigh > 0, last.thigh > 0 {
+                        girthRow("腿", first.thigh, last.thigh, goodUp: false)
+                    }
+                }
+
+                Text(girthVerdict(first, last))
+                    .font(.tw(11.5, .regular))
+                    .foregroundStyle(TWColor.ink3)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(16)
+            .twGlass()
+        }
+    }
+
+    private func girthRow(_ name: String, _ from: Double, _ to: Double, goodUp: Bool) -> some View {
+        let d = to - from
+        let flat = abs(d) < 0.25
+        let better = goodUp ? d > 0 : d < 0
+        let tint = flat ? TWColor.ink3 : (better ? TWColor.mint : TWColor.coral)
+        return HStack(spacing: 8) {
+            Text(name)
+                .font(.tw(12.5, .semibold))
+                .foregroundStyle(TWColor.ink2)
+                .frame(width: 24, alignment: .leading)
+            Text(String(format: "%.1f", from))
+                .font(.tw(12.5, .regular))
+                .foregroundStyle(TWColor.ink3)
+                .monospacedDigit()
+            Image(systemName: "arrow.right")
+                .font(.tw(9, .bold))
+                .foregroundStyle(TWColor.ink3.opacity(0.55))
+            Text(String(format: "%.1f", to))
+                .font(.tw(13, .bold))
+                .foregroundStyle(TWColor.ink)
+                .monospacedDigit()
+            Spacer(minLength: 0)
+            HStack(spacing: 3) {
+                Image(systemName: flat ? "minus" : (d > 0 ? "arrow.up.right" : "arrow.down.right"))
+                    .font(.tw(9, .bold))
+                Text(flat ? "没变" : String(format: "%.1f", abs(d)))
+                    .font(.tw(11.5, .semibold))
+            }
+            .foregroundStyle(tint)
+        }
+    }
+
+    private func girthVerdict(_ a: GirthLog, _ b: GirthLog) -> String {
+        let waist = b.waist > 0 && a.waist > 0 ? b.waist - a.waist : 0
+        let arm = b.arm > 0 && a.arm > 0 ? b.arm - a.arm : 0
+        if waist <= -2, arm >= 0.5 { return "腰细了、臂围还长了，这是最想要的那种变化。" }
+        if waist <= -2 { return "腰围掉了 \(String(format: "%.1f", abs(waist))) cm，继续按这个节奏。" }
+        if waist >= 2 { return "腰围涨了 \(String(format: "%.1f", waist)) cm，最近热量可能超了。" }
+        if arm >= 0.5 { return "臂围涨了 \(String(format: "%.1f", arm)) cm，上肢有在长。" }
+        return "整体没什么变化，想推动就先把训练容量或蛋白提上去。"
+    }
+
+    private func shortDay(_ key: String) -> String {
+        let p = key.split(separator: "-")
+        return p.count == 3 ? "\(p[1])/\(p[2])" : key
+    }
+
+    private func spanText(from a: String, to b: String) -> String {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        guard let da = f.date(from: a), let db = f.date(from: b) else { return "跨度" }
+        let days = Calendar.current.dateComponents([.day], from: da, to: db).day ?? 0
+        if days <= 0 { return "同一天" }
+        if days < 14 { return "\(days) 天" }
+        if days < 90 { return "\(days / 7) 周" }
+        return "\(days / 30) 个月"
     }
 
     // MARK: - 饮水

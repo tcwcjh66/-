@@ -374,6 +374,21 @@ struct TodayPage: View {
                 GlassPill(text: "本周 \(weekCount) 次", tint: TWColor.mint)
             }
 
+            // 本周七天，练了打勾、今天描紫边
+            HStack(spacing: 4) {
+                ForEach(Array(weekCells.enumerated()), id: \.offset) { pair in
+                    weekPill(pair.element)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            if pair.element.isToday { onOpenFlow() }
+                        }
+                }
+            }
+
+            Text(todayPlanLine)
+                .font(.tw(11.5, .regular))
+                .foregroundStyle(TWColor.ink3)
+
             if store.sessionStart != nil {
                 HStack(spacing: 8) {
                     Circle()
@@ -432,6 +447,74 @@ struct TodayPage: View {
             .buttonStyle(.plain)
         }
         .padding(14)
+    }
+
+    // MARK: - 本周七天
+
+    private var weekCells: [TodayWeekCell] {
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: Date())
+        let wd = cal.component(.weekday, from: today)   // 1 = 周日
+        let back = (wd + 5) % 7                          // 周一为一周第一天
+        let monday = cal.date(byAdding: .day, value: -back, to: today) ?? today
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        let labels = ["一", "二", "三", "四", "五", "六", "日"]
+        var out: [TodayWeekCell] = []
+        for i in 0..<7 {
+            let d = cal.date(byAdding: .day, value: i, to: monday) ?? monday
+            let key = f.string(from: d)
+            out.append(TodayWeekCell(label: labels[i],
+                                     day: cal.component(.day, from: d),
+                                     trained: store.sessions.contains { $0.date == key },
+                                     isToday: cal.isDateInToday(d)))
+        }
+        return out
+    }
+
+    private var todayPlanLine: String {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        let key = f.string(from: Date())
+        if let s = store.sessions.first(where: { $0.date == key }) {
+            return "今天练过了：\(s.day) · \(s.sets) 组"
+        }
+        if store.sessionStart != nil {
+            return "正在练：\(store.sessionMoves.first ?? "")"
+        }
+        if let hint = store.nextDayHint {
+            return "今天该练：\(hint.day)（\(hint.plan)）"
+        }
+        return "本周目标 3 次，练一次就点亮一格"
+    }
+
+    private func weekPill(_ c: TodayWeekCell) -> some View {
+        VStack(spacing: 3) {
+            Text(c.label)
+                .font(.tw(10, .semibold))
+                .foregroundStyle(c.isToday ? TWColor.purple : TWColor.ink3)
+            ZStack {
+                Circle()
+                    .fill(c.trained ? TWColor.mint : TWColor.ink3.opacity(0.08))
+                    .frame(width: 30, height: 30)
+                if c.isToday {
+                    Circle()
+                        .strokeBorder(TWColor.purple, lineWidth: 1.6)
+                        .frame(width: 30, height: 30)
+                }
+                if c.trained {
+                    Image(systemName: "checkmark")
+                        .font(.tw(11, .bold))
+                        .foregroundStyle(.white)
+                } else {
+                    Text("\(c.day)")
+                        .font(.tw(11, c.isToday ? .heavy : .medium))
+                        .foregroundStyle(c.isToday ? TWColor.purple : TWColor.ink3)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .accessibilityLabel(c.label + " 周" + (c.trained ? "已训练" : "未训练"))
     }
 
     private func shortDay(_ raw: String) -> String {
@@ -728,4 +811,11 @@ struct RingInfoSheet: View {
                 .fill(TWColor.glass(0.46))
         }
     }
+}
+
+struct TodayWeekCell {
+    let label: String
+    let day: Int
+    let trained: Bool
+    let isToday: Bool
 }

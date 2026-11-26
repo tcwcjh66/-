@@ -77,6 +77,13 @@ struct RootView: View {
             if let v = item.value, !v.isEmpty { dict[item.name.lowercased()] = v }
         }
 
+        // twfit://train 或 twfit://any?open=train —— 直接跳到训练页
+        if url.host == "train" || url.path == "/train" || dict["open"] == "train" {
+            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+            withAnimation(.snappy(duration: 0.26)) { tab = .flow }
+            return
+        }
+
         func val(_ keys: String...) -> Double? {
             for k in keys {
                 if let s = dict[k], let d = Double(s) { return d }
