@@ -10,6 +10,7 @@ struct SettingsSheet: View {
     @State private var showCopied = false
     @State private var showGoal = false
     @State private var showStatus = false
+    @State private var showManualHealth = false
     @State private var exportURL: URL?
     @State private var csvURL: URL?
     @State private var learnCount = FoodLearn.count
@@ -55,6 +56,7 @@ struct SettingsSheet: View {
 
                     overviewCard
                     notifyCard
+                    healthCard
                     sideloadCard
                     goalCard
                     dataCard
@@ -73,6 +75,12 @@ struct SettingsSheet: View {
         }
         .sheet(isPresented: $showGoal) {
             GoalSheet()
+                .presentationDetents([.large])
+                .presentationCornerRadius(28)
+        }
+        .sheet(isPresented: $showManualHealth) {
+            ManualHealthSheet()
+                .environmentObject(store)
                 .presentationDetents([.large])
                 .presentationCornerRadius(28)
         }
@@ -209,6 +217,53 @@ struct SettingsSheet: View {
                 TWNotify.reschedule()
             }
         )
+    }
+
+    /// 免费签名没有 HealthKit，健康数据只能手填；这里留一个入口，别让它变成死路
+    private var healthCard: some View {
+        Button {
+            UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+            showManualHealth = true
+        } label: {
+            HStack(spacing: 11) {
+                Image(systemName: "heart.text.square")
+                    .font(.tw(14, .semibold))
+                    .foregroundStyle(TWColor.coral)
+                    .frame(width: 32, height: 32)
+                    .background {
+                        RoundedRectangle(cornerRadius: 9, style: .continuous)
+                            .fill(TWColor.coral.opacity(0.12))
+                    }
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("手动健康数据")
+                        .font(.tw(14, .semibold))
+                        .foregroundStyle(TWColor.ink)
+                    Text(healthSummary)
+                        .font(.tw(11))
+                        .foregroundStyle(TWColor.ink3)
+                        .lineLimit(1)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right")
+                    .font(.tw(10, .bold))
+                    .foregroundStyle(TWColor.ink3)
+            }
+            .padding(16)
+            .twGlass()
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var healthSummary: String {
+        var parts: [String] = []
+        if store.manualSleepMin > 0 {
+            parts.append(String(format: "睡眠 %.1f h", Double(store.manualSleepMin) / 60))
+        }
+        if store.manualRestingHR > 0 { parts.append("静息 \(store.manualRestingHR) bpm") }
+        if store.manualHRV > 0 { parts.append("HRV \(store.manualHRV) ms") }
+        return parts.isEmpty
+            ? "免费签名读不到 HealthKit，手填三行就能算恢复度"
+            : "已手填：" + parts.joined(separator: " · ")
     }
 
     private var sideloadCard: some View {

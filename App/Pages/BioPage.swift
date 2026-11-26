@@ -42,6 +42,7 @@ struct BioPage: View {
             stepCard
             sleepCard
             sleepTrainCard
+            groupVolumeCard
             bodyCard
             progressCard
             girthCard
@@ -532,6 +533,97 @@ struct BioPage: View {
             .padding(16)
             .twGlass()
         }
+    }
+
+    /// 本周每个肌群做了多少组。常用区间 10–20 组/周，超了过量、欠了该补。
+    private var groupVolumeCard: some View {
+        let rows = store.weeklyGroupSets()
+        let total = rows.reduce(0) { $0 + $1.sets }
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 7) {
+                Image(systemName: "figure.strengthtraining.traditional")
+                    .font(.tw(14, .semibold))
+                    .foregroundStyle(TWColor.blue)
+                Text("本周肌群分布")
+                    .font(.tw(15, .bold))
+                    .foregroundStyle(TWColor.ink)
+                Spacer()
+                GlassPill(text: rows.isEmpty ? "近 7 天" : "\(total) 组", tint: TWColor.blue)
+            }
+
+            if rows.isEmpty {
+                Text("这七天还没有训练记录。练完回来，这里会按胸、背、腿分开算组数。")
+                    .font(.tw(12))
+                    .foregroundStyle(TWColor.ink3)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else {
+                VStack(spacing: 9) {
+                    ForEach(Array(rows.enumerated()), id: \.offset) { pair in
+                        let g = pair.element.group
+                        let n = pair.element.sets
+                        groupBar(g, sets: n)
+                    }
+                }
+                Text(volumeAdvice)
+                    .font(.tw(12))
+                    .foregroundStyle(TWColor.ink2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(16)
+        .twGlass()
+    }
+
+    private func groupBar(_ g: String, sets n: Int) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            HStack(spacing: 6) {
+                Text(g)
+                    .font(.tw(12.5, .semibold))
+                    .foregroundStyle(TWColor.ink)
+                Spacer(minLength: 4)
+                Text("\(n) 组")
+                    .font(.tw(12, .bold))
+                    .foregroundStyle(volumeTint(n))
+                    .monospacedDigit()
+                Text(n > 20 ? "偏多" : (n < 10 ? "偏少" : "合适"))
+                    .font(.tw(10, .medium))
+                    .foregroundStyle(volumeTint(n))
+                    .frame(width: 30, alignment: .trailing)
+            }
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(TWColor.ink3.opacity(0.12))
+                    Capsule()
+                        .fill(volumeTint(n))
+                        .frame(width: geo.size.width * min(1, Double(n) / 20))
+                }
+            }
+            .frame(height: 6)
+        }
+    }
+
+    private func volumeTint(_ n: Int) -> Color {
+        if n > 20 { return TWColor.coral }
+        if n < 10 { return TWColor.ink3 }
+        return TWColor.mint
+    }
+
+    /// 最久没练的那块，直接点名，省得自己翻记录
+    private var volumeAdvice: String {
+        let groups = ["胸", "背", "腿", "肩", "手臂", "核心"]
+        var bestName = ""
+        var bestDays = 0
+        for g in groups {
+            guard let d = store.daysSinceTrain(group: g) else { continue }
+            if d >= 2, d > bestDays {
+                bestName = g
+                bestDays = d
+            }
+        }
+        if !bestName.isEmpty {
+            return "最久没练：\(bestName)，\(bestDays) 天前。下次排课把它补上。"
+        }
+        return "各肌群最近两天都练过，分布均衡。"
     }
 
     private var bodyCard: some View {

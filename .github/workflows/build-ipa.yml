@@ -4,6 +4,11 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      lite:
+        description: "不带 Watch/Widget 扩展的瘦包（免费签名装不上时用）"
+        type: boolean
+        default: false
 
 jobs:
   build:
@@ -23,6 +28,12 @@ jobs:
       - name: Install XcodeGen
         run: |
           if command -v xcodegen >/dev/null 2>&1; then xcodegen --version; else brew install xcodegen; fi
+
+      - name: Apply lite config
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.lite }}
+        run: |
+          python3 scripts/lite_project.py
+          head -40 project.yml
 
       - name: Generate Xcode project
         run: |

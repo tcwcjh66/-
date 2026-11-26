@@ -11,8 +11,11 @@ struct RecoveryScore {
 
 enum TWRecovery {
     static func today(_ store: TWStore) -> RecoveryScore? {
-        let hrv = store.hrv
-        let sleep = store.watchSleepMin
+        // 免费签名拿不到 HealthKit，手填的值优先，恢复度才有得算
+        let hrv = store.manualHRV > 0 ? store.manualHRV : store.hrv
+        let sleep = store.manualSleepMin > 0 ? store.manualSleepMin : store.watchSleepMin
+        let hrvTag = store.manualHRV > 0 ? "（手填）" : ""
+        let sleepTag = store.manualSleepMin > 0 ? "（手填）" : ""
         let streak = store.trainingStreak
         // 三项全无：没有 HRV、没有睡眠、也还没练过，那就别评
         guard hrv > 0 || sleep > 0 || streak > 0 else { return nil }
@@ -23,16 +26,16 @@ enum TWRecovery {
         if hrv > 0 {
             if hrv >= 65 {
                 score += 18
-                reasons.append("HRV \(hrv) ms，恢复得不错")
+                reasons.append("HRV \(hrv) ms\(hrvTag)，恢复得不错")
             } else if hrv >= 45 {
                 score += 8
-                reasons.append("HRV \(hrv) ms，正常区间")
+                reasons.append("HRV \(hrv) ms\(hrvTag)，正常区间")
             } else if hrv >= 30 {
                 score -= 4
-                reasons.append("HRV \(hrv) ms，偏低")
+                reasons.append("HRV \(hrv) ms\(hrvTag)，偏低")
             } else {
                 score -= 14
-                reasons.append("HRV \(hrv) ms，明显偏低")
+                reasons.append("HRV \(hrv) ms\(hrvTag)，明显偏低")
             }
         }
 
@@ -40,16 +43,16 @@ enum TWRecovery {
             let h = Double(sleep) / 60.0
             if h >= 7.5 {
                 score += 10
-                reasons.append(String(format: "睡了 %.1f 小时", h))
+                reasons.append(String(format: "睡了 %.1f 小时", h) + sleepTag)
             } else if h >= 6.5 {
                 score += 4
-                reasons.append(String(format: "睡了 %.1f 小时", h))
+                reasons.append(String(format: "睡了 %.1f 小时", h) + sleepTag)
             } else if h >= 5 {
                 score -= 8
-                reasons.append(String(format: "只睡 %.1f 小时", h))
+                reasons.append(String(format: "只睡 %.1f 小时", h) + sleepTag)
             } else {
                 score -= 16
-                reasons.append(String(format: "只睡 %.1f 小时，太短", h))
+                reasons.append(String(format: "只睡 %.1f 小时", h) + sleepTag + "，太短")
             }
         }
 

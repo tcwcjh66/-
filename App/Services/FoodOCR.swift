@@ -208,6 +208,40 @@ enum FoodOCR {
         return Array((strong + Array(weak.prefix(2))).prefix(6))
     }
 
+
+    // MARK: - 四、把引擎看到的每一步摊开
+
+    /// 一条分组诊断：这组读了哪些字、落在哪、认成什么、多少分、净含量从哪段抠的
+    struct GroupDiag: Identifiable {
+        var id: Int
+        var words: [String]
+        var centerX: CGFloat
+        var name: String
+        var score: Double
+        var keyword: String
+        var net: Double?
+    }
+
+    /// 识别调试台的数据源。阈值猜不准的时候，就靠它看真照片上到底发生了什么事。
+    static func diagnostics(_ words: [OCRWord],
+                            boost: [String: Double] = [:]) -> (groups: [GroupDiag], vertical: Int) {
+        var out: [GroupDiag] = []
+        for (i, g) in clusters(words).enumerated() {
+            let best = matchGroup(g, boost: boost)
+            let cx = g.map { $0.box.midX }.reduce(0, +) / CGFloat(max(1, g.count))
+            out.append(GroupDiag(
+                id: i + 1,
+                words: g.map { "\($0.text)@(\(String(format: "%.2f", $0.box.midX)),\(String(format: "%.2f", $0.box.midY)))" },
+                centerX: cx,
+                name: best.first?.food.name ?? "",
+                score: best.first?.score ?? 0,
+                keyword: best.first?.keyword ?? "",
+                net: netWeight(g.map { $0.text })
+            ))
+        }
+        return (out, words.filter { $0.rotated }.count)
+    }
+
     private static func matchGroup(_ group: [OCRWord], boost: [String: Double]) -> [FoodMatch] {
         let ordered = group.sorted { $0.box.midX < $1.box.midX }
         var texts: [String] = ordered.map { $0.text }

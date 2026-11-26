@@ -326,6 +326,8 @@ struct BarcodeScanSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     let slot: String
+    /// 只借这个扫码器读净含量时传进来：扫到就回调，不弹记录页
+    var gramsOnly: ((FoodPick) -> Void)? = nil
 
     @StateObject private var scanner = BarcodeScanner()
     @State private var manual = ""
@@ -438,12 +440,21 @@ struct BarcodeScanSheet: View {
                 .environmentObject(store)
             }
             .sheet(item: $pick) { p in
-                GramSheet(pick: p, slot: slot) { entry in
-                    store.addMeal(entry)
-                    dismiss()
+                if gramsOnly != nil {
+                    // 被「补克数」借走的扫码器：读到条码直接回填，不进记录流程
+                    Color.clear
+                        .onAppear {
+                            gramsOnly?(p)
+                            dismiss()
+                        }
+                } else {
+                    GramSheet(pick: p, slot: slot) { entry in
+                        store.addMeal(entry)
+                        dismiss()
+                    }
+                    .presentationDetents([.large])
+                    .presentationCornerRadius(28)
                 }
-                .presentationDetents([.large])
-                .presentationCornerRadius(28)
             }
         }
     }

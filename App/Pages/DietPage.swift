@@ -9,6 +9,8 @@ struct DietPage: View {
     @State private var analyzing = false
     @State private var hits: [FoodHit] = []
     @State private var shotWords: [String] = []
+    /// 这一轮的识别过程，给调试台用
+    @State private var shotDiag: [String] = []
     @State private var showResult = false
     @State private var showAI = false
     @State private var copiedCount: Int?
@@ -84,7 +86,7 @@ struct DietPage: View {
             .presentationCornerRadius(28)
         }
         .sheet(isPresented: $showResult) {
-            ShotResultSheet(hits: hits, defaultSlot: autoSlot, words: shotWords,
+            ShotResultSheet(hits: hits, defaultSlot: autoSlot, words: shotWords, diag: shotDiag,
                             onGoSearch: { afterDismiss { showFoodSearch = true } },
                             onGoScan: { afterDismiss { showScanSheet = true } }) { hit in
                 store.addMeal(MealEntry(
@@ -155,6 +157,7 @@ struct DietPage: View {
             Task {
                 var all: [FoodHit] = []
                 var words: [String] = []
+                var diags: [String] = []
                 for item in items {
                     if let data = try? await item.loadTransferable(type: Data.self),
                        let img = UIImage(data: data) {
@@ -168,11 +171,13 @@ struct DietPage: View {
                         }.value
                         all = mergeHits(all, found.hits)
                         words += found.words
+                        diags += found.diag
                     }
                 }
                 await MainActor.run {
                     hits = all
                     shotWords = words
+                    shotDiag = diags
                     analyzing = false
                     picks = []
                     showResult = true
@@ -1237,6 +1242,8 @@ struct ShotResultSheet: View {
     var defaultSlot: String = "午餐"
     /// 这一轮相机实际读到的字，认不出时摆出来给用户看
     var words: [String] = []
+    /// 引擎这一步看到的字、分组和分数（调试台）
+    var diag: [String] = []
     var onGoSearch: (() -> Void)? = nil
     var onGoScan: (() -> Void)? = nil
     var onAdd: (FoodHit) -> Void
@@ -1249,6 +1256,9 @@ struct ShotResultSheet: View {
     @State private var manualQuery = ""
     @State private var showAI = false
     @State private var savedToast = false
+    @State private var showDiag = false
+    /// 正在给哪条结果扫码补克数
+    @State private var scanTarget: FoodHit?
 
     private let slots = ["早餐", "午餐", "晚餐", "加餐"]
     @State private var slot: String = ""
@@ -1325,12 +1335,74 @@ struct ShotResultSheet: View {
                     Spacer(minLength: 0)
                 }
                 .padding(.horizontal, 14)
+
+                HStack(spacing: 8) {
+                    Button {
+                        UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                        scanTarget = h
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "barcode.viewfinder")
+                                .font(.tw(11, .bold))
+                            Text("扫码补克数")
+                                .font(.tw(11.5, .bold))
+                        }
+                        .foregroundStyle(TWColor.blue)
+                        .padding(.horizontal, 9)
+                        .padding(.vertical, 5)
+                        .background { Capsule().fill(TWColor.blue.opacity(0.12)) }
+                    }
+                    .buttonStyle(.plain)
+                    Text("认出品牌却不知道这包多少克，扫包装条码读净含量")
+                        .font(.tw(10.5))
+                        .foregroundStyle(TWColor.ink3)
+                        .lineLimit(2)
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, 14)
                 .padding(.bottom, 12)
             }
         }
         .background {
             RoundedRectangle(cornerRadius: 15, style: .continuous)
                 .fill(TWColor.glass(on ? 0.85 : 0.42))
+        }
+    }
+
+    /// 识别调试台：引擎看到的原始字、分组位置、命中分数都摆出来，
+    /// 阈值调不准的时候，只有真照片能给出答案
+    private var diagPanel: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Button {
+                UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                withAnimation(.snappy(duration: 0.2)) { showDiag.toggle() }
+            } label: {
+                HStack(spacing: 5) {
+                    Image(systemName: "stethoscope")
+                        .font(.tw(11, .semibold))
+                    Text("识别调试台")
+                        .font(.tw(11.5, .bold))
+                    Spacer(minLength: 0)
+                    Image(systemName: showDiag ? "chevron.up" : "chevron.down")
+                        .font(.tw(9, .bold))
+                }
+                .foregroundStyle(TWColor.ink3)
+                .padding(.vertical, 5)
+            }
+            .buttonStyle(.plain)
+
+            if showDiag {
+                Text(diag.isEmpty ? "这一轮没有过程数据" : diag.joined(separator: "\n"))
+                    .font(.system(size: 10.5, design: .monospaced))
+                    .foregroundStyle(TWColor.ink2)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(10)
+                    .background {
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .fill(TWColor.blue.opacity(0.06))
+                    }
+            }
         }
     }
 
@@ -1600,6 +1672,8 @@ struct ShotResultSheet: View {
 
                         manualEntry
                             .padding(.top, 2)
+
+                        diagPanel
                     }
                     .padding(.horizontal, 18)
                     .padding(.top, 12)
@@ -1694,6 +1768,15 @@ struct ShotResultSheet: View {
             AIChatSheet(seed: aiSeed)
                 .presentationDetents([.large])
                 .presentationCornerRadius(28)
+        }
+        .sheet(item: $scanTarget) { h in
+            BarcodeScanSheet(slot: activeSlot, gramsOnly: { p in
+                let g = p.defaultGrams > 0 ? p.defaultGrams : 100
+                gramsOverride[h.id] = g
+            })
+            .environmentObject(store)
+            .presentationDetents([.large])
+            .presentationCornerRadius(28)
         }
     }
 

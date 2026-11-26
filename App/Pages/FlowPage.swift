@@ -17,6 +17,8 @@ struct FlowPage: View {
     @State private var summaryStreak: Int = 1
     @State private var setWeight: Double = 20
     @State private var setReps: Int = 8
+    /// 这组还剩几次余力，0 = 力竭；默认留两次
+    @State private var rir: Int = 2
     /// 最近点过的动作，用来知道“记一组”记的是哪个动作
     @State private var activeMove: String = ""
     @State private var restNext: String = ""
@@ -353,7 +355,7 @@ struct FlowPage: View {
                     Button {
                         UIImpactFeedbackGenerator(style: .rigid).impactOccurred()
                         withAnimation(.snappy(duration: 0.2)) {
-                            store.addSet(weight: setWeight, reps: setReps, move: activeMove)
+                            store.addSet(weight: setWeight, reps: setReps, move: activeMove, rir: rir)
                         }
                     } label: {
                         Text("记一组")
@@ -477,7 +479,7 @@ struct FlowPage: View {
             setRun = false
             setElapsed = 0
             weightNote = ""
-            store.addSet(weight: setWeight, reps: setReps, move: name)
+            store.addSet(weight: setWeight, reps: setReps, move: name, rir: rir)
             // 按这个动作自己的 rest 起休息倒计时，不用再手调
             let sec = store.restOverride > 0 ? store.restOverride : restSeconds(rest)
             withAnimation(.snappy(duration: 0.25)) {
@@ -495,14 +497,50 @@ struct FlowPage: View {
     }
 
     private var loadRow: some View {
-        HStack(spacing: 9) {
-            loadChip("重量", String(format: "%g", setWeight) + " kg",
-                     minus: { setWeight = max(0, setWeight - 2.5) },
-                     plus: { setWeight = min(500, setWeight + 2.5) })
-            loadChip("次数", "\(setReps) 次",
-                     minus: { setReps = max(1, setReps - 1) },
-                     plus: { setReps = min(50, setReps + 1) })
+        VStack(spacing: 9) {
+            HStack(spacing: 9) {
+                loadChip("重量", String(format: "%g", setWeight) + " kg",
+                         minus: { setWeight = max(0, setWeight - 2.5) },
+                         plus: { setWeight = min(500, setWeight + 2.5) })
+                loadChip("次数", "\(setReps) 次",
+                         minus: { setReps = max(1, setReps - 1) },
+                         plus: { setReps = min(50, setReps + 1) })
+            }
+            rirRow
         }
+    }
+
+    /// 余力次数：记完这组还剩几下的余量，比「次数做满没」更能决定该不该加重量
+    private var rirRow: some View {
+        HStack(spacing: 7) {
+            Text("还能再做")
+                .font(.tw(10.5, .semibold))
+                .foregroundStyle(TWColor.ink3)
+            ForEach([0, 1, 2, 3], id: \.self) { n in
+                Button {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    withAnimation(.snappy(duration: 0.15)) { rir = n }
+                } label: {
+                    Text(n == 3 ? "3+" : "\(n)")
+                        .font(.tw(11.5, .bold))
+                        .foregroundStyle(rir == n ? .white : TWColor.ink2)
+                        .frame(width: 30, height: 24)
+                        .background {
+                            Capsule().fill(rir == n
+                                           ? AnyShapeStyle(LinearGradient(colors: [TWColor.purple, TWColor.violet],
+                                                                          startPoint: .top, endPoint: .bottom))
+                                           : AnyShapeStyle(TWColor.glass(0.5)))
+                        }
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("这组还剩 \(n) 次余力")
+            }
+            Spacer(minLength: 0)
+            Text(rir <= 1 ? "已经到头，别再加" : "留有余力")
+                .font(.tw(10.5, .medium))
+                .foregroundStyle(rir <= 1 ? TWColor.coral : TWColor.ink3)
+        }
+        .padding(.horizontal, 3)
     }
 
     private func loadChip(_ title: String, _ value: String,
@@ -607,8 +645,9 @@ struct FlowPage: View {
                                 .foregroundStyle(done ? TWColor.ink3 : TWColor.ink)
                                 .strikethrough(done, color: TWColor.ink3)
                                 .lineLimit(1)
-                            if let last = store.lastRecord(move: nm) {
-                                Text("上次 \(fmtKg(last.weight))kg × \(last.reps) 次")
+                            let lastRecs = store.lastSets(move: nm)
+                            if !lastRecs.isEmpty {
+                                Text("上次 " + lastRecs.map { "\(fmtKg($0.weight))×\($0.reps)" }.joined(separator: " · "))
                                     .font(.tw(10.5, .medium))
                                     .foregroundStyle(TWColor.ink3)
                                     .lineLimit(1)

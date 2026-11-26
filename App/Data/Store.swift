@@ -89,6 +89,9 @@ struct SetRecord: Codable, Hashable {
     var weight: Double
     var reps: Int
     var date: String   // yyyy-MM-dd
+    /// 这组做完还剩几次余力（RIR）。0 = 力竭，2 = 还留两次，3+ = 偏轻。
+    /// 只看次数做满没，会误判「其实还有三下没做完」的重量；老记录没有这个字段。
+    var rir: Int? = nil
 }
 
 /// 某动作某天的最好 e1RM（Epley 估算），用来画力量曲线。
@@ -365,6 +368,10 @@ final class TWStore: ObservableObject {
     @Published var watchSteps: Int = 0
     /// 手表同步进来的睡眠数据（Quick 快捷指令通道）
     @Published var watchSleepMin: Int = 0
+    /// 免费签名拿不到 HealthKit，这几项允许手填，恢复度才有得算
+    @Published var manualSleepMin: Int = 0
+    @Published var manualRestingHR: Int = 0
+    @Published var manualHRV: Int = 0
     @Published var watchDeepMin: Int = 0
     @Published var watchSyncAt: Date?
     @Published var watchSyncCount: Int = 0
@@ -524,6 +531,9 @@ final class TWStore: ObservableObject {
         static let wcount = "tw.wcount.v2"
         static let mindmin = "tw.mindmin.v2"
         static let mindat = "tw.mindat.v2"
+        static let msleep = "tw.msleep.v1"
+        static let mhr = "tw.mhr.v1"
+        static let mhrv = "tw.mhrv.v1"
     }
 
     init() {
@@ -1392,7 +1402,7 @@ final class TWStore: ObservableObject {
         persistSoon()
     }
 
-    func addSet(weight: Double = 0, reps: Int = 0, move: String = "") {
+    func addSet(weight: Double = 0, reps: Int = 0, move: String = "", rir: Int? = nil) {
         sessionSets += 1
         if weight > 0, reps > 0 {
             sessionTonnage += weight * Double(reps)
@@ -1401,7 +1411,8 @@ final class TWStore: ObservableObject {
                 sessionRecords.append(SetRecord(move: move,
                                                 weight: weight,
                                                 reps: reps,
-                                                date: DateFormatter.twDay.string(from: Date())))
+                                                date: DateFormatter.twDay.string(from: Date()),
+                                                rir: rir))
             }
         }
         exerciseMin += 2.5
@@ -1451,6 +1462,33 @@ final class TWStore: ObservableObject {
         return nil
     }
 
+    /// 上一次练这个动作时每一组的成绩，按当时做的顺序。
+    /// 「上次 20×8、20×8、20×7」比只给一个好最后一组，才知道该不该加重量。
+    func lastSets(move: String) -> [SetRecord] {
+        for s in sessions {
+            guard let rs = s.records else { continue }
+            let hit = rs.filter { $0.move == move }
+            if !hit.isEmpty { return hit }
+        }
+        return []
+    }
+
+    /// 最近 days 天每个肌群做了多少组。动作名去动作库查肌群。
+    func weeklyGroupSets(days: Int = 7) -> [(group: String, sets: Int)] {
+        let cal = Calendar.current
+        let from = cal.date(byAdding: .day, value: -(days - 1), to: Date()) ?? Date()
+        let cutoff = DateFormatter.twDay.string(from: from)
+        var map: [String: Int] = [:]
+        for s in sessions where s.date >= cutoff {
+            guard let rs = s.records else { continue }
+            for r in rs {
+                let g = allMoves.first(where: { $0.name == r.move })?.group ?? "其它"
+                map[g, default: 0] += 1
+            }
+        }
+        return map.sorted { $0.value > $1.value }.map { (group: $0.key, sets: $0.value) }
+    }
+
     /// 渐进超负荷：上次把目标次数做满就加 2.5kg；没做满就维持上次重量。
     func suggestWeight(move: String, targetReps: Int) -> Double? {
         guard let last = lastRecord(move: move), last.weight > 0 else { return nil }
@@ -1464,8 +1502,13 @@ final class TWStore: ObservableObject {
         var kg = last.weight
         var note: String
         if last.reps >= t {
-            kg = min(500, last.weight + 2.5)
-            note = "上次 \(String(format: "%g", last.weight))kg × \(last.reps) 次做满了，这组加到 \(String(format: "%g", kg))kg"
+            // 次数做满但已经力竭，说明这个重量到头了，再加就要掉次数
+            if let r = last.rir, r <= 1 {
+                note = "上次 \(String(format: "%g", last.weight))kg × \(last.reps) 次已经力竭（RIR \(r)），这组先守住 \(String(format: "%g", kg))kg"
+            } else {
+                kg = min(500, last.weight + 2.5)
+                note = "上次 \(String(format: "%g", last.weight))kg × \(last.reps) 次做满了，这组加到 \(String(format: "%g", kg))kg"
+            }
         } else {
             note = "上次只做到 \(last.reps) 次，先守住 \(String(format: "%g", kg))kg 把 \(t) 次做满"
         }
@@ -1765,6 +1808,9 @@ final class TWStore: ObservableObject {
         }
         d.set(watchSleepMin, forKey: Key.wsleep)
         d.set(watchDeepMin, forKey: Key.wdeep)
+        d.set(manualSleepMin, forKey: Key.msleep)
+        d.set(manualRestingHR, forKey: Key.mhr)
+        d.set(manualHRV, forKey: Key.mhrv)
         d.set(watchSyncCount, forKey: Key.wcount)
         if let t = watchSyncAt { d.set(t.timeIntervalSince1970, forKey: Key.wsync) }
         d.set(mindfulMin, forKey: Key.mindmin)
@@ -1874,6 +1920,9 @@ final class TWStore: ObservableObject {
         }
         watchSleepMin = d.integer(forKey: Key.wsleep)
         watchDeepMin = d.integer(forKey: Key.wdeep)
+        manualSleepMin = d.integer(forKey: Key.msleep)
+        manualRestingHR = d.integer(forKey: Key.mhr)
+        manualHRV = d.integer(forKey: Key.mhrv)
         watchSyncCount = d.integer(forKey: Key.wcount)
         let syncTs = d.double(forKey: Key.wsync)
         watchSyncAt = syncTs > 0 ? Date(timeIntervalSince1970: syncTs) : nil
