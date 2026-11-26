@@ -185,7 +185,10 @@ struct DietPage: View {
     private var eatBoost: [String: Double] {
         let cutoff = Date().addingTimeInterval(-30 * 86400)
         var c: [String: Int] = [:]
-        for m in store.meals where m.time > cutoff { c[m.name, default: 0] += 1 }
+        for m in store.meals {
+            guard let t = m.time, t > cutoff else { continue }
+            c[m.name, default: 0] += 1
+        }
         guard let top = c.values.max(), top > 0 else { return [:] }
         return c.mapValues { min(6, Double($0) * 6 / Double(top)) }
     }
