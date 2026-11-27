@@ -1,7 +1,7 @@
 import SwiftUI
 import UIKit
 
-/// 手表同步：把 Apple Watch 的健康数据通过「快捷指令」带进天才威。
+/// 手表同步：把 Apple Watch 的健康数据通过「快捷指令」带进Persist。
 /// 免费签名读不了 HealthKit；快捷指令是系统 App，能读，它把值拼进 URL 再交回这里。
 struct WatchSyncSheet: View {
     @EnvironmentObject var store: TWStore
@@ -110,8 +110,8 @@ struct WatchSyncSheet: View {
                 .buttonStyle(.plain)
             }
 
-            Text(runFail ? "没找到这条快捷指令，先把名字改成「天才威心率」"
-                         : "「跑一次」要求快捷指令命名成「天才威心率」")
+            Text(runFail ? "没找到这条快捷指令，先把名字改成「Persist心率」"
+                         : "「跑一次」要求快捷指令命名成「Persist心率」")
                 .font(.tw(10.5))
                 .foregroundStyle(runFail ? TWColor.coral : TWColor.ink3)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -176,7 +176,7 @@ struct WatchSyncSheet: View {
                     .font(.tw(12.5))
                     .foregroundStyle(TWColor.ink2)
             } else {
-                Text("还没收到过数据。照下面「五步」走一遍，末了打开一次天才威，这里就会变成「已连通」。")
+                Text("还没收到过数据。照下面「五步」走一遍，末了打开一次Persist，这里就会变成「已连通」。")
                     .font(.tw(12.5))
                     .foregroundStyle(TWColor.ink3)
                     .lineSpacing(2.5)
@@ -298,11 +298,11 @@ struct WatchSyncSheet: View {
                  "桌面找不到就下拉搜索“快捷指令”。进自动化后先点 + 建一条新的。")
 
             step(2,
-                 "选「App」→ 搜“天才威”→ 选中 → 勾「打开时」→ 打开「立即运行」→ 点「下一步」",
+                 "选「App」→ 搜“Persist”→ 选中 → 勾「打开时」→ 打开「立即运行」→ 点「下一步」",
                  "「立即运行」不开的话，每次都会先弹一个确认框，白等两秒。")
 
             step(3,
-                 "回到「所有快捷指令」，右上角 + 新建，名字随便起（比如“天才威同步”）",
+                 "回到「所有快捷指令」，右上角 + 新建，名字随便起（比如“Persist同步”）",
                  "这条是“数据源”，第 2 步那条自动化稍后来调它。")
 
             step(4,
@@ -313,7 +313,7 @@ struct WatchSyncSheet: View {
                  "加「文本」→ 粘贴第一步复制的模板 → 把 [心率] 这类方括号逐个换成变量 → 再加「打开 URL」",
                  "换变量：先删掉方括号里的字，点键盘上方「变量」，选那个查找动作的「值」。最后「打开 URL」的输入选这个文本。")
 
-            Text("收尾：回到自动化那条 → 「添加动作」→ 选刚建的快捷指令 → 完成。之后每次打开天才威就自动同步。")
+            Text("收尾：回到自动化那条 → 「添加动作」→ 选刚建的快捷指令 → 完成。之后每次打开Persist就自动同步。")
                 .font(.tw(11.5))
                 .foregroundStyle(TWColor.ink3)
                 .lineSpacing(2.5)
@@ -337,7 +337,7 @@ struct WatchSyncSheet: View {
                 Spacer(minLength: 0)
             }
 
-            Text("上面五步里的第 2 步用的是「打开天才威时」触发——你得先开 App 它才跑。把触发条件换成时间，就彻底不用管了：")
+            Text("上面五步里的第 2 步用的是「打开Persist时」触发——你得先开 App 它才跑。把触发条件换成时间，就彻底不用管了：")
                 .font(.tw(12))
                 .foregroundStyle(TWColor.ink3)
                 .lineSpacing(2.5)
@@ -352,7 +352,7 @@ struct WatchSyncSheet: View {
                  "关掉询问才是真的自动。不关的话每天会弹一个确认框，等于又变成手动。")
 
             step(3,
-                 "动作只加一条：「运行快捷指令」→ 选你第 3 步建好的那条（比如“天才威同步”）→ 完成",
+                 "动作只加一条：「运行快捷指令」→ 选你第 3 步建好的那条（比如“Persist同步”）→ 完成",
                  "这条自动化不用再写查找健康样本，直接调那条现成的就行。两条共用同一个快捷指令，改一处两边都生效。")
 
             Text("更准的两种触发：把「特定时间」换成「当闹钟关闭时」，或「当断开充电时」。这两件事你每天都会做，不用等整点。")
@@ -361,7 +361,7 @@ struct WatchSyncSheet: View {
                 .lineSpacing(2.5)
                 .fixedSize(horizontal: false, vertical: true)
 
-            Text("会闪一下：最后那条「打开 URL」会把天才威拉到前台。手机锁着的话，解锁那一刻才跳过去，数据不会丢。")
+            Text("会闪一下：最后那条「打开 URL」会把Persist拉到前台。手机锁着的话，解锁那一刻才跳过去，数据不会丢。")
                 .font(.tw(11.5))
                 .foregroundStyle(TWColor.ink3)
                 .lineSpacing(2.5)
@@ -517,7 +517,7 @@ struct WatchSyncSheet: View {
             trouble("文本里插不进变量", "「查找健康样本」必须排在「文本」前面。先有查找动作，变量列表里才出现它的值。")
             trouble("URL 打开没反应", "检查是不是以 twfit:// 开头、中间没有空格、& 不是中文的＆。")
             trouble("每次打开都弹确认", "自动化里关掉「运行前询问」，并确认选的是「立即运行」。")
-            trouble("步数一直是 0", "设置 → 隐私与安全 → 运动与健身 → 天才威 打开；步数要手机在身上才计得准。")
+            trouble("步数一直是 0", "设置 → 隐私与安全 → 运动与健身 → Persist 打开；步数要手机在身上才计得准。")
             trouble("血氧显示 0 或 0.98", "健康里的血氧是 0.98 这种小数，App 两种写法都认，直接传就行。")
             trouble("心率一直是 0", "手表要贴合手腕、健康里有心率记录；「最新样本」当天没记录就是空。")
         }
@@ -601,7 +601,7 @@ struct WatchSyncSheet: View {
                     .font(.tw(14.5, .bold))
                     .foregroundStyle(TWColor.ink)
             }
-            Text("Apple Watch 的数据在系统「健康」里。第三方 App 直连要 HealthKit 权限，这个权限只在付费开发者账号下发；免费签名的 App 一调就 AUTH_FAILED。\n\n快捷指令是系统 App，天生能读健康。让它读出来、拼成链接交给天才威——这条完全免费，也是免费签名下唯一走得通的路。")
+            Text("Apple Watch 的数据在系统「健康」里。第三方 App 直连要 HealthKit 权限，这个权限只在付费开发者账号下发；免费签名的 App 一调就 AUTH_FAILED。\n\n快捷指令是系统 App，天生能读健康。让它读出来、拼成链接交给Persist——这条完全免费，也是免费签名下唯一走得通的路。")
                 .font(.tw(12))
                 .foregroundStyle(TWColor.ink2)
                 .lineSpacing(3)
@@ -616,7 +616,7 @@ struct WatchSyncSheet: View {
 
     /// 唤起用户已经建好的那条快捷指令。名字必须和引导里写的一致。
     private func runShortcut() {
-        let name = "天才威心率"
+        let name = "Persist心率"
         guard let enc = name.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
               let u = URL(string: "shortcuts://run-shortcut?name=\(enc)") else { return }
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
@@ -651,13 +651,13 @@ struct WatchSyncSheet: View {
 
     private func copySteps() {
         let text = """
-        天才威 · 手表同步 五步
+        Persist · 手表同步 五步
 
         模板（App 里点“复制模板并打开快捷指令”也能拿到）：
         \(quickTemplate)
 
         1. 快捷指令 App → 底部「自动化」→ 右上角 +
-        2. 选「App」→ 搜“天才威”→ 勾「打开时」→ 开「立即运行」→ 下一步
+        2. 选「App」→ 搜“Persist”→ 勾「打开时」→ 开「立即运行」→ 下一步
         3. 回「所有快捷指令」→ 右上角 + 新建，名字随意
         4. 添加动作 → 搜「查找健康样本」，加 4 个：心率 / 步数 / 活动能量 / 睡眠分析
            每个：类型对应，排序方式=最新样本，限制=1
@@ -666,7 +666,7 @@ struct WatchSyncSheet: View {
            再添加「打开 URL」，输入选这个文本
 
         收尾：自动化那条 → 添加动作 → 选刚建的快捷指令
-        之后每次打开天才威自动同步。
+        之后每次打开Persist自动同步。
 
         ---- 想彻底不用手动开 App，再加一条定时的 ----
         快捷指令 → 自动化 → + → 选「特定时间」

@@ -357,7 +357,7 @@ struct SettingsSheet: View {
                 .foregroundStyle(TWColor.ink)
 
             ShareLink(item: exportURL ?? FileManager.default.temporaryDirectory,
-                      subject: Text("天才威数据备份")) {
+                      subject: Text("Persist数据备份")) {
                 HStack(spacing: 11) {
                     Image(systemName: "square.and.arrow.up")
                         .font(.tw(15, .semibold))
@@ -418,7 +418,7 @@ struct SettingsSheet: View {
             }
 
             if let csvURL {
-                ShareLink(item: csvURL, subject: Text("天才威数据 CSV")) {
+                ShareLink(item: csvURL, subject: Text("Persist数据 CSV")) {
                     HStack(spacing: 11) {
                         Image(systemName: "tablecells")
                             .font(.tw(15, .semibold))

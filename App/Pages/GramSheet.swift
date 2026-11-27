@@ -467,7 +467,7 @@ struct BarcodeScanSheet: View {
             Text("相机没被允许")
                 .font(.tw(15, .bold))
                 .foregroundStyle(TWColor.ink)
-            Text("设置 → 隐私与安全 → 相机 → 天才威 打开，或者下面手动输入条码。")
+            Text("设置 → 隐私与安全 → 相机 → Persist 打开，或者下面手动输入条码。")
                 .font(.tw(12))
                 .foregroundStyle(TWColor.ink3)
                 .multilineTextAlignment(.center)

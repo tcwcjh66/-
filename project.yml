@@ -16,7 +16,7 @@ settings:
     ENABLE_USER_SCRIPT_SANDBOXING: "NO"
     SWIFT_OPTIMIZATION_LEVEL: "-O"
     # CI 会用命令行覆盖这三个：版本随提交走，构建号用 run number，commit 前 7 位写进包
-    MARKETING_VERSION: "3.54"
+    MARKETING_VERSION: "3.55"
     CURRENT_PROJECT_VERSION: "1"
     TW_COMMIT: "local"
 
@@ -33,7 +33,18 @@ targets:
     info:
       path: App/Info.plist
       properties:
-        CFBundleDisplayName: 天才威
+        CFBundleDisplayName: Persist
+        # 长按图标的快捷动作：记水 / 开练 / 记体重
+        UIApplicationShortcutItems:
+          - UIApplicationShortcutItemType: tw.shortcut.water
+            UIApplicationShortcutItemTitle: 记一杯水
+            UIApplicationShortcutItemIconType: UIApplicationShortcutIconTypeAdd
+          - UIApplicationShortcutItemType: tw.shortcut.train
+            UIApplicationShortcutItemTitle: 开始训练
+            UIApplicationShortcutItemIconType: UIApplicationShortcutIconTypePlay
+          - UIApplicationShortcutItemType: tw.shortcut.weight
+            UIApplicationShortcutItemTitle: 记体重
+            UIApplicationShortcutItemIconType: UIApplicationShortcutIconTypeBookmark
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         TWCommit: "$(TW_COMMIT)"
@@ -76,7 +87,7 @@ targets:
     info:
       path: WatchApp/Info.plist
       properties:
-        CFBundleDisplayName: 天才威
+        CFBundleDisplayName: Persist
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         TWCommit: "$(TW_COMMIT)"
@@ -97,7 +108,7 @@ targets:
     info:
       path: Widget/Info.plist
       properties:
-        CFBundleDisplayName: 天才威
+        CFBundleDisplayName: Persist
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
     settings:

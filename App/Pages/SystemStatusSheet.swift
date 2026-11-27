@@ -20,6 +20,9 @@ struct SystemStatusSheet: View {
     @State private var caps: [Cap] = []
     @State private var checking = false
     @State private var exportURL: URL?
+    @State private var issues: [TWDataIssue] = []
+    @State private var lastCrash: Date?
+    @State private var cleanTip = ""
 
     struct Cap: Identifiable {
         let id = UUID()
@@ -108,7 +111,7 @@ struct SystemStatusSheet: View {
                         .buttonStyle(.plain)
 
                         if let exportURL {
-                            ShareLink(item: exportURL, subject: Text("天才威数据备份")) {
+                            ShareLink(item: exportURL, subject: Text("Persist数据备份")) {
                                 HStack(spacing: 5) {
                                     Image(systemName: "square.and.arrow.up")
                                         .font(.tw(11, .bold))
@@ -118,6 +121,38 @@ struct SystemStatusSheet: View {
                                 .foregroundStyle(TWColor.mint)
                             }
                         }
+                    }
+
+                    card("数据体检") {
+                        if issues.isEmpty {
+                            row("状态", "没发现空记录或异常跳动", TWColor.mint)
+                        } else {
+                            ForEach(issues) { i in
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(i.title)
+                                        .font(.tw(12.5, .semibold))
+                                        .foregroundStyle(TWColor.coral)
+                                    Text(i.detail)
+                                        .font(.tw(10.5))
+                                        .foregroundStyle(TWColor.ink3)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                            if let zero = issues.first(where: { $0.kind == "zero" }) {
+                                Button {
+                                    let n = store.cleanZeroSessions()
+                                    issues = store.auditData()
+                                    cleanTip = n > 0 ? "已清掉 \(n) 条" : "没有可清的"
+                                } label: {
+                                    Text(cleanTip.isEmpty ? "清掉这 \(zero.count) 条空训练" : cleanTip)
+                                        .font(.tw(12, .bold))
+                                }
+                                .foregroundStyle(TWColor.mint)
+                            }
+                        }
+                        row("上次异常退出", lastCrash == nil ? "无记录" : timeText(lastCrash),
+                            lastCrash == nil ? TWColor.mint : TWColor.coral)
                     }
 
                     card("自动备份") {
@@ -219,7 +254,7 @@ struct SystemStatusSheet: View {
         let exts = files.filter { $0.hasSuffix(".appex") }
         out.append(Cap(name: "桌面小组件", ok: !exts.isEmpty,
                        detail: exts.isEmpty
-                       ? "包内没有扩展，桌面长按不会出现「天才威」"
+                       ? "包内没有扩展，桌面长按不会出现「Persist」"
                        : "已打进包：\(exts.joined(separator: "、"))"))
 
         await MainActor.run {
@@ -229,6 +264,10 @@ struct SystemStatusSheet: View {
     }
 
     private func reload() {
+        issues = store.auditData()
+        if let ts = UserDefaults.standard.object(forKey: "tw.lastCrashAt.v1") as? Double {
+            lastCrash = Date(timeIntervalSince1970: ts)
+        }
         let fm = FileManager.default
         let dir = TWBackup.dir()
         if let fs = try? fm.contentsOfDirectory(at: dir, includingPropertiesForKeys: [.fileSizeKey]) {

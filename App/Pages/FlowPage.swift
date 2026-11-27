@@ -100,6 +100,8 @@ struct FlowPage: View {
         .onAppear {
             // 休息提醒要靠通知权限，第一次进来问一次，之后不再弹
             Task { await TWNotify.requestPermission() }
+            // 锁屏挂一张「训练中」卡，休息时同一张卡切成倒计时
+            TWRestLive.begin(plan: plan.name)
         }
         .sheet(item: $summaryEntry) { e in
             SessionSummarySheet(entry: e, prev: summaryPrev, streak: summaryStreak)
@@ -491,7 +493,8 @@ struct FlowPage: View {
             }
             // 就算把手机揣兜里、切出去刷视频，到点也会响
             TWNotify.scheduleRest(after: sec, move: name)
-            TWRestLive.start(seconds: sec, move: name, next: next)
+            TWRestLive.setProgress(store.sessionSets + 1)
+            TWRestLive.start(seconds: sec, move: name, next: next, setNo: store.sessionSets + 1)
             TWVoice.announceRest(sec, move: name)
         }
     }
@@ -914,10 +917,11 @@ struct FlowPage: View {
                     // 暂停就撤通知，继续就按剩余秒数重约一条
                     if running {
                         TWNotify.scheduleRest(after: remain, move: restFrom)
-                        TWRestLive.start(seconds: remain, move: restFrom, next: restNext)
+                        TWRestLive.start(seconds: remain, move: restFrom, next: restNext, setNo: store.sessionSets + 1)
                     } else {
                         TWNotify.cancelRest()
-                        TWRestLive.endAll()
+                        // 暂停休息不等于结束训练：锁屏切回「训练中 · 第 N 组」
+                        TWRestLive.setProgress(store.sessionSets + 1)
                     }
                 } label: {
                     HStack(spacing: 6) {

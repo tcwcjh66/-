@@ -103,6 +103,15 @@ struct E1RMPoint: Identifiable, Hashable {
     var weight: Double
 }
 
+/// 一条体检发现。count 是受影响的记录数，kind 决定能不能一键清
+struct TWDataIssue: Identifiable {
+    var id = UUID()
+    var title: String
+    var detail: String
+    var count: Int
+    var kind: String
+}
+
 struct SessionLog: Codable, Identifiable, Hashable {
     var id = UUID()
     var date: String        // yyyy-MM-dd
@@ -884,6 +893,49 @@ final class TWStore: ObservableObject {
         persistSoon()
     }
 
+    // MARK: - 数据体检
+
+    /// 找脏数据：空训练、体重单日跳变。只报告，不擅自删。
+    func auditData() -> [TWDataIssue] {
+        var out: [TWDataIssue] = []
+
+        let zero = sessions.filter { $0.minutes <= 0 || $0.moves <= 0 }
+        if !zero.isEmpty {
+            out.append(TWDataIssue(
+                title: "空训练记录 \(zero.count) 条",
+                detail: "没记时长或没记动作，多半是误点「开始」又直接「结束」。可以一键清掉。",
+                count: zero.count, kind: "zero"))
+        }
+
+        let sorted = weightLogs.sorted { $0.id < $1.id }
+        var jumps: [String] = []
+        var prev: WeightLog?
+        for w in sorted {
+            if let p = prev, abs(w.kg - p.kg) > 2.0 {
+                jumps.append("\(p.id) → \(w.id)：\(String(format: "%.1f", p.kg)) → \(String(format: "%.1f", w.kg))")
+            }
+            prev = w
+        }
+        if !jumps.isEmpty {
+            out.append(TWDataIssue(
+                title: "体重单日跳变 \(jumps.count) 处",
+                detail: jumps.prefix(2).joined(separator: "；") + (jumps.count > 2 ? " 等" : "") + "。多半是换了秤或手误，建议到身体页核对。",
+                count: jumps.count, kind: "weight"))
+        }
+
+        return out
+    }
+
+    /// 清掉 0 时长、0 动作的训练记录，返回删了几条
+    @discardableResult
+    func cleanZeroSessions() -> Int {
+        let before = sessions.count
+        sessions.removeAll { $0.minutes <= 0 || $0.moves <= 0 }
+        let n = before - sessions.count
+        if n > 0 { persistSoon() }
+        return n
+    }
+
     // MARK: - 训练节奏（供本周日历和智能提醒用）
 
     /// 最近一次训练距今几天；从没练过返回 999
@@ -927,7 +979,7 @@ final class TWStore: ObservableObject {
     func exportJSONFile() -> URL? {
         let f = DateFormatter()
         f.dateFormat = "yyyy-MM-dd"
-        let name = "天才威-数据备份-\(f.string(from: Date())).json"
+        let name = "Persist-数据备份-\(f.string(from: Date())).json"
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(name)
         do {
             try exportJSON().data(using: .utf8)?.write(to: url, options: .atomic)
@@ -948,7 +1000,7 @@ final class TWStore: ObservableObject {
         }
 
         var lines: [String] = []
-        lines.append("天才威 数据导出, \(todayKey())")
+        lines.append("Persist 数据导出, \(todayKey())")
         lines.append("")
 
         lines.append("【训练记录】")
@@ -1011,7 +1063,7 @@ final class TWStore: ObservableObject {
     func exportCSVFile() -> URL? {
         let f = DateFormatter()
         f.dateFormat = "yyyy-MM-dd"
-        let name = "天才威-数据-\(f.string(from: Date())).csv"
+        let name = "Persist-数据-\(f.string(from: Date())).csv"
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(name)
         // 带 BOM，Excel 打开中文不乱码
         let bom = "\u{FEFF}"
@@ -1036,7 +1088,7 @@ final class TWStore: ObservableObject {
         f.dateFormat = "yyyy-MM-dd HH:mm"
         var root: [String: Any] = [:]
         root["exportedAt"] = f.string(from: Date())
-        root["app"] = "天才威 3.0"
+        root["app"] = "Persist 3.0"
         // 备份格式版本：以后加字段靠它判断要不要迁移
         root["schemaVersion"] = 2
         root["build"] = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "?"
@@ -1101,15 +1153,15 @@ final class TWStore: ObservableObject {
     }
 
     struct ImportError: LocalizedError {
-        var errorDescription: String? { "这不是天才威的备份文件，或者文件已经损坏" }
+        var errorDescription: String? { "这不是Persist的备份文件，或者文件已经损坏" }
     }
 
     /// 把导出的 JSON 回灌进来。换手机、重装之后靠这个捡回历史。
     @discardableResult
     func importJSON(_ data: Data) throws -> Int {
         guard let root = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-              (root["app"] as? String)?.contains("天才威") == true else {
-            TWLog.add("import", "导入失败：不是天才威的备份文件")
+              (root["app"] as? String).map({ $0.contains("Persist") || $0.contains("天才威") }) == true else {
+            TWLog.add("import", "导入失败：不是 Persist 的备份文件（改名前的旧备份也认）")
             throw ImportError()
         }
         // 老备份没有这个字段，按 1 处理；以后加字段靠它判断要不要迁移

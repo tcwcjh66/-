@@ -58,7 +58,7 @@ struct ShareCardContent: View {
                     Image(systemName: "bolt.heart.fill")
                         .font(.system(size: 13, weight: .bold))
                         .foregroundStyle(.white)
-                    Text("天才威")
+                    Text("Persist")
                         .font(.system(size: 13, weight: .heavy, design: .rounded))
                         .foregroundStyle(.white.opacity(0.92))
                     Spacer()
@@ -111,7 +111,7 @@ struct ShareCardContent: View {
                 HStack(spacing: 5) {
                     Image(systemName: "iphone")
                         .font(.system(size: 9))
-                    Text("天才威 · 本机记录，不含模拟数据")
+                    Text("Persist · 本机记录，不含模拟数据")
                         .font(.system(size: 9))
                 }
                 .foregroundStyle(.white.opacity(0.4))
@@ -177,7 +177,7 @@ struct WeekCardContent: View {
                 HStack(spacing: 6) {
                     Image(systemName: "bolt.heart.fill")
                         .font(.system(size: 12, weight: .bold))
-                    Text("天才威 · 周报")
+                    Text("Persist · 周报")
                         .font(.system(size: 12, weight: .heavy, design: .rounded))
                     Spacer()
                 }

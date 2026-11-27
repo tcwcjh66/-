@@ -19,6 +19,35 @@ struct RootView: View {
                 }
             }
         }
+        // 组件格子、长按图标、系统深链都从这里进来
+        .onReceive(NotificationCenter.default.publisher(for: .twShortcut)) { note in
+            go(to: (note.object as? String) ?? "")
+        }
+    }
+
+    /// 一处收口：深链、快捷动作都走这里，省得每个入口各写一遍
+    private func go(to key: String) {
+        switch key {
+        case "water":
+            store.addWater(1)
+            withAnimation(.snappy(duration: 0.26)) { tab = .diet }
+        case "meal":
+            withAnimation(.snappy(duration: 0.26)) { tab = .diet }
+        case "train":
+            withAnimation(.snappy(duration: 0.26)) { tab = .flow }
+        case "weight":
+            withAnimation(.snappy(duration: 0.26)) { tab = .bio }
+        case "tw.shortcut.water":
+            store.addWater(1)
+            withAnimation(.snappy(duration: 0.26)) { tab = .diet }
+        case "tw.shortcut.train":
+            withAnimation(.snappy(duration: 0.26)) { tab = .flow }
+        case "tw.shortcut.weight":
+            withAnimation(.snappy(duration: 0.26)) { tab = .bio }
+        default:
+            // 未知 host（比如快捷指令回传）不抢导航，留在当前页
+            break
+        }
     }
 
     private var content: some View {
@@ -59,7 +88,9 @@ struct RootView: View {
         .environment(\.twScrollPause, isScrolling)
         .ignoresSafeArea(edges: .bottom)
         .onOpenURL { url in
+            // 先让快捷指令回传（心率、睡眠）吃掉自己的参数，再交给页面路由
             handleIncoming(url)
+            go(to: url.host ?? "")
         }
     }
 

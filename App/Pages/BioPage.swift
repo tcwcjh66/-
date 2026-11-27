@@ -45,6 +45,8 @@ struct BioPage: View {
             groupVolumeCard
             bodyCard
             weightTrendCard
+
+            trainingStatsCard
             progressCard
             girthCard
             girthCompareCard
@@ -710,6 +712,16 @@ struct BioPage: View {
                             trendTag("离目标", String(format: "%.1f", abs(last.kg - goal)), TWColor.amber)
                         }
                     }
+
+                    if let eta = weightETA(recent) {
+                        Text("照最近四周的速度，预计 \(eta) 到 \(String(format: "%.1f", goal)) kg")
+                            .font(.tw(10.5))
+                            .foregroundStyle(TWColor.mint)
+                    } else if goal > 0 {
+                        Text("记够两周、方向稳定后，会给出预计到达日期。")
+                            .font(.tw(10))
+                            .foregroundStyle(TWColor.ink3)
+                    }
                 }
             }
         }
@@ -726,6 +738,100 @@ struct BioPage: View {
                 .font(.tw(15, .bold))
                 .foregroundStyle(tint)
         }
+    }
+
+    /// 按最近四周的净变化推目标日期；方向反了或数据太少就不硬算。
+    private func weightETA(_ logs: [WeightLog]) -> String? {
+        let goal = store.weightGoal
+        guard goal > 0, logs.count >= 2 else { return nil }
+        let cutoff = Date().addingTimeInterval(-28 * 86400)
+        let recent = logs.filter { (DateFormatter.twDay.date(from: $0.id) ?? .distantPast) > cutoff }
+        guard recent.count >= 2,
+              let first = recent.first, let last = recent.last,
+              let d1 = DateFormatter.twDay.date(from: first.id),
+              let d2 = DateFormatter.twDay.date(from: last.id) else { return nil }
+        let weeks = max(1.0, d2.timeIntervalSince(d1) / 604800)
+        let rate = (last.kg - first.kg) / weeks
+        let delta = goal - last.kg
+        guard abs(rate) > 0.05, delta * rate > 0 else { return nil }
+        let days = Int(abs(delta / rate) * 7)
+        guard days > 0, days < 520 else { return nil }
+        let f = DateFormatter()
+        f.dateFormat = "M 月 d 日"
+        return f.string(from: Date().addingTimeInterval(Double(days) * 86400))
+    }
+
+    /// 近半年训练量：柱高是次数，下面一行是当月的时长和吨位
+    private var trainingStatsCard: some View {
+        let cal = Calendar.current
+        let now = Date()
+        func key(_ d: Date) -> String {
+            let f = DateFormatter(); f.dateFormat = "yyyy-MM"; return f.string(from: d)
+        }
+        func label(_ d: Date) -> String {
+            let f = DateFormatter(); f.dateFormat = "M月"; return f.string(from: d)
+        }
+        let months = (0..<6).reversed().compactMap { off -> (String, Int, Int, Double)? in
+            guard let d = cal.date(byAdding: .month, value: -off, to: now) else { return nil }
+            let k = key(d)
+            let list = store.sessions.filter { $0.date.hasPrefix(k) }
+            return (label(d), list.count, list.reduce(0) { $0 + $1.minutes },
+                    list.reduce(0.0) { $0 + ($1.tonnage ?? 0) })
+        }
+        let peak = max(1, months.map { $0.1 }.max() ?? 1)
+        let thisMonth = months.last
+
+        return VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 6) {
+                Image(systemName: "chart.bar.fill")
+                    .font(.tw(13, .semibold))
+                    .foregroundStyle(TWColor.purple)
+                Text("训练统计")
+                    .font(.tw(16, .bold))
+                    .foregroundStyle(TWColor.ink)
+                Spacer()
+                GlassPill(text: "近 6 个月", tint: TWColor.purple)
+            }
+
+            if store.sessions.isEmpty {
+                Text("练完一次，这里就会开始长柱子。")
+                    .font(.tw(12))
+                    .foregroundStyle(TWColor.ink3)
+            } else {
+                HStack(alignment: .bottom, spacing: 10) {
+                    ForEach(Array(months.enumerated()), id: \.offset) { i, m in
+                        VStack(spacing: 5) {
+                            Text("\(m.1)")
+                                .font(.tw(9.5, .bold))
+                                .foregroundStyle(i == months.count - 1 ? TWColor.ink : TWColor.ink3)
+                            RoundedRectangle(cornerRadius: 5, style: .continuous)
+                                .fill(i == months.count - 1
+                                      ? LinearGradient(colors: [TWColor.mint, TWColor.blue],
+                                                       startPoint: .top, endPoint: .bottom)
+                                      : LinearGradient(colors: [TWColor.ink3.opacity(0.45), TWColor.ink3.opacity(0.18)],
+                                                       startPoint: .top, endPoint: .bottom))
+                                .frame(height: max(6, CGFloat(m.1) / CGFloat(peak) * 62))
+                            Text(m.0)
+                                .font(.tw(9))
+                                .foregroundStyle(TWColor.ink3)
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                }
+                .frame(height: 118, alignment: .bottom)
+
+                if let m = thisMonth {
+                    HStack(spacing: 20) {
+                        trendTag("本月次数", "\(m.1)", TWColor.ink)
+                        trendTag("总时长", "\(m.2) 分", TWColor.blue)
+                        trendTag("总吨位", String(format: "%.0f", m.3), TWColor.purple)
+                        Spacer(minLength: 0)
+                    }
+                }
+            }
+        }
+        .padding(16)
+        .twGlass()
     }
 
     private var bodyCard: some View {

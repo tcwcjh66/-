@@ -3,6 +3,13 @@ import Combine
 
 @main
 struct TianCaiWeiApp: App {
+    @UIApplicationDelegateAdaptor(TWAppDelegate.self) private var appDelegate
+
+    init() {
+        TWCrashGuard.install()
+        TWCrashGuard.checkLastCrash()
+    }
+
     @StateObject private var store = TWStore.shared
     @Environment(\.scenePhase) private var scenePhase
     /// 前台每 5 分钟把当下数值写进今天这一格，这样没训练的日子图里也有点

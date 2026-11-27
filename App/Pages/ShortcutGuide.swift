@@ -116,7 +116,7 @@ struct ShortcutGuideSheet: View {
             }
 
             hint("先手打 twfit://hr?bpm= ，然后把光标停在这行末尾，点键盘上方的「变量」，选第一步那个查找动作的「值」——它就变成右边那个紫色胶囊。")
-            hint("建完把这条改名成「天才威心率」，以后在手表同步页点「跑一次」就不用再进来。")
+            hint("建完把这条改名成「Persist心率」，以后在手表同步页点「跑一次」就不用再进来。")
 
             Button { copyPrefix() } label: {
                 HStack(spacing: 7) {
@@ -151,8 +151,8 @@ struct ShortcutGuideSheet: View {
                     .font(.tw(14.5, .bold))
                     .foregroundStyle(TWColor.ink)
             }
-            checkLine(1, "先给这条快捷指令改名成「天才威心率」——回 App 点「跑一次」就靠这个名字找它")
-            checkLine(2, "回到天才威，看首页「心率」那一格")
+            checkLine(1, "先给这条快捷指令改名成「Persist心率」——回 App 点「跑一次」就靠这个名字找它")
+            checkLine(2, "回到Persist，看首页「心率」那一格")
             checkLine(3, "数字变成了你刚才的心率，就成了；还是 — 就回来看第二步的变量插没插对")
         }
         .frame(maxWidth: .infinity, alignment: .leading)

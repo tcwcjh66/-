@@ -11,11 +11,17 @@ struct TWRestAttributes: ActivityAttributes {
         var endAt: Date
         /// 本轮总秒数，用来画进度
         var total: Int
+        /// rest = 组间休息，training = 训练进行中
+        var phase: String = "rest"
+        /// 当前第几组，训练全程卡上用
+        var setNo: Int = 0
+        /// 刚做完的动作
+        var move: String = ""
+        /// 下一个要做的
+        var next: String = ""
     }
 
-    /// 刚做完的动作
-    var move: String
-    /// 下一个要做的
-    var next: String
+    /// 这次训练用的是哪个方案
+    var plan: String = ""
 }
 #endif

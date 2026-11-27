@@ -43,7 +43,7 @@ struct OnboardingView: View {
         VStack(alignment: .leading, spacing: 18) {
             Spacer(minLength: 30)
 
-            Text("天才威")
+            Text("Persist")
                 .font(.tw(44, .black))
                 .foregroundStyle(TWColor.ink)
 

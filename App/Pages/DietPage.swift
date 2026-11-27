@@ -69,6 +69,7 @@ struct DietPage: View {
             aiCard
             kcalCard
             macroCard
+            nextBiteCard
             fixCard
             addCard
             searchCard
@@ -603,6 +604,78 @@ struct DietPage: View {
 
     private func one(_ v: Double) -> String {
         String(format: "%.1f", v)
+    }
+
+    /// 「今天还差什么」：按剩余热量和蛋白缺口，从库里挑几样补上
+    private var nextBiteCard: some View {
+        let leftKcal = store.dietTarget - store.dietKcal
+        let leftProtein = max(0, store.proteinGoal - store.protein)
+        let leftCarb = max(0, carbNeed - store.carb)
+        let picks = FoodBase.items
+            .filter { $0.kcal > 0 && $0.portion > 0 && $0.protein / $0.kcal > 0.05 }
+            .sorted { ($0.protein / $0.kcal) > ($1.protein / $1.kcal) }
+            .prefix(3)
+            .map { f -> (String, String, String) in
+                let g = f.portion
+                let r = g / 100.0
+                return (f.name,
+                        "\(Int(g))g",
+                        "\(Int(f.kcal * r)) kcal · 蛋白 \(String(format: "%.0f", f.protein * r))g")
+            }
+
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 6) {
+                Image(systemName: "fork.knife")
+                    .font(.tw(13, .semibold))
+                    .foregroundStyle(TWColor.mint)
+                Text("今天还差什么")
+                    .font(.tw(15, .bold))
+                    .foregroundStyle(TWColor.ink)
+                Spacer(minLength: 0)
+            }
+
+            HStack(spacing: 8) {
+                GlassPill(text: leftKcal > 0 ? "热量还差 \(Int(leftKcal))" : "热量已够",
+                          tint: leftKcal > 0 ? TWColor.amber : TWColor.mint)
+                GlassPill(text: leftProtein > 0 ? "蛋白还差 \(Int(leftProtein))g" : "蛋白够了",
+                          tint: leftProtein > 0 ? TWColor.blue : TWColor.mint)
+                if leftCarb > 0 && leftKcal > 0 {
+                    GlassPill(text: "碳水差 \(Int(leftCarb))g", tint: TWColor.purple)
+                }
+                Spacer(minLength: 0)
+            }
+
+            if leftProtein <= 0 && leftKcal <= 0 {
+                Text("今天的目标已经够了，别再硬塞。")
+                    .font(.tw(11))
+                    .foregroundStyle(TWColor.ink3)
+            } else {
+                VStack(spacing: 0) {
+                    ForEach(Array(picks.enumerated()), id: \.offset) { i, p in
+                        HStack(spacing: 10) {
+                            Text(p.0)
+                                .font(.tw(12.5, .semibold))
+                                .foregroundStyle(TWColor.ink)
+                            Spacer(minLength: 0)
+                            Text(p.1)
+                                .font(.tw(11))
+                                .foregroundStyle(TWColor.ink3)
+                            Text(p.2)
+                                .font(.tw(10.5))
+                                .foregroundStyle(TWColor.ink2)
+                                .frame(width: 118, alignment: .trailing)
+                        }
+                        .padding(.vertical, 8)
+                        if i < picks.count - 1 { Divider().opacity(0.25) }
+                    }
+                }
+                Text("挑 1–2 样就够补上缺口，别三样全吃。")
+                    .font(.tw(10))
+                    .foregroundStyle(TWColor.ink3)
+            }
+        }
+        .padding(16)
+        .twGlass()
     }
 
     private var macroCard: some View {
