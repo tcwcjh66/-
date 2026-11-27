@@ -199,7 +199,7 @@ struct TWRestLiveWidget: Widget {
             .activityBackgroundTint(Color(red: 0.16, green: 0.13, blue: 0.32))
         } dynamicIsland: { context in
             let resting = context.state.phase == "rest"
-            DynamicIsland {
+            return DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
                     Label(resting ? (context.state.move.isEmpty ? "休息" : context.state.move) : "训练中",
                           systemImage: resting ? "timer" : "figure.strengthtraining.traditional")
