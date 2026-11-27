@@ -382,6 +382,8 @@ final class TWStore: ObservableObject {
     @Published var dietKcal: Double = 0
     @Published var dietTarget: Double = 2200
     @Published var proteinGoal: Double = 120
+    /// 每周练几次算达标，本周日历和「还差几次」提醒都用它
+    @Published var weeklyGoal: Int = 4
     @Published var protein: Double = 0
     @Published var carb: Double = 0
     @Published var fat: Double = 0
@@ -527,6 +529,7 @@ final class TWStore: ObservableObject {
         static let wdeep = "tw.wdeep.v2"
         static let dt = "tw.dt.v2"
         static let pgoal = "tw.pgoal.v2"
+        static let weekly = "tw.weekly.v1"
         static let wt = "tw.wt.v2"
         static let mhist = "tw.mhist.v2"
         static let wsync = "tw.wsync.v2"
@@ -881,6 +884,45 @@ final class TWStore: ObservableObject {
         persistSoon()
     }
 
+    // MARK: - 训练节奏（供本周日历和智能提醒用）
+
+    /// 最近一次训练距今几天；从没练过返回 999
+    func gapDays() -> Int {
+        let cal = Calendar.current
+        guard let last = sessions.compactMap({ DateFormatter.twDay.date(from: $0.date) }).max() else { return 999 }
+        return cal.dateComponents([.day],
+                                  from: cal.startOfDay(for: last),
+                                  to: cal.startOfDay(for: Date())).day ?? 0
+    }
+
+    /// 本周（周一起算）练了几次
+    func weeklyDone() -> Int {
+        let cal = Calendar.current
+        let today = Date()
+        let weekday = cal.component(.weekday, from: today)
+        let offset = (weekday + 5) % 7
+        guard let monday = cal.date(byAdding: .day, value: -offset,
+                                    to: cal.startOfDay(for: today)) else { return 0 }
+        let keys = Set(sessions.map { $0.date })
+        return (0..<7)
+            .compactMap { cal.date(byAdding: .day, value: $0, to: monday) }
+            .filter { keys.contains(DateFormatter.twDay.string(from: $0)) }
+            .count
+    }
+
+    /// 近三周里最常练的星期几（1=周日 … 7=周六）。没有计划表时，
+    /// 用它推「你通常会在这几天练」，比硬编码周几更贴合实际。
+    func habitWeekdays(limit: Int = 3) -> Set<Int> {
+        let cal = Calendar.current
+        var counts: [Int: Int] = [:]
+        for s in sessions.prefix(60) {
+            guard let d = DateFormatter.twDay.date(from: s.date) else { continue }
+            guard let diff = cal.dateComponents([.day], from: d, to: Date()).day, diff <= 21 else { continue }
+            counts[cal.component(.weekday, from: d), default: 0] += 1
+        }
+        return Set(counts.sorted { $0.value > $1.value }.prefix(limit).map { $0.key })
+    }
+
     /// 把导出的 JSON 落成一个真实的 .json 文件，交给系统分享面板存到「文件」或发给自己
     func exportJSONFile() -> URL? {
         let f = DateFormatter()
@@ -1007,6 +1049,7 @@ final class TWStore: ObservableObject {
         root["mood"] = mood
         root["dietTarget"] = dietTarget
         root["proteinGoal"] = proteinGoal
+        root["weeklyGoal"] = weeklyGoal
         root["dietKcal"] = dietKcal
         root["protein"] = protein
         root["carb"] = carb
@@ -1093,6 +1136,7 @@ final class TWStore: ObservableObject {
         if let v = root["mood"] as? String { mood = v }
         if let v = dbl("dietTarget") { dietTarget = v }
         if let v = dbl("proteinGoal") { proteinGoal = v }
+        if let v = int("weeklyGoal") { weeklyGoal = min(7, max(1, v)) }
         if let v = dbl("dietKcal") { dietKcal = v }
         if let v = dbl("protein") { protein = v }
         if let v = dbl("carb") { carb = v }
@@ -1783,6 +1827,7 @@ final class TWStore: ObservableObject {
 
         d.set(dietTarget, forKey: Key.dt)
         d.set(proteinGoal, forKey: Key.pgoal)
+        d.set(weeklyGoal, forKey: Key.weekly)
         d.set(age, forKey: "tw.age.v3")
         d.set(sexMale, forKey: "tw.sexMale.v3")
         d.set(activityLevel, forKey: "tw.activity.v3")
@@ -1860,6 +1905,7 @@ final class TWStore: ObservableObject {
         mood = d.string(forKey: Key.mood) ?? "ok"
         if d.object(forKey: Key.dt) != nil { dietTarget = d.double(forKey: Key.dt) }
         if d.object(forKey: Key.pgoal) != nil { proteinGoal = d.double(forKey: Key.pgoal) }
+        if d.object(forKey: Key.weekly) != nil { weeklyGoal = max(1, d.integer(forKey: Key.weekly)) }
         if d.object(forKey: "tw.age.v3") != nil { age = d.integer(forKey: "tw.age.v3") }
         if d.object(forKey: "tw.sexMale.v3") != nil { sexMale = d.bool(forKey: "tw.sexMale.v3") }
         if d.object(forKey: "tw.activity.v3") != nil { activityLevel = d.integer(forKey: "tw.activity.v3") }

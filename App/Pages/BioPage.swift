@@ -44,6 +44,7 @@ struct BioPage: View {
             sleepTrainCard
             groupVolumeCard
             bodyCard
+            weightTrendCard
             progressCard
             girthCard
             girthCompareCard
@@ -624,6 +625,107 @@ struct BioPage: View {
             return "最久没练：\(bestName)，\(bestDays) 天前。下次排课把它补上。"
         }
         return "各肌群最近两天都练过，分布均衡。"
+    }
+
+    /// 体重趋势：单次数字没意义，方向才有。
+    /// 目标线画在图上，减了几斤、离目标还有多少，一眼看完。
+    private var weightTrendCard: some View {
+        let logs = store.weightLogs.sorted { $0.id < $1.id }
+        let recent = Array(logs.suffix(30))
+        let vals = recent.map { $0.kg }
+        let goal = store.weightGoal
+        let lo = min(vals.min() ?? 0, goal > 0 ? goal : (vals.min() ?? 0))
+        let hi = max(vals.max() ?? 0, goal > 0 ? goal : (vals.max() ?? 0))
+        let span = max(0.6, hi - lo)
+
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("体重趋势")
+                    .font(.tw(16, .bold))
+                    .foregroundStyle(TWColor.ink)
+                Spacer()
+                GlassPill(text: recent.count >= 2 ? "近 \(recent.count) 次" : "还不够画线",
+                          tint: recent.count >= 2 ? TWColor.mint : TWColor.ink3)
+            }
+
+            if recent.count < 2 {
+                Text("至少记两次才能看出方向。每天早上空腹、同一台秤称一次，趋势比单次数字可靠。")
+                    .font(.tw(12))
+                    .foregroundStyle(TWColor.ink3)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else {
+                GeometryReader { geo in
+                    let w = geo.size.width
+                    let h = geo.size.height
+                    let step = w / CGFloat(max(1, recent.count - 1))
+                    ZStack(alignment: .topLeading) {
+                        if goal > 0 {
+                            Path { p in
+                                let y = h - CGFloat((goal - lo) / span) * (h - 10) - 5
+                                p.move(to: CGPoint(x: 0, y: y))
+                                p.addLine(to: CGPoint(x: w, y: y))
+                            }
+                            .stroke(TWColor.amber.opacity(0.5),
+                                    style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
+
+                            Text("目标 \(String(format: "%.1f", goal))")
+                                .font(.tw(9.5, .semibold))
+                                .foregroundStyle(TWColor.amber)
+                                .offset(x: 4,
+                                        y: h - CGFloat((goal - lo) / span) * (h - 10) - 20)
+                        }
+
+                        Path { p in
+                            for (i, v) in vals.enumerated() {
+                                let pt = CGPoint(x: CGFloat(i) * step,
+                                                 y: h - CGFloat((v - lo) / span) * (h - 10) - 5)
+                                if i == 0 { p.move(to: pt) } else { p.addLine(to: pt) }
+                            }
+                        }
+                        .stroke(LinearGradient(colors: [TWColor.blue, TWColor.mint],
+                                               startPoint: .leading, endPoint: .trailing),
+                                style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
+
+                        if let last = vals.last {
+                            Circle()
+                                .fill(TWColor.mint)
+                                .frame(width: 7, height: 7)
+                                .offset(x: w - 7,
+                                        y: h - CGFloat((last - lo) / span) * (h - 10) - 8)
+                        }
+                    }
+                }
+                .frame(height: 108)
+
+                if let first = recent.first, let last = recent.last {
+                    let diff = last.kg - first.kg
+                    HStack(spacing: 14) {
+                        trendTag("起始", String(format: "%.1f", first.kg), TWColor.ink2)
+                        trendTag("现在", String(format: "%.1f", last.kg), TWColor.ink)
+                        trendTag(diff >= 0 ? "变化 +" : "变化 −",
+                                 String(format: "%.1f", abs(diff)),
+                                 diff >= 0 ? TWColor.coral : TWColor.mint)
+                        Spacer(minLength: 0)
+                        if goal > 0 {
+                            trendTag("离目标", String(format: "%.1f", abs(last.kg - goal)), TWColor.amber)
+                        }
+                    }
+                }
+            }
+        }
+        .padding(16)
+        .twGlass()
+    }
+
+    private func trendTag(_ k: String, _ v: String, _ tint: Color) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(k)
+                .font(.tw(9.5))
+                .foregroundStyle(TWColor.ink3)
+            Text(v)
+                .font(.tw(15, .bold))
+                .foregroundStyle(tint)
+        }
     }
 
     private var bodyCard: some View {

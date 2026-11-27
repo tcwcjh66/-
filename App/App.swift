@@ -26,6 +26,13 @@ struct TianCaiWeiApp: App {
                         lastExport: TWStore.lastExportAt,
                         hasData: !store.sessions.isEmpty || !store.meals.isEmpty
                             || !store.weightLogs.isEmpty || !store.logs.isEmpty)
+                    // 智能提醒：训练日提前两小时、断练三天、周日还差几次
+                    TWNotify.rescheduleSmart(
+                        planWeekdays: store.habitWeekdays(),
+                        gapDays: store.gapDays(),
+                        weeklyDone: store.weeklyDone(),
+                        weeklyGoal: store.weeklyGoal,
+                        hasData: !store.sessions.isEmpty)
                     StepLive.shared.bind(store)
                     StepLive.shared.start()
                     store.rollIfNewDay()

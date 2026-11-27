@@ -198,6 +198,81 @@ enum TWNotify {
             .removePendingNotificationRequests(withIdentifiers: [expiryID])
     }
 
+    // MARK: - 智能提醒（按真实节奏重排，每次打开 App 刷一遍）
+
+    private static let smartPlanPrefix = "tw.notif.req.smart.plan."
+    private static let smartGapID = "tw.notif.req.smart.gap"
+    private static let smartWeekID = "tw.notif.req.smart.week"
+
+    /// 训练日提前两小时、断练三天、周日还差几次。
+    /// 这三条都跟着真实数据走，不用用户再手动设一遍。
+    static func rescheduleSmart(planWeekdays: Set<Int>,
+                                gapDays: Int,
+                                weeklyDone: Int,
+                                weeklyGoal: Int,
+                                trainHour: Int = 19,
+                                hasData: Bool) {
+        let c = UNUserNotificationCenter.current()
+        var old: [String] = []
+        for w in 1...7 { old.append(smartPlanPrefix + "\(w)") }
+        old += [smartGapID, smartWeekID]
+        c.removePendingNotificationRequests(withIdentifiers: old)
+
+        guard hasData else { return }
+
+        // 训练日：提前两小时
+        var fireHour = trainHour - 2
+        if fireHour < 0 { fireHour += 24 }
+        for w in planWeekdays {
+            let content = UNMutableNotificationContent()
+            content.title = "今天排了训练"
+            content.body = "两小时后开始（\(trainHour):00）。先把动作过一遍，组间别拖太长。"
+            content.sound = .default
+            var comps = DateComponents()
+            comps.weekday = w
+            comps.hour = fireHour
+            comps.minute = 0
+            let trigger = UNCalendarNotificationTrigger(dateMatching: comps, repeats: true)
+            c.add(UNNotificationRequest(identifier: smartPlanPrefix + "\(w)",
+                                        content: content, trigger: trigger))
+        }
+
+        // 断练：明天 19:30 一次性提醒
+        if gapDays >= 3 && gapDays < 999 {
+            let content = UNMutableNotificationContent()
+            content.title = "已经 \(gapDays) 天没练"
+            content.body = "哪怕二十分钟，两组深蹲加一组俯卧撑也算续上。"
+            content.sound = .default
+            let trigger = UNTimeIntervalNotificationTrigger(
+                timeInterval: secondsUntilTomorrow(hour: 19, minute: 30), repeats: false)
+            c.add(UNNotificationRequest(identifier: smartGapID, content: content, trigger: trigger))
+        }
+
+        // 周日 18:00 提醒本周还差几次（已达标就不排）
+        if weeklyDone < weeklyGoal {
+            let content = UNMutableNotificationContent()
+            content.title = "本周还差 \(weeklyGoal - weeklyDone) 次"
+            content.body = "今天是这周最后一天，补一次这周就完整了。"
+            content.sound = .default
+            var comps = DateComponents()
+            comps.weekday = 1
+            comps.hour = 18
+            comps.minute = 0
+            let trigger = UNCalendarNotificationTrigger(dateMatching: comps, repeats: true)
+            c.add(UNNotificationRequest(identifier: smartWeekID, content: content, trigger: trigger))
+        }
+    }
+
+    private static func secondsUntilTomorrow(hour: Int, minute: Int) -> TimeInterval {
+        let cal = Calendar.current
+        guard let tomorrow = cal.date(byAdding: .day, value: 1, to: Date()) else { return 3600 }
+        var comps = cal.dateComponents([.year, .month, .day], from: tomorrow)
+        comps.hour = hour
+        comps.minute = minute
+        guard let at = cal.date(from: comps) else { return 3600 }
+        return max(60, at.timeIntervalSinceNow)
+    }
+
     // MARK: - 组间休息
 
     private static let restID = "tw.notif.req.rest"

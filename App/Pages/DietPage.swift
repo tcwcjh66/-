@@ -484,6 +484,11 @@ struct DietPage: View {
         (store.sessionStart == nil && store.sessions.isEmpty) ? 110 : 130
     }
 
+    /// 碳水、脂肪目标跟着热量目标走：45% 热量给碳水、30% 给脂肪，
+    /// 比写死 260g / 70g 更贴每个人的实际摄入。
+    private var carbNeed: Double { max(1, store.dietTarget * 0.45 / 4) }
+    private var fatNeed: Double { max(1, store.dietTarget * 0.30 / 9) }
+
     private var proteinLeft: Double { max(0, proteinNeed - store.protein) }
 
     private var proteinHint: String {
@@ -611,9 +616,9 @@ struct DietPage: View {
                           tint: proteinLeft <= 0 ? TWColor.mint : TWColor.coral)
             }
 
-            macroRow(title: "蛋白质", value: store.protein, target: proteinNeed, tint: TWColor.coral, unit: "g")
-            macroRow(title: "碳水", value: store.carb, target: 260, tint: TWColor.blue, unit: "g")
-            macroRow(title: "脂肪", value: store.fat, target: 70, tint: TWColor.amber, unit: "g")
+            macroRow(title: "蛋白质", value: store.protein, target: max(store.proteinGoal, proteinNeed), tint: TWColor.coral, unit: "g")
+            macroRow(title: "碳水", value: store.carb, target: carbNeed, tint: TWColor.blue, unit: "g")
+            macroRow(title: "脂肪", value: store.fat, target: fatNeed, tint: TWColor.amber, unit: "g")
 
             macroRatioBar
         }
@@ -1264,6 +1269,11 @@ struct ShotResultSheet: View {
     @State private var showDiag = false
     /// 正在给哪条结果扫码补克数
     @State private var scanTarget: FoodHit?
+    /// 正在纠正哪条结果（认错了就地改，改完写进学习表）
+    @State private var fixTarget: FoodHit?
+    @State private var fixQuery = ""
+    /// 纠正过的结果留在这，原 hits 是外部传进来不可变的
+    @State private var fixedHits: [FoodHit] = []
 
     private let slots = ["早餐", "午餐", "晚餐", "加餐"]
     @State private var slot: String = ""
@@ -1277,6 +1287,45 @@ struct ShotResultSheet: View {
 
     private func gramsOf(_ h: FoodHit) -> Double { gramsOverride[h.id] ?? h.grams }
     private func rateOf(_ h: FoodHit) -> Double { max(0.1, gramsOf(h) / max(1, h.grams)) }
+
+    /// 纠正过就用改后的，没改过用引擎给的
+    private var shownHits: [FoodHit] { fixedHits.isEmpty ? hits : fixedHits }
+
+    /// 就地改对这一条，并把「读到的字 → 对的食物」记进学习表。
+    /// 库再全也追不上每个人的零食柜，用户改一次比调十个阈值管用。
+    private func applyFix(_ food: LocalFood, for h: FoodHit) {
+        let g = gramsOf(h)
+        let r = g / max(1, food.portion)
+        let fixed = FoodHit(name: food.name, grams: g,
+                            kcal: food.kcal * r, protein: food.protein * r,
+                            carb: food.carb * r, fat: food.fat * r,
+                            veg: 0,
+                            confidence: 1.0, source: "你改过的",
+                            keyword: h.keyword)
+
+        var list = shownHits
+        if let idx = list.firstIndex(where: { $0.id == h.id }) { list[idx] = fixed }
+        fixedHits = list
+
+        // 选中状态和份量跟着那条结果走
+        if selected.contains(h.id) {
+            selected.remove(h.id)
+            selected.insert(fixed.id)
+        }
+        if let gv = gramsOverride[h.id] {
+            gramsOverride.removeValue(forKey: h.id)
+            gramsOverride[fixed.id] = gv
+        }
+
+        let word = h.keyword.isEmpty ? h.name : h.keyword
+        FoodLearn.remember(word: word, food: food.name)
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
+
+        withAnimation(.snappy(duration: 0.2)) {
+            fixTarget = nil
+            fixQuery = ""
+        }
+    }
 
     /// 按用户调过的份量重算一条
     private func scaled(_ h: FoodHit) -> FoodHit {
@@ -1365,13 +1414,108 @@ struct ShotResultSheet: View {
                     Spacer(minLength: 0)
                 }
                 .padding(.horizontal, 14)
-                .padding(.bottom, 12)
+
+                HStack(spacing: 8) {
+                    Button {
+                        UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                        withAnimation(.snappy(duration: 0.2)) {
+                            fixTarget = (fixTarget?.id == h.id) ? nil : h
+                            fixQuery = ""
+                        }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "arrow.triangle.2.circlepath")
+                                .font(.tw(11, .bold))
+                            Text(fixTarget?.id == h.id ? "收起" : "认错了？换一个")
+                                .font(.tw(11.5, .bold))
+                        }
+                        .foregroundStyle(TWColor.coral)
+                        .padding(.horizontal, 9)
+                        .padding(.vertical, 5)
+                        .background { Capsule().fill(TWColor.coral.opacity(0.12)) }
+                    }
+                    .buttonStyle(.plain)
+
+                    Text("改过之后会记住，下次读到同样的字直接命中")
+                        .font(.tw(10.5))
+                        .foregroundStyle(TWColor.ink3)
+                        .lineLimit(2)
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, 14)
+
+                if fixTarget?.id == h.id {
+                    fixPanel(for: h)
+                        .padding(.horizontal, 14)
+                }
+
+                Spacer()
+                    .frame(height: 12)
             }
         }
         .background {
             RoundedRectangle(cornerRadius: 15, style: .continuous)
                 .fill(TWColor.glass(on ? 0.85 : 0.42))
         }
+    }
+
+    /// 认错了就地改：搜到哪个就换哪个，顺着把「读到的字 → 食物」写进学习表
+    private func fixPanel(for h: FoodHit) -> some View {
+        let q = fixQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+        let cands = q.isEmpty ? [] : FoodBase.search(q, limit: 5)
+
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Image(systemName: "magnifyingglass")
+                    .font(.tw(11, .semibold))
+                    .foregroundStyle(TWColor.ink3)
+                TextField("正确是哪个食物？", text: $fixQuery)
+                    .font(.tw(12.5))
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+            .background {
+                RoundedRectangle(cornerRadius: 11, style: .continuous)
+                    .fill(TWColor.glass(0.42))
+            }
+
+            if cands.isEmpty {
+                Text(q.isEmpty ? "输入名字，从库里挑一个正确的" : "库里没有匹配，换个说法再试")
+                    .font(.tw(10.5))
+                    .foregroundStyle(TWColor.ink3)
+            } else {
+                ForEach(cands) { f in
+                    Button {
+                        applyFix(f, for: h)
+                    } label: {
+                        HStack(spacing: 8) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(f.name)
+                                    .font(.tw(12.5, .semibold))
+                                    .foregroundStyle(TWColor.ink)
+                                Text("\(Int(f.kcal)) kcal / \(Int(f.portion))g · 蛋白 \(Int(f.protein))g")
+                                    .font(.tw(10.5))
+                                    .foregroundStyle(TWColor.ink3)
+                            }
+                            Spacer(minLength: 0)
+                            Image(systemName: "arrow.right.circle.fill")
+                                .font(.tw(14, .semibold))
+                                .foregroundStyle(TWColor.mint)
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 8)
+                        .background {
+                            RoundedRectangle(cornerRadius: 11, style: .continuous)
+                                .fill(TWColor.glass(0.34))
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+        .padding(.bottom, 4)
     }
 
     /// 识别调试台：引擎看到的原始字、分组位置、命中分数都摆出来，
@@ -1671,7 +1815,7 @@ struct ShotResultSheet: View {
                             }
                         }
 
-                        ForEach(hits) { h in
+                        ForEach(shownHits) { h in
                             resultRow(h)
                         }
 
@@ -1688,8 +1832,8 @@ struct ShotResultSheet: View {
                     HStack(spacing: 6) {
                         Button {
                             UIImpactFeedbackGenerator(style: .soft).impactOccurred()
-                            let chosen = hits.filter { selected.contains($0.id) }
-                            store.saveAsCustom((chosen.isEmpty ? hits : chosen).map { scaled($0) })
+                            let chosen = shownHits.filter { selected.contains($0.id) }
+                            store.saveAsCustom((chosen.isEmpty ? shownHits : chosen).map { scaled($0) })
                             withAnimation(.snappy(duration: 0.2)) { savedToast = true }
                             DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) {
                                 withAnimation(.snappy(duration: 0.2)) { savedToast = false }
@@ -1741,7 +1885,7 @@ struct ShotResultSheet: View {
                             onGoSearch?()
                             return
                         }
-                        for h in hits where selected.contains(h.id) {
+                        for h in shownHits where selected.contains(h.id) {
                             if !h.keyword.isEmpty { FoodLearn.remember(word: h.keyword, food: h.name) }
                             onAdd(scaled(h))
                         }

@@ -16,7 +16,7 @@ settings:
     ENABLE_USER_SCRIPT_SANDBOXING: "NO"
     SWIFT_OPTIMIZATION_LEVEL: "-O"
     # CI 会用命令行覆盖这三个：版本随提交走，构建号用 run number，commit 前 7 位写进包
-    MARKETING_VERSION: "3.53"
+    MARKETING_VERSION: "3.54"
     CURRENT_PROJECT_VERSION: "1"
     TW_COMMIT: "local"
 
@@ -48,6 +48,10 @@ targets:
         NSPhotoLibraryAddUsageDescription: 用于把训练成绩单存进相簿。
         NSSupportsLiveActivities: true
         NSSupportsLiveActivitiesFrequentUpdates: true
+        # 让「文件」App 能看见 Documents 里的 twbackup，
+        # 重装前把 JSON 拖出来，卸载后数据才有得救
+        UIFileSharingEnabled: true
+        LSSupportsOpeningDocumentsInPlace: true
         NSHealthShareUsageDescription: 用于读取手表回传的心率、HRV、睡眠与训练记录。
         UIBackgroundModes:
           - audio

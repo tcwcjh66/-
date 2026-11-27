@@ -32,6 +32,7 @@ struct TodayPage: View {
                 if firstRun { firstRunCard }
                 hairline
                 todayTrainCard
+                weekGridCard
                 hairline
                 statsRow
                     .padding(.horizontal, 14)
@@ -111,9 +112,14 @@ struct TodayPage: View {
                 Spacer(minLength: 0)
             }
 
-            hintLine("1", "测一次心率", "「身体」→ 指尖轻压后置镜头，20 秒出数", TWColor.coral)
-            hintLine("2", "记第一餐", "「饮食」→ 搜食物或扫条码，填克数就出热量", TWColor.mint)
+            hintLine("1", "定个目标", "「我的」→ 填体重和目标，四环才有分母", TWColor.purple)
+            hintLine("2", "拍第一餐", "「饮食」→ 拍包装或搜食物，热量自动算", TWColor.mint)
             hintLine("3", "练第一次", "选个方案点「开始今天的训练」，记下来的组会进曲线", TWColor.blue)
+
+            Text("想测心率就「身体」→ 指尖轻压后置镜头，20 秒出数。不测也能用。")
+                .font(.tw(10))
+                .foregroundStyle(TWColor.ink3)
+                .fixedSize(horizontal: false, vertical: true)
 
             Button {
                 UIImpactFeedbackGenerator(style: .medium).impactOccurred()
@@ -294,6 +300,76 @@ struct TodayPage: View {
                 .font(.tw(12, .medium))
                 .foregroundStyle(TWColor.ink3)
         }
+    }
+
+    /// 本周七天摆出来：练过的打勾，今天描一圈。
+    /// 「这周练了几次、还差几次」是训练计划最需要的反馈，之前只能自己数。
+    private var weekGridCard: some View {
+        let cal = Calendar.current
+        let today = Date()
+        let weekday = cal.component(.weekday, from: today)
+        let offset = (weekday + 5) % 7
+        let monday = cal.date(byAdding: .day, value: -offset,
+                              to: cal.startOfDay(for: today)) ?? today
+        let days = (0..<7).compactMap { cal.date(byAdding: .day, value: $0, to: monday) }
+        let doneDays = Set(store.sessions.map { $0.date })
+        let done = days.filter { doneDays.contains(DateFormatter.twDay.string(from: $0)) }.count
+        let goal = max(1, store.weeklyGoal)
+
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 6) {
+                Image(systemName: "calendar")
+                    .font(.tw(13, .semibold))
+                    .foregroundStyle(TWColor.mint)
+                Text("本周训练")
+                    .font(.tw(15, .bold))
+                    .foregroundStyle(TWColor.ink)
+                Spacer()
+                GlassPill(text: done >= goal ? "达标 \(done)/\(goal)" : "\(done)/\(goal) 次",
+                          tint: done >= goal ? TWColor.mint : TWColor.amber)
+            }
+
+            HStack(spacing: 7) {
+                ForEach(Array(days.enumerated()), id: \.offset) { i, d in
+                    let key = DateFormatter.twDay.string(from: d)
+                    let has = doneDays.contains(key)
+                    let isToday = cal.isDateInToday(d)
+                    VStack(spacing: 6) {
+                        Text(["一", "二", "三", "四", "五", "六", "日"][i])
+                            .font(.tw(10, isToday ? .bold : .semibold))
+                            .foregroundStyle(isToday ? TWColor.ink : TWColor.ink3)
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                .fill(has ? TWColor.mint.opacity(0.82) : TWColor.glass(0.38))
+                                .frame(height: 40)
+                            if has {
+                                Image(systemName: "checkmark")
+                                    .font(.tw(13, .bold))
+                                    .foregroundStyle(.white)
+                            } else if isToday {
+                                Circle()
+                                    .strokeBorder(TWColor.mint.opacity(0.55), lineWidth: 1.5)
+                                    .frame(width: 12, height: 12)
+                            }
+                        }
+                        .overlay {
+                            if isToday {
+                                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                    .strokeBorder(TWColor.mint.opacity(0.75), lineWidth: 1.4)
+                            }
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+            }
+
+            Text(done >= goal
+                 ? "本周已经达标，剩下的当加练。"
+                 : "还差 \(goal - done) 次，排一天 40 分钟就能补上。")
+                .font(.tw(10.5))
+                .foregroundStyle(TWColor.ink3)
+        }
+        .padding(14)
     }
 
     private var statsRow: some View {

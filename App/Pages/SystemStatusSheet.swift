@@ -1,6 +1,11 @@
 import SwiftUI
+import UserNotifications
+import AVFoundation
+import Photos
+import ActivityKit
 
 /// 运行状态：把"到底存了几份、同步还活着吗"摊开，出问题不用猜。
+/// 免费签名下，扩展和权限经常悄悄失效，所以这里连"能力"一起体检。
 struct SystemStatusSheet: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var store: TWStore
@@ -10,6 +15,18 @@ struct SystemStatusSheet: View {
     @State private var photoBytes: Int = 0
     @State private var photoCount: Int = 0
     @State private var prefsCount: Int = 0
+
+    /// 能力自检结果：能用的打勾，不能用的写清楚卡在哪
+    @State private var caps: [Cap] = []
+    @State private var checking = false
+    @State private var exportURL: URL?
+
+    struct Cap: Identifiable {
+        let id = UUID()
+        let name: String
+        let ok: Bool
+        let detail: String
+    }
 
     var body: some View {
         ZStack {
@@ -31,6 +48,77 @@ struct SystemStatusSheet: View {
                         .buttonStyle(.plain)
                     }
                     .padding(.top, 10)
+
+                    card("能力自检") {
+                        if caps.isEmpty {
+                            row("状态", checking ? "正在检查…" : "点下面的按钮跑一遍", TWColor.ink3)
+                        } else {
+                            ForEach(caps) { c in
+                                HStack(alignment: .top, spacing: 8) {
+                                    Image(systemName: c.ok ? "checkmark.circle.fill" : "xmark.circle.fill")
+                                        .font(.tw(12, .bold))
+                                        .foregroundStyle(c.ok ? TWColor.mint : TWColor.coral)
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(c.name)
+                                            .font(.tw(12, .semibold))
+                                            .foregroundStyle(TWColor.ink)
+                                        Text(c.detail)
+                                            .font(.tw(10.5))
+                                            .foregroundStyle(TWColor.ink3)
+                                            .fixedSize(horizontal: false, vertical: true)
+                                    }
+                                    Spacer(minLength: 0)
+                                }
+                            }
+                        }
+
+                        Button {
+                            Task { await runChecks() }
+                        } label: {
+                            HStack(spacing: 5) {
+                                Image(systemName: "arrow.clockwise")
+                                    .font(.tw(11, .bold))
+                                Text(checking ? "检查中…" : "重新检查一遍")
+                                    .font(.tw(12, .bold))
+                            }
+                            .foregroundStyle(TWColor.mint)
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(checking)
+                    }
+
+                    card("重装前先存一份") {
+                        Text("卸载会连 Documents 一起清掉。把 JSON 存进「文件」，重装后从「数据」导回来，记录原样还在。")
+                            .font(.tw(10.5))
+                            .foregroundStyle(TWColor.ink3)
+                            .fixedSize(horizontal: false, vertical: true)
+
+                        Button {
+                            UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                            exportURL = store.exportJSONFile()
+                        } label: {
+                            HStack(spacing: 5) {
+                                Image(systemName: "doc.badge.arrow.up")
+                                    .font(.tw(11, .bold))
+                                Text(exportURL == nil ? "生成一份备份" : "重新生成")
+                                    .font(.tw(12, .bold))
+                            }
+                            .foregroundStyle(TWColor.blue)
+                        }
+                        .buttonStyle(.plain)
+
+                        if let exportURL {
+                            ShareLink(item: exportURL, subject: Text("天才威数据备份")) {
+                                HStack(spacing: 5) {
+                                    Image(systemName: "square.and.arrow.up")
+                                        .font(.tw(11, .bold))
+                                    Text("存到「文件」App")
+                                        .font(.tw(12, .bold))
+                                }
+                                .foregroundStyle(TWColor.mint)
+                            }
+                        }
+                    }
 
                     card("自动备份") {
                         row("备份份数", "\(backups.count) 份", backups.isEmpty ? TWColor.coral : TWColor.mint)
@@ -75,7 +163,69 @@ struct SystemStatusSheet: View {
                 .padding(.bottom, 30)
             }
         }
-        .onAppear { reload() }
+        .onAppear {
+            reload()
+            Task { await runChecks() }
+        }
+    }
+
+    /// 免费签名最容易出问题的地方：扩展没带上、权限被拒、实时活动被系统关掉。
+    /// 一次把结论摆出来，比在训练中途闪退再猜强。
+    private func runChecks() async {
+        await MainActor.run { checking = true }
+        var out: [Cap] = []
+
+        let ns = await UNUserNotificationCenter.current().notificationSettings()
+        switch ns.authorizationStatus {
+        case .authorized, .provisional, .ephemeral:
+            out.append(Cap(name: "通知", ok: true, detail: "已授权，提醒能正常弹出"))
+        case .denied:
+            out.append(Cap(name: "通知", ok: false, detail: "已被拒绝，要去系统设置里手动打开"))
+        case .notDetermined:
+            out.append(Cap(name: "通知", ok: false, detail: "还没申请过，开任意一个提醒就会申请"))
+        @unknown default:
+            out.append(Cap(name: "通知", ok: false, detail: "状态未知"))
+        }
+
+        let cam = AVCaptureDevice.authorizationStatus(for: .video)
+        if cam == .authorized {
+            out.append(Cap(name: "相机", ok: true, detail: "拍照识别、扫条码可用"))
+        } else if cam == .denied {
+            out.append(Cap(name: "相机", ok: false, detail: "已被拒绝，拍照和扫码都会失败"))
+        } else if cam == .restricted {
+            out.append(Cap(name: "相机", ok: false, detail: "被系统限制，无法使用"))
+        } else {
+            out.append(Cap(name: "相机", ok: false, detail: "还没申请过，第一次拍照时会申请"))
+        }
+
+        let photo = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+        if photo == .authorized || photo == .limited {
+            out.append(Cap(name: "相册", ok: true, detail: photo == .limited ? "只授权了部分照片" : "从相册选图可用"))
+        } else if photo == .denied {
+            out.append(Cap(name: "相册", ok: false, detail: "已被拒绝，相册里的餐食照片读不到"))
+        } else if photo == .restricted {
+            out.append(Cap(name: "相册", ok: false, detail: "被系统限制"))
+        } else {
+            out.append(Cap(name: "相册", ok: false, detail: "还没申请过"))
+        }
+
+        let live = ActivityAuthorizationInfo().areActivitiesEnabled
+        out.append(Cap(name: "实时活动 · 组间倒计时", ok: live,
+                       detail: live ? "锁屏和灵动岛都能显示倒计时"
+                                     : "系统里关掉了实时活动，锁屏看不到倒计时"))
+
+        let plugins = Bundle.main.bundleURL.appendingPathComponent("PlugIns")
+        let files = (try? FileManager.default.contentsOfDirectory(atPath: plugins.path)) ?? []
+        let exts = files.filter { $0.hasSuffix(".appex") }
+        out.append(Cap(name: "桌面小组件", ok: !exts.isEmpty,
+                       detail: exts.isEmpty
+                       ? "包内没有扩展，桌面长按不会出现「天才威」"
+                       : "已打进包：\(exts.joined(separator: "、"))"))
+
+        await MainActor.run {
+            caps = out
+            checking = false
+        }
     }
 
     private func reload() {
