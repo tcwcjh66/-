@@ -6,6 +6,7 @@ struct TodayPage: View {
     @EnvironmentObject var live: TWLive
     @State private var appeared = false
     @State private var showSettings = false
+    @State private var showSearch = false
     @State private var showWaterLog = false
     @State private var showRingInfo = false
     var onOpenFlow: () -> Void = {}
@@ -55,6 +56,12 @@ struct TodayPage: View {
         }
         .sheet(isPresented: $showSettings) {
             SettingsSheet()
+                .presentationDetents([.large])
+                .presentationCornerRadius(28)
+        }
+        .sheet(isPresented: $showSearch) {
+            GlobalSearchSheet()
+                .environmentObject(store)
                 .presentationDetents([.large])
                 .presentationCornerRadius(28)
         }
@@ -176,17 +183,31 @@ struct TodayPage: View {
                 TwGradientText(text: "今天", size: 31)
             }
             Spacer()
-            Button {
-                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                showSettings = true
-            } label: {
-                Image(systemName: "gearshape.fill")
+            HStack(spacing: 8) {
+                Button {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    showSearch = true
+                } label: {
+                    Image(systemName: "magnifyingglass")
+                        .font(.tw(15, .semibold))
+                        .foregroundStyle(TWColor.ink2)
+                        .frame(width: 38, height: 38)
+                        .twGlass(radius: 19)
+                }
+                .buttonStyle(.plain)
+
+                Button {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    showSettings = true
+                } label: {
+                    Image(systemName: "gearshape.fill")
                     .font(.tw(16, .semibold))
                     .foregroundStyle(TWColor.ink2)
                     .frame(width: 38, height: 38)
                     .twGlass(radius: 19)
+                }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
         }
     }
 

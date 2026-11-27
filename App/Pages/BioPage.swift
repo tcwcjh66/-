@@ -28,6 +28,7 @@ struct BioPage: View {
     @State private var showWeekly = false
     @State private var showAch = false
     @State private var showProgress = false
+    @State private var showBackfill = false
 
 
     var body: some View {
@@ -53,6 +54,12 @@ struct BioPage: View {
             achievementCard
             waterCard
             sourceCard
+        }
+        .sheet(isPresented: $showBackfill) {
+            BackfillSheet()
+                .environmentObject(store)
+                .presentationDetents([.large])
+                .presentationCornerRadius(28)
         }
         .sheet(isPresented: $showProgress) {
             ProgressPhotoSheet()
@@ -741,6 +748,16 @@ struct BioPage: View {
     }
 
     /// 按最近四周的净变化推目标日期；方向反了或数据太少就不硬算。
+    /// Deurenberg 估算：BMI + 年龄 + 性别。没有颈围，用不了海军公式。
+    private var bodyFatEstimate: (pct: Double, fatKg: Double, leanKg: Double)? {
+        guard store.bmi > 0, store.age > 0, store.bodyWeight > 0 else { return nil }
+        let base = 1.8 * store.bmi + 0.23 * Double(store.age)
+        let pct = store.sexMale ? base - 16.4 : base - 5.4
+        guard pct > 3, pct < 60 else { return nil }
+        let fatKg = store.bodyWeight * pct / 100
+        return (pct, fatKg, store.bodyWeight - fatKg)
+    }
+
     private func weightETA(_ logs: [WeightLog]) -> String? {
         let goal = store.weightGoal
         guard goal > 0, logs.count >= 2 else { return nil }
@@ -790,6 +807,18 @@ struct BioPage: View {
                     .font(.tw(16, .bold))
                     .foregroundStyle(TWColor.ink)
                 Spacer()
+                Button {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    showBackfill = true
+                } label: {
+                    Text("补录")
+                        .font(.tw(11, .bold))
+                        .foregroundStyle(TWColor.mint)
+                        .padding(.horizontal, 9)
+                        .padding(.vertical, 5)
+                        .background { Capsule().fill(TWColor.mint.opacity(0.13)) }
+                }
+                .buttonStyle(.plain)
                 GlassPill(text: "近 6 个月", tint: TWColor.purple)
             }
 
@@ -892,6 +921,40 @@ struct BioPage: View {
                         Spacer()
                         Text("偏高 28").font(.tw(9.5)).foregroundStyle(TWColor.ink3)
                     }
+                }
+
+                if let fat = bodyFatEstimate {
+                    HStack(spacing: 12) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("体脂约")
+                                .font(.tw(9.5))
+                                .foregroundStyle(TWColor.ink3)
+                            Text(String(format: "%.1f%%", fat.pct))
+                                .font(.tw(18, .bold))
+                                .foregroundStyle(TWColor.amber)
+                        }
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("脂肪量")
+                                .font(.tw(9.5))
+                                .foregroundStyle(TWColor.ink3)
+                            Text(String(format: "%.1f kg", fat.fatKg))
+                                .font(.tw(13, .semibold))
+                                .foregroundStyle(TWColor.ink2)
+                        }
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("去脂体重")
+                                .font(.tw(9.5))
+                                .foregroundStyle(TWColor.ink3)
+                            Text(String(format: "%.1f kg", fat.leanKg))
+                                .font(.tw(13, .semibold))
+                                .foregroundStyle(TWColor.ink2)
+                        }
+                        Spacer(minLength: 0)
+                    }
+                    Text("按 BMI + 年龄估的，误差约 ±5%，只用来看趋势，不用当体检结论。")
+                        .font(.tw(9.5))
+                        .foregroundStyle(TWColor.ink3)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
 

@@ -85,6 +85,7 @@ enum TWNotify {
 
     /// 按当前开关重排全部提醒。改开关后调一次，App 启动也调一次。
     static func reschedule() {
+        registerCategories()
         let c = UNUserNotificationCenter.current()
         c.removePendingNotificationRequests(withIdentifiers: allIDs())
         guard anyOn() else { return }
@@ -99,11 +100,34 @@ enum TWNotify {
         if isOn(.sleep) { add(id: "sleep", kind: .sleep, hour: 22, minute: 30) }
     }
 
+    // MARK: - 锁屏按钮
+
+    static let waterCategory = "TW_WATER"
+    static let trainCategory = "TW_TRAIN"
+
+    /// 注册带按钮的通知分类，锁屏上能直接处理，不用先解锁
+    static func registerCategories() {
+        let drank = UNNotificationAction(identifier: "TW_WATER_DONE", title: "已喝一杯",
+                                         options: [.authenticationRequired])
+        let later = UNNotificationAction(identifier: "TW_WATER_SNOOZE", title: "20 分钟后", options: [])
+        let water = UNNotificationCategory(identifier: waterCategory,
+                                           actions: [drank, later],
+                                           intentIdentifiers: [], options: [])
+        let skip = UNNotificationAction(identifier: "TW_TRAIN_SKIP", title: "今天不练", options: [])
+        let tomorrow = UNNotificationAction(identifier: "TW_TRAIN_TOMORROW", title: "推迟到明天", options: [])
+        let train = UNNotificationCategory(identifier: trainCategory,
+                                           actions: [skip, tomorrow],
+                                           intentIdentifiers: [], options: [])
+        UNUserNotificationCenter.current().setNotificationCategories([water, train])
+    }
+
     private static func add(id: String, kind: Kind, hour: Int, minute: Int) {
         let content = UNMutableNotificationContent()
         content.title = kind.label
         content.body = kind.body
         content.sound = .default
+        if kind == .water { content.categoryIdentifier = waterCategory }
+        if kind == .train { content.categoryIdentifier = trainCategory }
         var comps = DateComponents()
         comps.hour = hour
         comps.minute = minute

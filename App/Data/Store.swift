@@ -893,6 +893,44 @@ final class TWStore: ObservableObject {
         persistSoon()
     }
 
+    // MARK: - 补录
+
+    /// 补一条过去的训练。合并到同一天的记录里，没那天就新建。
+    /// 用「补录」作为方案名，和正常训练区分开，统计里照样算。
+    func addBackfill(date: String, move: String, sets: Int, weight: Double, reps: Int) {
+        guard sets > 0, reps > 0, !move.isEmpty else { return }
+        let tonnage = Double(sets) * weight * Double(reps)
+        let recs = (0..<sets).map { _ in
+            SetRecord(move: move, weight: weight, reps: reps, date: date)
+        }
+        if let i = sessions.firstIndex(where: { $0.date == date }) {
+            var s = sessions[i]
+            s.moves += sets
+            s.sets += sets
+            s.minutes += max(15, sets * 3)
+            s.tonnage = (s.tonnage ?? 0) + tonnage
+            var names = s.moveNames ?? []
+            if !names.contains(move) { names.append(move) }
+            s.moveNames = names
+            s.records = (s.records ?? []) + recs
+            sessions[i] = s
+        } else {
+            sessions.append(SessionLog(
+                date: date,
+                plan: "补录",
+                day: move,
+                moves: sets,
+                sets: sets,
+                minutes: max(15, sets * 3),
+                moveNames: [move],
+                tonnage: tonnage,
+                records: recs
+            ))
+        }
+        sessions.sort { $0.date < $1.date }
+        persistSoon()
+    }
+
     // MARK: - 数据体检
 
     /// 找脏数据：空训练、体重单日跳变。只报告，不擅自删。

@@ -70,6 +70,7 @@ struct DietPage: View {
             kcalCard
             macroCard
             nextBiteCard
+            proteinSpreadCard
             fixCard
             addCard
             searchCard
@@ -523,6 +524,65 @@ struct DietPage: View {
             groups.insert(f.group)
         }
         return out
+    }
+
+    /// 蛋白总量够了但分布不对，肌肉照样不长。
+    private var proteinSpreadCard: some View {
+        let per = max(18, (store.bodyWeight > 0 ? store.bodyWeight : 70) * 0.3)
+        var map: [String: Double] = [:]
+        for m in store.meals { map[m.slot ?? "加餐", default: 0] += m.protein }
+        let slots = ["早餐", "午餐", "晚餐", "加餐"]
+
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 6) {
+                Image(systemName: "chart.bar.xaxis")
+                    .font(.tw(13, .semibold))
+                    .foregroundStyle(TWColor.purple)
+                Text("蛋白分布")
+                    .font(.tw(15, .bold))
+                    .foregroundStyle(TWColor.ink)
+                Spacer()
+                GlassPill(text: "每餐 \(Int(per))g 起", tint: TWColor.purple)
+            }
+
+            if store.meals.isEmpty {
+                Text("今天还没记吃的。记了之后这里按早、午、晚、加餐分开看。")
+                    .font(.tw(11.5))
+                    .foregroundStyle(TWColor.ink3)
+            } else {
+                ForEach(slots, id: \.self) { slot in
+                    let g = map[slot] ?? 0
+                    HStack(spacing: 10) {
+                        Text(slot)
+                            .font(.tw(11.5, .semibold))
+                            .foregroundStyle(TWColor.ink2)
+                            .frame(width: 36, alignment: .leading)
+                        ZStack(alignment: .leading) {
+                            Capsule().fill(TWColor.ink3.opacity(0.14)).frame(width: 128, height: 6)
+                            Capsule()
+                                .fill(g >= per ? TWColor.mint : TWColor.amber)
+                                .frame(width: max(2, CGFloat(min(g / per, 1.0)) * 128), height: 6)
+                        }
+                        Text(String(format: "%.0f g", g))
+                            .font(.tw(11, .bold))
+                            .foregroundStyle(g >= per ? TWColor.mint : TWColor.ink2)
+                            .frame(width: 40, alignment: .trailing)
+                        Text(g >= per ? "够" : (g > 0 ? "差 \(Int(per - g))" : "没记"))
+                            .font(.tw(10))
+                            .foregroundStyle(TWColor.ink3)
+                        Spacer(minLength: 0)
+                    }
+                }
+                if map["晚餐", default: 0] < per {
+                    Text("晚餐还差 \(Int(per - map["晚餐", default: 0]))g 蛋白，睡前补一杯牛奶或一份鸡胸就够。")
+                        .font(.tw(10))
+                        .foregroundStyle(TWColor.ink3)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+        .padding(16)
+        .twGlass()
     }
 
     private var fixCard: some View {
