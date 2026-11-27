@@ -21,6 +21,7 @@ struct FlowPage: View {
     @State private var rir: Int = 2
     /// 最近点过的动作，用来知道“记一组”记的是哪个动作
     @State private var activeMove: String = ""
+    @State private var warmupOpen = false
     @State private var restNext: String = ""
     @State private var detailSession: SessionLog?
     @State private var pendingPlan: Int?
@@ -75,6 +76,7 @@ struct FlowPage: View {
             }
 
             tipCard
+            warmupCard
             sessionBar
             sessionCard
             setCard
@@ -712,6 +714,65 @@ struct FlowPage: View {
                             .frame(height: 0.7)
                     }
                 }
+            }
+        }
+        .padding(16)
+        .twGlass()
+    }
+
+    // MARK: - 热身清单
+
+    /// 按今天的动作推热身：练腿就髋膝踝，练胸就肩袖，主项再加一组递增。
+    private var warmupCard: some View {
+        let steps = Warmup.steps(moveNames: day.items.map { swapped[$0.name] ?? $0.name })
+        return VStack(alignment: .leading, spacing: 10) {
+            Button {
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                withAnimation(.snappy(duration: 0.22)) { warmupOpen.toggle() }
+            } label: {
+                HStack(spacing: 7) {
+                    Image(systemName: "figure.cooldown")
+                        .font(.tw(13, .semibold))
+                        .foregroundStyle(TWColor.amber)
+                    Text("热身清单")
+                        .font(.tw(15, .bold))
+                        .foregroundStyle(TWColor.ink)
+                    Text("\(steps.count) 步 · 约 8 分钟")
+                        .font(.tw(10.5))
+                        .foregroundStyle(TWColor.ink3)
+                    Spacer(minLength: 0)
+                    Image(systemName: warmupOpen ? "chevron.up" : "chevron.down")
+                        .font(.tw(11, .semibold))
+                        .foregroundStyle(TWColor.ink3)
+                }
+            }
+            .buttonStyle(.plain)
+
+            if warmupOpen {
+                VStack(spacing: 9) {
+                    ForEach(steps) { step in
+                        HStack(alignment: .top, spacing: 9) {
+                            Text(step.tag)
+                                .font(.tw(9.5, .semibold))
+                                .foregroundStyle(TWColor.amber)
+                                .padding(.horizontal, 7)
+                                .padding(.vertical, 3)
+                                .background { Capsule().fill(TWColor.amber.opacity(0.13)) }
+                                .frame(width: 44)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(step.name)
+                                    .font(.tw(12, .semibold))
+                                    .foregroundStyle(TWColor.ink)
+                                Text(step.detail)
+                                    .font(.tw(10.5))
+                                    .foregroundStyle(TWColor.ink3)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                            Spacer(minLength: 0)
+                        }
+                    }
+                }
+                .padding(.top, 2)
             }
         }
         .padding(16)
