@@ -70,6 +70,7 @@ struct FlowPage: View {
 
             planPicker
             planTools
+            pendingCard
 
             if plan.days.count > 1 {
                 dayTabs
@@ -85,6 +86,25 @@ struct FlowPage: View {
             calendarCard
             historyCard
         }
+        .overlay(alignment: .top) {
+            if let b = store.prBurst {
+                HStack(spacing: 6) {
+                    Image(systemName: "trophy.fill")
+                        .font(.tw(12, .bold))
+                        .foregroundStyle(TWColor.amber)
+                    Text(b)
+                        .font(.tw(12.5, .bold))
+                        .foregroundStyle(TWColor.ink)
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 9)
+                .background { Capsule().fill(TWColor.glass(0.9)) }
+                .overlay { Capsule().stroke(TWColor.amber.opacity(0.45), lineWidth: 1) }
+                .padding(.top, 6)
+                .transition(.move(edge: .top).combined(with: .opacity))
+            }
+        }
+        .animation(.snappy(duration: 0.25), value: store.prBurst)
         .onReceive(tick) { _ in
             tickSet()
             guard running else { return }
@@ -155,6 +175,67 @@ struct FlowPage: View {
             Button("继续当前训练", role: .cancel) { pendingPlan = nil }
         } message: {
             Text("已经记了 \(store.sessionSets) 组，切过去这些数据不会保留。")
+        }
+    }
+
+    // MARK: - 上次没结算的训练
+
+    @ViewBuilder
+    private var pendingCard: some View {
+        if let p = store.pendingSession, store.sessionStart == nil {
+            VStack(alignment: .leading, spacing: 9) {
+                HStack(spacing: 6) {
+                    Image(systemName: "clock.arrow.circlepath")
+                        .font(.tw(12, .semibold))
+                        .foregroundStyle(TWColor.amber)
+                    Text("上次的训练没结算")
+                        .font(.tw(14, .bold))
+                        .foregroundStyle(TWColor.ink)
+                    Spacer(minLength: 0)
+                    Text(p.start.formatted(date: .omitted, time: .shortened))
+                        .font(.tw(10))
+                        .foregroundStyle(TWColor.ink3)
+                }
+                Text("\(p.records.count) 组明细 · 容量 \(Int(p.tonnage)) kg")
+                    .font(.tw(11))
+                    .foregroundStyle(TWColor.ink2)
+                Text("接着记会把这批组带回来，收工后一起进统计。")
+                    .font(.tw(10.5))
+                    .foregroundStyle(TWColor.ink3)
+                HStack(spacing: 8) {
+                    Button {
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        store.resumePendingSession()
+                    } label: {
+                        Text("接着记")
+                            .font(.tw(12.5, .bold))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 8)
+                            .background {
+                                Capsule().fill(LinearGradient(colors: [TWColor.mint, TWColor.blue],
+                                                              startPoint: .leading, endPoint: .trailing))
+                            }
+                    }
+                    .buttonStyle(.plain)
+
+                    Button {
+                        store.discardPendingSession()
+                    } label: {
+                        Text("丢弃")
+                            .font(.tw(12, .semibold))
+                            .foregroundStyle(TWColor.ink3)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background { Capsule().fill(TWColor.glass(0.5)) }
+                    }
+                    .buttonStyle(.plain)
+                    Spacer(minLength: 0)
+                }
+            }
+            .padding(15)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .twGlass()
         }
     }
 

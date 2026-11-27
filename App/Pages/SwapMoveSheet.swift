@@ -7,6 +7,7 @@ struct SwapMoveSheet: View {
     var onPick: (String) -> Void
     /// 为什么换：器械被占、动作疼、还是今天想轻一点。不同原因该推的动作不一样。
     @State private var reason: String = ""
+    @EnvironmentObject var store: TWStore
     @Environment(\.dismiss) private var dismiss
 
     private var cur: MoveItem? { allMoves.first { $0.name == current } }
@@ -22,7 +23,7 @@ struct SwapMoveSheet: View {
 
     private var sameGroup: [MoveItem] {
         guard let c = cur else { return [] }
-        return allMoves.filter { $0.group == c.group && $0.name != current }
+        return store.availableMoves.filter { $0.group == c.group && $0.name != current }
     }
 
     /// 器械被占时最有用的就是「换个器械也能练同一块肌肉」

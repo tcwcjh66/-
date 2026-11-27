@@ -20,6 +20,8 @@ struct SettingsSheet: View {
     @State private var importAlert = false
     @State private var importMsg = ""
     @State private var sideloadText: String = TWSideload.dayText
+    @State private var altIcon: String? = nil
+    @State private var iconMsg: String = ""
 
     private var versionText: String {
         let v = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "3.0"
@@ -62,6 +64,8 @@ struct SettingsSheet: View {
                     healthCard
                     sideloadCard
                     goalCard
+                    gearCard
+                    iconCard
                     dataCard
                     statusCard
                     logCard
@@ -315,6 +319,152 @@ struct SettingsSheet: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
         .twGlass()
+    }
+
+    // MARK: - 器械
+
+    /// 只勾手上有或能用的，计划编辑和换动作就只从这些里出
+    private var gearCard: some View {
+        let gears = ["哑铃", "杠铃", "器械", "自重", "弹力带"]
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 6) {
+                Image(systemName: "dumbbell.fill")
+                    .font(.tw(13, .semibold))
+                    .foregroundStyle(TWColor.blue)
+                Text("我有什么器械")
+                    .font(.tw(16, .bold))
+                    .foregroundStyle(TWColor.ink)
+                Spacer()
+                Text("\(store.ownedGear.count)/\(gears.count)")
+                    .font(.tw(11, .semibold))
+                    .foregroundStyle(TWColor.ink3)
+            }
+            Text("计划编辑与换动作只从勾选的器械里挑；至少留一项。")
+                .font(.tw(10.5))
+                .foregroundStyle(TWColor.ink3)
+                .fixedSize(horizontal: false, vertical: true)
+
+            LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
+                ForEach(gears, id: \.self) { g in
+                    let on = store.ownedGear.contains(g)
+                    Button {
+                        UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                        if on {
+                            if store.ownedGear.count > 1 { store.ownedGear.remove(g) }
+                        } else {
+                            store.ownedGear.insert(g)
+                        }
+                        store.persist()
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: on ? "checkmark.circle.fill" : "circle")
+                                .font(.tw(11, .semibold))
+                                .foregroundStyle(on ? TWColor.mint : TWColor.ink3)
+                            Text(g)
+                                .font(.tw(12.5, .semibold))
+                                .foregroundStyle(on ? TWColor.ink : TWColor.ink3)
+                            Spacer(minLength: 0)
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 8)
+                        .background {
+                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                .fill(TWColor.glass(on ? 0.6 : 0.3))
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+        .padding(16)
+        .twGlass()
+    }
+
+    // MARK: - 图标
+
+    private var iconCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 6) {
+                Image(systemName: "app.dashed")
+                    .font(.tw(13, .semibold))
+                    .foregroundStyle(TWColor.purple)
+                Text("桌面图标")
+                    .font(.tw(16, .bold))
+                    .foregroundStyle(TWColor.ink)
+                Spacer()
+                if let altIcon {
+                    Text(altIcon == "AppIcon-Mono" ? "单色线" : "默认")
+                        .font(.tw(10.5, .semibold))
+                        .foregroundStyle(TWColor.ink3)
+                }
+            }
+            Text("换图标不用重装，桌面立刻变。")
+                .font(.tw(10.5))
+                .foregroundStyle(TWColor.ink3)
+
+            HStack(spacing: 10) {
+                iconOption(nil, "疾速 P", "原色渐变")
+                iconOption("AppIcon-Mono", "单色线", "白字深底")
+            }
+
+            if !iconMsg.isEmpty {
+                Text(iconMsg)
+                    .font(.tw(10))
+                    .foregroundStyle(TWColor.coral)
+            }
+        }
+        .padding(16)
+        .twGlass()
+        .onAppear { altIcon = UIApplication.shared.alternateIconName }
+    }
+
+    private func iconOption(_ name: String?, _ title: String, _ sub: String) -> some View {
+        let on = altIcon == name
+        return Button {
+            guard UIApplication.shared.supportsAlternateIcons else {
+                iconMsg = "这台设备的系统版本不支持换图标"
+                return
+            }
+            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+            UIApplication.shared.setAlternateIconName(name) { err in
+                DispatchQueue.main.async {
+                    if let err {
+                        iconMsg = "换失败：\(err.localizedDescription)"
+                    } else {
+                        iconMsg = ""
+                        altIcon = name
+                    }
+                }
+            }
+        } label: {
+            VStack(spacing: 6) {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(on ? TWColor.purple.opacity(0.18) : TWColor.glass(0.35))
+                    .frame(height: 58)
+                    .overlay {
+                        Image(systemName: on ? "checkmark.seal.fill" : "app.fill")
+                            .font(.tw(20, .semibold))
+                            .foregroundStyle(on ? TWColor.purple : TWColor.ink3)
+                    }
+                Text(title)
+                    .font(.tw(11.5, on ? .bold : .medium))
+                    .foregroundStyle(TWColor.ink)
+                Text(sub)
+                    .font(.tw(9.5))
+                    .foregroundStyle(TWColor.ink3)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(10)
+            .background {
+                RoundedRectangle(cornerRadius: 13, style: .continuous)
+                    .fill(TWColor.glass(on ? 0.6 : 0.3))
+            }
+            .overlay {
+                RoundedRectangle(cornerRadius: 13, style: .continuous)
+                    .stroke(on ? TWColor.purple.opacity(0.5) : .clear, lineWidth: 1)
+            }
+        }
+        .buttonStyle(.plain)
     }
 
     private var goalCard: some View {

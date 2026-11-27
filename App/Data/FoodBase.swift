@@ -885,7 +885,7 @@ enum FoodBase {
     /// 合并时按名字去重，先出现的优先，免得库里出现同名两条
     static let items: [LocalFood] = {
         var seen = Set<String>()
-        return (baseItems + extraItems).filter { seen.insert($0.name).inserted }
+        return (baseItems + extraItems + foodExtraBatch).filter { seen.insert($0.name).inserted }
     }()
 
     /// 按名字直取，识别匹配时要反复查，别每次都线性扫七百多条

@@ -16,7 +16,7 @@ settings:
     ENABLE_USER_SCRIPT_SANDBOXING: "NO"
     SWIFT_OPTIMIZATION_LEVEL: "-O"
     # CI 会用命令行覆盖这三个：版本随提交走，构建号用 run number，commit 前 7 位写进包
-    MARKETING_VERSION: "3.60"
+    MARKETING_VERSION: "3.61"
     CURRENT_PROJECT_VERSION: "1"
     TW_COMMIT: "local"
 
@@ -34,6 +34,12 @@ targets:
       path: App/Info.plist
       properties:
         CFBundleDisplayName: Persist
+        # 设置里可切换的备选图标（不用换包、不用重签）
+        CFBundleIcons:
+          CFBundleAlternateIcons:
+            AppIcon-Mono:
+              CFBundleIconFiles:
+                - AppIcon-Mono
         # 长按图标的快捷动作：记水 / 开练 / 记体重
         UIApplicationShortcutItems:
           - UIApplicationShortcutItemType: tw.shortcut.water
@@ -126,6 +132,7 @@ targets:
       - path: App/Services/FoodOCR.swift
       - path: App/Data/FoodBase.swift
       - path: App/Data/FoodRank.swift
+      - path: App/Data/FoodExtra.swift
       - path: App/Services/FoodLearn.swift
     settings:
       base:

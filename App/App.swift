@@ -8,6 +8,8 @@ struct TianCaiWeiApp: App {
     init() {
         TWCrashGuard.install()
         TWCrashGuard.checkLastCrash()
+        // 首启把动作和食物塞进系统搜索，之后按库版本决定要不要重建
+        TWSpotlight.indexIfNeeded()
     }
 
     @StateObject private var store = TWStore.shared

@@ -129,6 +129,7 @@ struct PlanEditorSheet: View {
                     }
                     showMovePicker = false
                 }
+                .environmentObject(store)
             }
         }
     }
@@ -160,17 +161,18 @@ struct PlanEditorSheet: View {
 
 /// 从 88 个动作里挑一个，可按部位筛
 struct MovePickerSheet: View {
+    @EnvironmentObject var store: TWStore
     @Environment(\.dismiss) private var dismiss
     @State private var q = ""
     var onPick: (String) -> Void
 
     private var groups: [String] {
-        Array(Set(allMoves.map { $0.group })).sorted()
+        Array(Set(store.availableMoves.map { $0.group })).sorted()
     }
 
     private var filtered: [MoveItem] {
-        guard !q.isEmpty else { return allMoves }
-        return allMoves.filter { $0.name.contains(q) || $0.group.contains(q) }
+        guard !q.isEmpty else { return store.availableMoves }
+        return store.availableMoves.filter { $0.name.contains(q) || $0.group.contains(q) }
     }
 
     var body: some View {

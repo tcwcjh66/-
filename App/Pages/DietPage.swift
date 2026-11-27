@@ -71,6 +71,7 @@ struct DietPage: View {
             macroCard
             nextBiteCard
             proteinSpreadCard
+            copyYesterdayCard
             fixCard
             addCard
             searchCard
@@ -583,6 +584,56 @@ struct DietPage: View {
         }
         .padding(16)
         .twGlass()
+    }
+
+    // MARK: - 照昨天吃
+
+    private var yesterdayMeals: [MealEntry] {
+        let key = DateFormatter.twDay.string(from: Date().addingTimeInterval(-86400))
+        return store.mealHistory[key] ?? []
+    }
+
+    /// 很多人早餐、加餐天天一样，一条条重记太蠢
+    private var copyYesterdayCard: some View {
+        let list = yesterdayMeals
+        let sum = list.reduce(0.0) { $0 + $1.kcal }
+        return Group {
+            if !list.isEmpty {
+                Button {
+                    for m in list {
+                        store.addMeal(MealEntry(name: m.name, grams: m.grams, kcal: m.kcal,
+                                                protein: m.protein, carb: m.carb, fat: m.fat,
+                                                veg: m.veg, slot: m.slot, time: Date()))
+                    }
+                    UINotificationFeedbackGenerator().notificationOccurred(.success)
+                    withAnimation(.snappy(duration: 0.2)) { copiedYesterday = true }
+                } label: {
+                    HStack(spacing: 9) {
+                        Image(systemName: copiedYesterday ? "checkmark.circle.fill" : "arrow.counterclockwise.circle.fill")
+                            .font(.tw(15, .semibold))
+                            .foregroundStyle(copiedYesterday ? TWColor.mint : TWColor.blue)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(copiedYesterday ? "已照昨天记入" : "照昨天吃")
+                                .font(.tw(13, .semibold))
+                                .foregroundStyle(TWColor.ink)
+                            Text("昨天 \(list.count) 条 · \(Int(sum)) kcal，一键复制到今天")
+                                .font(.tw(10.5))
+                                .foregroundStyle(TWColor.ink3)
+                                .lineLimit(1)
+                        }
+                        Spacer(minLength: 0)
+                    }
+                    .padding(13)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background {
+                        RoundedRectangle(cornerRadius: 13, style: .continuous)
+                            .fill(TWColor.blue.opacity(0.07))
+                    }
+                }
+                .buttonStyle(.plain)
+                .disabled(copiedYesterday)
+            }
+        }
     }
 
     private var fixCard: some View {
@@ -1397,6 +1448,7 @@ struct ShotResultSheet: View {
     @State private var gramsOverride: [UUID: Double] = [:]
     /// 认不出时直接在这儿打字，边打边从库里出候选
     @State private var manualQuery = ""
+    @State private var copiedYesterday = false
     @FocusState private var manualFocus: Bool
     @State private var showAI = false
     @State private var savedToast = false

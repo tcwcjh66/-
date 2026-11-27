@@ -94,6 +94,14 @@ struct SetRecord: Codable, Hashable {
     var rir: Int? = nil
 }
 
+/// 一次没结算的训练快照：App 被杀或误退，重进还能接上。
+struct TWPendingSession: Codable {
+    var start: Date
+    var sets: Int
+    var tonnage: Double
+    var records: [SetRecord]
+}
+
 /// 某动作某天的最好 e1RM（Epley 估算），用来画力量曲线。
 struct E1RMPoint: Identifiable, Hashable {
     var id: String { date }
@@ -448,6 +456,14 @@ final class TWStore: ObservableObject {
 
     /// 动作名 → 自己的最好成绩，如 "70kg × 5"
     @Published var prs: [String: String] = [:]
+    /// 每个动作的历史最好 e1RM，用来判断这组是不是破纪录
+    @Published var prBest: [String: Double] = [:]
+    /// 破纪录时弹一下的文案，几秒后自己消失
+    @Published var prBurst: String?
+    /// 上次没结算的训练，重进 App 时提示接上
+    @Published var pendingSession: TWPendingSession?
+    /// 手上有哪些器械，计划只从能做的动作里挑
+    @Published var ownedGear: Set<String> = ["哑铃", "杠铃", "器械", "自重", "弹力带"]
 
     // 饮水
     @Published var waterCups: Int = 0
@@ -491,6 +507,8 @@ final class TWStore: ObservableObject {
     private var heavyLoaded = false
 
     private enum Key {
+        static let prBest = "tw.prBest.v1"
+        static let gear = "tw.gear.v1"
         static let hr = "tw.hr.v2"
         static let hrv = "tw.hrv.v2"
         static let hrAt = "tw.hrAt.v2"
@@ -552,6 +570,7 @@ final class TWStore: ObservableObject {
 
     init() {
         load()
+        loadPendingSession()
         // 饮食、照片、训练记录这三个大数组放后台解，首屏不等
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             self?.loadHeavy()
@@ -893,6 +912,70 @@ final class TWStore: ObservableObject {
         persistSoon()
     }
 
+    // MARK: - 训练现场快照
+
+    /// 组记录只活在内存里，App 被杀就全丢了；每记一组落一份快照
+    func writePendingSession() {
+        guard let start = sessionStart, sessionSets > 0 else { return }
+        let snap = TWPendingSession(start: start, sets: sessionSets,
+                                    tonnage: sessionTonnage, records: sessionRecords)
+        pendingSession = snap
+        if let data = try? JSONEncoder().encode(snap) {
+            d.set(data, forKey: "tw.pendingSession.v1")
+        }
+    }
+
+    func loadPendingSession() {
+        guard let data = d.data(forKey: "tw.pendingSession.v1"),
+              let snap = try? JSONDecoder().decode(TWPendingSession.self, from: data) else { return }
+        // 隔夜的旧快照没有接上的意义
+        guard Date().timeIntervalSince(snap.start) < 12 * 3600 else {
+            d.removeObject(forKey: "tw.pendingSession.v1")
+            return
+        }
+        pendingSession = snap
+    }
+
+    func resumePendingSession() {
+        guard let snap = pendingSession else { return }
+        sessionStart = snap.start
+        sessionSets = snap.sets
+        sessionTonnage = snap.tonnage
+        sessionRecords = snap.records
+        pendingSession = nil
+        mood = "train"
+        persistSoon()
+    }
+
+    func discardPendingSession() {
+        pendingSession = nil
+        d.removeObject(forKey: "tw.pendingSession.v1")
+    }
+
+    // MARK: - PR 与器械
+
+    static func e1rm(_ weight: Double, _ reps: Int) -> Double {
+        weight * (1 + Double(reps) / 30.0)
+    }
+
+    /// 每组都和历史最好比一次，破了就写 PR 并弹一下
+    func notePR(move: String, weight: Double, reps: Int) {
+        guard weight > 0, reps > 0, reps <= 30, !move.isEmpty else { return }
+        let est = TWStore.e1rm(weight, reps)
+        if est > (prBest[move] ?? 0) + 0.01 {
+            prBest[move] = est
+            setPR(move, weight: weight, reps: reps)
+            prBurst = "\(move) 破了 · \(Int(est))kg 估算 1RM"
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak self] in
+                self?.prBurst = nil
+            }
+        }
+    }
+
+    func canDo(_ m: MoveItem) -> Bool { ownedGear.contains(m.equipment) }
+
+    var availableMoves: [MoveItem] { allMoves.filter { canDo($0) } }
+
     // MARK: - 补录
 
     /// 补一条过去的训练。合并到同一天的记录里，没那天就新建。
@@ -928,6 +1011,7 @@ final class TWStore: ObservableObject {
             ))
         }
         sessions.sort { $0.date < $1.date }
+        notePR(move: move, weight: weight, reps: reps)
         persistSoon()
     }
 
@@ -1549,6 +1633,7 @@ final class TWStore: ObservableObject {
     }
 
     func startSession(moves: [String]) {
+        discardPendingSession()
         sessionStart = Date()
         sessionSets = 0
         sessionMoves = moves
@@ -1574,6 +1659,8 @@ final class TWStore: ObservableObject {
         exerciseMin += 2.5
         moveKcal += 22
         standHours = min(standHours + 0.15, standTarget)
+        notePR(move: move, weight: weight, reps: reps)
+        writePendingSession()
         persistSoon()
     }
 
@@ -1603,6 +1690,8 @@ final class TWStore: ObservableObject {
         sessionStart = nil
         sessionTonnage = 0
         sessionRecords = []
+        pendingSession = nil
+        d.removeObject(forKey: "tw.pendingSession.v1")
         mood = "win"
         upsertToday()
         persistSoon()
@@ -1960,6 +2049,10 @@ final class TWStore: ObservableObject {
         if let v = try? JSONEncoder().encode(prs) {
             d.set(v, forKey: Key.prs)
         }
+        if let v = try? JSONEncoder().encode(prBest) {
+            d.set(v, forKey: Key.prBest)
+        }
+        d.set(Array(ownedGear), forKey: Key.gear)
         if let v = try? JSONEncoder().encode(sleepLogs) {
             d.set(v, forKey: Key.sleeps)
         }
@@ -2063,6 +2156,13 @@ final class TWStore: ObservableObject {
         if let v = d.data(forKey: Key.prs),
            let decoded = try? JSONDecoder().decode([String: String].self, from: v) {
             prs = decoded
+        }
+        if let v = d.data(forKey: Key.prBest),
+           let decoded = try? JSONDecoder().decode([String: Double].self, from: v) {
+            prBest = decoded
+        }
+        if let arr = d.array(forKey: Key.gear) as? [String], !arr.isEmpty {
+            ownedGear = Set(arr)
         }
         if let v = d.data(forKey: Key.sleeps),
            let decoded = try? JSONDecoder().decode([SleepLog].self, from: v) {

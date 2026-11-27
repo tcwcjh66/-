@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import Combine
 
 struct RootView: View {
     @EnvironmentObject var store: TWStore
@@ -87,6 +88,12 @@ struct RootView: View {
         }
         .environment(\.twScrollPause, isScrolling)
         .ignoresSafeArea(edges: .bottom)
+        .onReceive(NotificationCenter.default.publisher(for: .twSpotlight)) { note in
+            guard let id = note.object as? String else { return }
+            withAnimation(.snappy(duration: 0.22)) {
+                tab = id.hasPrefix("food:") ? .diet : .flow
+            }
+        }
         .onOpenURL { url in
             // 先让快捷指令回传（心率、睡眠）吃掉自己的参数，再交给页面路由
             handleIncoming(url)

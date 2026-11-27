@@ -24,6 +24,17 @@ enum FoodRank {
         "斤": 500, "两": 50
     ]
 
+    private static let cnNum: [Character: Double] = [
+        "半": 0.5, "一": 1, "两": 2, "二": 2, "三": 3, "四": 4, "五": 5,
+        "六": 6, "七": 7, "八": 8, "九": 9, "十": 10, "几": 2
+    ]
+
+    /// 常见容器与手部的份量，按家常做法估
+    private static let measureGram: [String: Double] = [
+        "碗": 150, "杯": 250, "勺": 15, "把": 30, "口": 20,
+        "块": 50, "片": 30, "根": 80, "个": 100, "份": 200
+    ]
+
     static func clean(_ raw: String) -> String {
         var s = raw
         for ch in [" ", "　", "：", ":", "·", "\n", "、", "，", ",", "；", ";",
@@ -41,6 +52,21 @@ enum FoodRank {
         var name = c
         var grams: Double?
         var packs = 1
+
+        // 「半碗」「一小把」「两勺」这类口语份量，先折成克数
+        if let re = try? NSRegularExpression(pattern: "([半一二两三四五六七八九十几])(小)?(碗|杯|勺|把|口|块|片|根|个|份)") {
+            let ns = c as NSString
+            for m in re.matches(in: c, range: NSRange(location: 0, length: ns.length)) {
+                let ch = ns.substring(with: m.range(at: 1)).first ?? "一"
+                let qty = cnNum[ch] ?? 1
+                let unit = ns.substring(with: m.range(at: 3))
+                let small = !ns.substring(with: m.range(at: 2)).isEmpty
+                var g = (measureGram[unit] ?? 0) * qty
+                if small { g *= 0.7 }
+                if grams == nil, g > 0 { grams = g }
+                name = name.replacingOccurrences(of: ns.substring(with: m.range), with: "")
+            }
+        }
 
         if let re = try? NSRegularExpression(
             pattern: "(\\d+(?:\\.\\d+)?)(kg|千克|公斤|ml|毫升|g|克|升|l|斤|两)",

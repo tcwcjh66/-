@@ -1,9 +1,12 @@
 import UIKit
 import UserNotifications
+import CoreSpotlight
 
 extension Notification.Name {
     /// 长按图标点快捷动作时广播出去，RootView 收到后切页
     static let twShortcut = Notification.Name("tw.shortcut")
+    /// 从系统搜索点进来（Spotlight 命中动作或食物）
+    static let twSpotlight = Notification.Name("tw.spotlight")
 }
 
 /// SwiftUI 生命周期拿不到 shortcut 和通知回调，挂一个轻量 delegate 专门接这两件事。
@@ -27,6 +30,18 @@ final class TWAppDelegate: NSObject, UIApplicationDelegate {
                      completionHandler: @escaping (Bool) -> Void) {
         NotificationCenter.default.post(name: .twShortcut, object: shortcutItem.type)
         completionHandler(true)
+    }
+
+    /// 系统搜索点进来：move:xxx → 训练页，food:xxx → 饮食页
+    func application(_ application: UIApplication,
+                     continue userActivity: NSUserActivity,
+                     restorationHandler: @escaping ([UIUserActivityRestoring]?) -> Void) -> Bool {
+        guard userActivity.activityType == CSSearchableItemActionType,
+              let id = userActivity.userInfo?[CSSearchableItemActivityIdentifier] as? String else {
+            return false
+        }
+        NotificationCenter.default.post(name: .twSpotlight, object: id)
+        return true
     }
 }
 
