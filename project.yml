@@ -16,7 +16,7 @@ settings:
     ENABLE_USER_SCRIPT_SANDBOXING: "NO"
     SWIFT_OPTIMIZATION_LEVEL: "-O"
     # CI 会用命令行覆盖这三个：版本随提交走，构建号用 run number，commit 前 7 位写进包
-    MARKETING_VERSION: "3.58"
+    MARKETING_VERSION: "3.59"
     CURRENT_PROJECT_VERSION: "1"
     TW_COMMIT: "local"
 

@@ -209,13 +209,20 @@ struct FoodSearchSheet: View {
         .padding(.top, 2)
     }
 
+    /// 用户搜索时说了「500ml」「70g」，选条目后直接按这个克数填，不用再手动改
+    private func gramsFor(_ f: LocalFood) -> Double {
+        let q = FoodRank.parse(query)
+        if let g = q.grams { return g }
+        return f.portion * Double(max(1, q.packs))
+    }
+
     private func localRow(_ f: LocalFood) -> some View {
         Button {
             UIImpactFeedbackGenerator(style: .soft).impactOccurred()
             pick = FoodPick(
                 name: f.name, group: f.group,
                 kcal100: f.kcal, protein100: f.protein, carb100: f.carb, fat100: f.fat,
-                fiber100: f.fiber, defaultGrams: f.portion,
+                fiber100: f.fiber, defaultGrams: gramsFor(f),
                 source: "本地库"
             )
         } label: {

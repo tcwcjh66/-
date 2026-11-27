@@ -26,21 +26,14 @@ struct LocalFood: Identifiable, Hashable {
 
 enum FoodBase {
     static func search(_ q: String, limit: Int = 40) -> [LocalFood] {
-        let key = q.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let key = q.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !key.isEmpty else { return Array(items.prefix(limit)) }
-        let hits = items.filter {
-            $0.name.lowercased().contains(key)
-            || $0.group.lowercased().contains(key)
-            || $0.brand.lowercased().contains(key)
-            || $0.aliases.contains { $0.lowercased().contains(key) }
-        }
-        // 名称开头匹配的排前面
-        let ranked = hits.sorted { a, b in
-            let A = a.name.lowercased().hasPrefix(key) ? 0 : 1
-            let B = b.name.lowercased().hasPrefix(key) ? 0 : 1
-            return A == B ? a.name.count < b.name.count : A < B
-        }
-        return Array(ranked.prefix(limit))
+        // 走统一打分：剥规格、认别名、按字覆盖排序，用户怎么说都能落到具体一款
+        let ranked = FoodRank.rank(key, limit: limit)
+        if !ranked.isEmpty { return ranked.map { $0.food } }
+        // 兜底：分组词（"零食""饮料"）还能按组扫
+        let g = key.lowercased()
+        return Array(items.filter { $0.group.lowercased().contains(g) }.prefix(limit))
     }
 
     static let baseItems: [LocalFood] = [

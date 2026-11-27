@@ -1397,6 +1397,7 @@ struct ShotResultSheet: View {
     @State private var gramsOverride: [UUID: Double] = [:]
     /// 认不出时直接在这儿打字，边打边从库里出候选
     @State private var manualQuery = ""
+    @FocusState private var manualFocus: Bool
     @State private var showAI = false
     @State private var savedToast = false
     @State private var showDiag = false
@@ -1484,9 +1485,12 @@ struct ShotResultSheet: View {
                         Text(h.name)
                             .font(.tw(15, .semibold))
                             .foregroundStyle(TWColor.ink)
-                        Text("\(Int(g))g · \(Int(h.kcal * r)) kcal · 蛋白 \(Int(h.protein * r))g")
+                        Text("\(Int(g))g · \(Int(h.kcal * r)) kcal")
                             .font(.tw(12))
                             .foregroundStyle(TWColor.ink2)
+                        Text("蛋白 \(Int(h.protein * r)) · 碳水 \(Int(h.carb * r)) · 脂肪 \(Int(h.fat * r)) g")
+                            .font(.tw(11))
+                            .foregroundStyle(TWColor.ink3)
                         Text(h.source)
                             .font(.tw(10, .semibold))
                             .foregroundStyle(h.source.contains("读包装") || h.source.contains("读到品牌")
@@ -1688,20 +1692,39 @@ struct ShotResultSheet: View {
         }
     }
 
+    // MARK: - 补充一句就认
+
+    /// 认不出时，用户补一句「乐事原味薯片 70g」——先剥规格，再按字匹配，
+    /// 点一下就变成结果里的一条（可继续补），不再是一条就关窗。
     private var manualEntry: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("认不出来就自己填")
+        let raw = manualQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+        let q = FoodRank.parse(raw)
+        let scored = raw.isEmpty ? [] : FoodRank.rank(raw, limit: 6)
+
+        return VStack(alignment: .leading, spacing: 9) {
+            Text("认不出就补一句")
                 .font(.tw(11.5, .bold))
                 .foregroundStyle(TWColor.ink3)
 
             HStack(spacing: 8) {
-                Image(systemName: "magnifyingglass")
+                Image(systemName: "square.and.pencil")
                     .font(.tw(12, .semibold))
                     .foregroundStyle(TWColor.ink3)
-                TextField("这包叫什么？", text: $manualQuery)
+                TextField("乐事原味薯片 70g、蜜雪柠檬水 500ml", text: $manualQuery)
                     .font(.tw(13.5))
+                    .focused($manualFocus)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
+                if !raw.isEmpty {
+                    Button {
+                        manualQuery = ""
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.tw(12))
+                            .foregroundStyle(TWColor.ink3)
+                    }
+                    .buttonStyle(.plain)
+                }
             }
             .padding(.horizontal, 11)
             .padding(.vertical, 9)
@@ -1710,40 +1733,75 @@ struct ShotResultSheet: View {
                     .fill(TWColor.glass(0.55))
             }
 
-            if !manualQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                ForEach(FoodBase.search(manualQuery, limit: 5)) { f in
-                    Button {
-                        UIImpactFeedbackGenerator(style: .soft).impactOccurred()
-                        let g = max(1, f.portion)
-                        let r = g / 100
-                        FoodLearn.remember(word: manualQuery, food: f.name)
-                        onAdd(FoodHit(name: f.name, grams: g,
-                                      kcal: f.kcal * r, protein: f.protein * r,
-                                      carb: f.carb * r, fat: f.fat * r,
-                                      veg: 0, confidence: 1.0,
-                                      source: "你打的名字", keyword: manualQuery))
-                        dismiss()
-                    } label: {
-                        HStack(spacing: 8) {
-                            Text(f.name)
-                                .font(.tw(13, .semibold))
-                                .foregroundStyle(TWColor.ink)
-                            Text("\(Int(f.kcal)) kcal/100g")
-                                .font(.tw(10.5))
-                                .foregroundStyle(TWColor.ink3)
-                            Spacer(minLength: 0)
-                            Image(systemName: "plus.circle.fill")
-                                .font(.tw(14, .bold))
-                                .foregroundStyle(TWColor.purple)
+            if !raw.isEmpty {
+                HStack(spacing: 5) {
+                    Image(systemName: "text.magnifyingglass")
+                        .font(.tw(10, .semibold))
+                        .foregroundStyle(TWColor.purple)
+                    Text(parseLine(q))
+                        .font(.tw(10.5))
+                        .foregroundStyle(TWColor.ink3)
+                        .lineLimit(1)
+                    Spacer(minLength: 0)
+                }
+
+                if scored.isEmpty {
+                    VStack(alignment: .leading, spacing: 7) {
+                        Text("库里没有这一款")
+                            .font(.tw(11.5, .semibold))
+                            .foregroundStyle(TWColor.coral)
+                        Text("先按同类估算记上（会标成估算），或者退出去扫包装条码拿厂商数据。")
+                            .font(.tw(10.5))
+                            .foregroundStyle(TWColor.ink3)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Button {
+                            addEstimate(q)
+                        } label: {
+                            HStack(spacing: 5) {
+                                Image(systemName: "wand.and.stars")
+                                    .font(.tw(11, .bold))
+                                Text("按同类估算加入")
+                                    .font(.tw(11.5, .bold))
+                            }
+                            .foregroundStyle(TWColor.amber)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background { Capsule().fill(TWColor.amber.opacity(0.13)) }
                         }
-                        .padding(.horizontal, 11)
-                        .padding(.vertical, 8)
-                        .background {
-                            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                .fill(TWColor.purple.opacity(0.08))
-                        }
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
+                } else {
+                    ForEach(scored, id: \.food.id) { fs in
+                        Button {
+                            addFromFood(fs.food, query: q)
+                        } label: {
+                            HStack(spacing: 9) {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(fs.food.name)
+                                        .font(.tw(13, .semibold))
+                                        .foregroundStyle(TWColor.ink)
+                                    Text("每份 \(Int(fs.food.portion))g · \(Int(fs.food.kcal)) kcal · 蛋白 \(Int(fs.food.protein)) · 碳水 \(Int(fs.food.carb)) · 脂肪 \(Int(fs.food.fat))")
+                                        .font(.tw(10))
+                                        .foregroundStyle(TWColor.ink3)
+                                        .lineLimit(1)
+                                    Text(fs.reason)
+                                        .font(.tw(9.5))
+                                        .foregroundStyle(TWColor.mint)
+                                }
+                                Spacer(minLength: 0)
+                                Image(systemName: "plus.circle.fill")
+                                    .font(.tw(15, .bold))
+                                    .foregroundStyle(TWColor.purple)
+                            }
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 8)
+                            .background {
+                                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                    .fill(TWColor.purple.opacity(0.07))
+                            }
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
             }
         }
@@ -1752,6 +1810,136 @@ struct ShotResultSheet: View {
         .background {
             RoundedRectangle(cornerRadius: 13, style: .continuous)
                 .fill(TWColor.glass(0.4))
+        }
+    }
+
+    private func parseLine(_ q: FoodRank.Query) -> String {
+        var parts: [String] = ["理解为「\(q.name)」"]
+        if let g = q.grams { parts.append("\(Int(g))g") }
+        if q.packs > 1 { parts.append("×\(q.packs) 份") }
+        return parts.joined(separator: " · ")
+    }
+
+    /// 选中的库内条目 → 直接进结果列表并默认选中
+    private func addFromFood(_ f: LocalFood, query: FoodRank.Query) {
+        let g = query.grams ?? (f.portion * Double(max(1, query.packs)))
+        let r = g / 100
+        let hit = FoodHit(name: f.name, grams: g,
+                          kcal: f.kcal * r, protein: f.protein * r,
+                          carb: f.carb * r, fat: f.fat * r,
+                          veg: 0, confidence: 1.0,
+                          source: "你补的名字", keyword: query.name)
+        appendHit(hit)
+        FoodLearn.remember(word: query.name, food: f.name)
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
+        manualQuery = ""
+        manualFocus = false
+    }
+
+    /// 库里没有就按同类估一条，来源写清楚是估算，别冒充实测
+    private func addEstimate(_ q: FoodRank.Query) {
+        let g = q.grams ?? 100
+        let r = g / 100
+        let n = q.name
+        var kcal = 150.0, p = 8.0, c = 18.0, f = 5.0
+        if ["饮", "茶", "水", "汁", "奶", "咖啡", "可乐", "雪碧", "柠檬"].contains(where: { n.contains($0) }) {
+            kcal = 45; p = 0.5; c = 10; f = 0.5
+        } else if ["薯", "片", "条", "脆", "饼", "糖", "巧克力", "锅巴", "辣条", "果冻"].contains(where: { n.contains($0) }) {
+            kcal = 500; p = 6; c = 55; f = 30
+        } else if ["面", "饭", "包", "粉", "粥", "饺"].contains(where: { n.contains($0) }) {
+            kcal = 200; p = 5; c = 35; f = 4
+        }
+        let hit = FoodHit(name: n, grams: g, kcal: kcal * r,
+                          protein: p * r, carb: c * r, fat: f * r,
+                          veg: 0, confidence: 0.4, source: "同类估算 · 回头记得改",
+                          keyword: n)
+        appendHit(hit)
+        UINotificationFeedbackGenerator().notificationOccurred(.warning)
+        manualQuery = ""
+        manualFocus = false
+    }
+
+    /// 追加进结果列表；同名只加份量，不堆两行
+    private func appendHit(_ hit: FoodHit) {
+        var list = shownHits
+        if let i = list.firstIndex(where: { $0.name == hit.name }) {
+            var old = list[i]
+            old.grams += hit.grams
+            old.kcal += hit.kcal
+            old.protein += hit.protein
+            old.carb += hit.carb
+            old.fat += hit.fat
+            list[i] = old
+            fixedHits = list
+            selected.insert(old.id)
+        } else {
+            list.append(hit)
+            fixedHits = list
+            selected.insert(hit.id)
+        }
+    }
+
+    // MARK: - 读到了却没认出来的字
+
+    /// OCR 读到的字里有，但没落成任何一条结果的，拎出来给用户点
+    private var unreadWords: [String] {
+        guard !words.isEmpty else { return [] }
+        var seen = Set<String>()
+        var out: [String] = []
+        for w in words {
+            let c = FoodRank.clean(w)
+            guard c.count >= 2, c.count <= 12 else { continue }
+            guard seen.insert(c).inserted else { continue }
+            if shownHits.contains(where: {
+                $0.name.contains(c) || c.contains($0.name) || $0.keyword.contains(c)
+            }) { continue }
+            out.append(c)
+        }
+        return Array(out.prefix(4))
+    }
+
+    private var unreadCard: some View {
+        let list = unreadWords
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 5) {
+                Image(systemName: "questionmark.bubble")
+                    .font(.tw(11, .semibold))
+                    .foregroundStyle(TWColor.amber)
+                Text("这些字读到了，但没对上号")
+                    .font(.tw(11.5, .bold))
+                    .foregroundStyle(TWColor.ink2)
+                Spacer(minLength: 0)
+            }
+            Text("点一个填进下面的框，出候选后再选是哪一款")
+                .font(.tw(10))
+                .foregroundStyle(TWColor.ink3)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 7) {
+                    ForEach(list, id: \.self) { w in
+                        Button {
+                            UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                            manualQuery = w
+                            manualFocus = true
+                        } label: {
+                            Text(w)
+                                .font(.tw(11.5, .semibold))
+                                .foregroundStyle(TWColor.ink2)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 6)
+                                .background { Capsule().fill(TWColor.glass(0.55)) }
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.vertical, 1)
+            }
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(TWColor.amber.opacity(0.06))
         }
     }
 
@@ -1948,6 +2136,10 @@ struct ShotResultSheet: View {
                             }
                         }
 
+                        if !unreadWords.isEmpty {
+                            unreadCard
+                        }
+
                         ForEach(shownHits) { h in
                             resultRow(h)
                         }
@@ -1961,7 +2153,7 @@ struct ShotResultSheet: View {
                     .padding(.top, 12)
                 }
 
-                if !hits.isEmpty {
+                if !shownHits.isEmpty {
                     HStack(spacing: 6) {
                         Button {
                             UIImpactFeedbackGenerator(style: .soft).impactOccurred()
@@ -2013,18 +2205,21 @@ struct ShotResultSheet: View {
                     .buttonStyle(.plain)
 
                     Button {
-                        if hits.isEmpty {
+                        let picked = shownHits.filter { selected.contains($0.id) }
+                        if picked.isEmpty {
                             dismiss()
                             onGoSearch?()
                             return
                         }
-                        for h in shownHits where selected.contains(h.id) {
+                        for h in picked {
                             if !h.keyword.isEmpty { FoodLearn.remember(word: h.keyword, food: h.name) }
                             onAdd(scaled(h))
                         }
                         dismiss()
                     } label: {
-                        Text(hits.isEmpty ? "去搜食物" : "记入\(activeSlot)")
+                        let pickedCount = shownHits.filter { selected.contains($0.id) }.count
+                        Text(shownHits.isEmpty ? "去搜食物"
+                             : (pickedCount > 1 ? "记入\(activeSlot) · \(pickedCount) 条" : "记入\(activeSlot)"))
                             .font(.tw(16, .bold))
                             .foregroundStyle(.white)
                             .frame(maxWidth: .infinity)

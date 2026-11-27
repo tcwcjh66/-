@@ -285,6 +285,12 @@ enum FoodOCR {
                 continue
             }
 
+            // 整串交给统一匹配。库里常没有同名条目（读到「乐事原味薯片」，库里叫「乐事薯片原味」），
+            // 只按名字包含去比就只剩品牌级结果，用户看到的永远是「同品牌里选一款」。
+            for fs in FoodRank.rank(c, limit: 3) where fs.score >= 72 {
+                offer(fs.food, min(96, fs.score), c)
+            }
+
             for f in FoodBase.items {
                 if f.name == c { offer(f, 100, c); continue }
                 if f.aliases.contains(where: { $0 == c }) { offer(f, 94, c); continue }
