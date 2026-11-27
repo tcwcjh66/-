@@ -9,6 +9,7 @@ struct DietPage: View {
     @State private var analyzing = false
     @State private var hits: [FoodHit] = []
     @State private var shotWords: [String] = []
+    @State private var copiedYesterday = false
     /// 这一轮的识别过程，给调试台用
     @State private var shotDiag: [String] = []
     @State private var showResult = false
@@ -1448,7 +1449,6 @@ struct ShotResultSheet: View {
     @State private var gramsOverride: [UUID: Double] = [:]
     /// 认不出时直接在这儿打字，边打边从库里出候选
     @State private var manualQuery = ""
-    @State private var copiedYesterday = false
     @FocusState private var manualFocus: Bool
     @State private var showAI = false
     @State private var savedToast = false
