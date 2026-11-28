@@ -2,7 +2,7 @@ import UIKit
 import UserNotifications
 
 /// 桌面图标上的小红点：今天还差几杯水。
-/// 角标要通知权限，没授权就什么都不做，不报错。
+/// 走 UNUserNotificationCenter 的角标接口（iOS 16+），没授权就静默不动。
 enum TWBadge {
     private static let key = "tw.badge.on.v1"
 
@@ -17,17 +17,16 @@ enum TWBadge {
             clear()
             return
         }
-        UNUserNotificationCenter.current().getNotificationSettings { s in
+        let c = UNUserNotificationCenter.current()
+        c.getNotificationSettings { s in
             let ok = s.authorizationStatus == .authorized
                 || s.authorizationStatus == .provisional
                 || s.authorizationStatus == .ephemeral
-            DispatchQueue.main.async {
-                UIApplication.shared.applicationIconItemNumber = ok ? max(0, left) : 0
-            }
+            c.setBadgeCount(ok ? max(0, left) : 0) { _ in }
         }
     }
 
     static func clear() {
-        UIApplication.shared.applicationIconItemNumber = 0
+        UNUserNotificationCenter.current().setBadgeCount(0) { _ in }
     }
 }
