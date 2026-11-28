@@ -57,7 +57,9 @@ struct FlowPage: View {
     }
 
     /// 今天计划的总组数，和已经记下来的计划内组数
-    private var planTotalSets: Int { max(1, day.items.reduce(0) { $0 + $1.sets }) }
+    private var planTotalSets: Int {
+        max(1, day.items.reduce(0) { $0 + max(1, firstInt($1.sets)) })
+    }
 
     private var planDoneSets: Int {
         let names = Set(day.items.map { swapped[$0.name] ?? $0.name })
