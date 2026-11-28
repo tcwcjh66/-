@@ -997,6 +997,13 @@ struct BioPage: View {
                         .font(.tw(12.5, .bold))
                         .foregroundStyle(abs(diff) < 0.3 ? TWColor.mint : TWColor.amber)
                 }
+
+                if abs(diff) >= 0.3, let eta = store.weightGoalETA {
+                    Text("照最近两周的速度，大约 \(eta.formatted(.dateTime.month().day())) 到目标")
+                        .font(.tw(11))
+                        .foregroundStyle(TWColor.ink3)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
             }
 
             Button {

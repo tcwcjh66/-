@@ -40,6 +40,21 @@ struct SessionDetailSheet: View {
                     .padding(.vertical, 14)
                     .twGlass(radius: 18)
 
+                    if let note = session.note, !note.isEmpty {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("当时写的")
+                                .font(.tw(11.5, .semibold))
+                                .foregroundStyle(TWColor.ink3)
+                            Text(note)
+                                .font(.tw(13))
+                                .foregroundStyle(TWColor.ink2)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(14)
+                        .twGlass(radius: 16)
+                    }
+
                     if let names = session.moveNames, !names.isEmpty {
                         VStack(alignment: .leading, spacing: 10) {
                             Text("这次练了什么")

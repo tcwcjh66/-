@@ -132,6 +132,10 @@ struct SessionLog: Codable, Identifiable, Hashable {
     var tonnage: Double? = nil
     /// 4.0 之后才有：每组的动作/重量/次数。老记录为 nil，渐进建议会跳过它们。
     var records: [SetRecord]? = nil
+    /// 这次计划了多少组，用来算完成率；老记录没有
+    var plannedSets: Int? = nil
+    /// 训练完自己写的一句话：状态、为什么降重量
+    var note: String? = nil
 }
 
 struct GirthLog: Codable, Identifiable, Hashable {
@@ -483,6 +487,10 @@ final class TWStore: ObservableObject {
     @Published var ownedGear: Set<String> = ["哑铃", "杠铃", "器械", "自重", "弹力带"]
     /// 打开 App 要 Face ID / 设备密码，设置里可关
     @Published var lockEnabled: Bool = false
+    /// 固定训练日（Calendar 的 weekday：1 = 周日 … 7 = 周六）；空 = 按历史习惯提醒
+    @Published var trainWeekdays: Set<Int> = []
+    /// 标记成减载周的那一周（格式 2026-W48），过周自动失效
+    @Published var deloadWeekKey: String? = nil
 
     // 饮水
     @Published var waterCups: Int = 0
@@ -529,6 +537,8 @@ final class TWStore: ObservableObject {
         static let prBest = "tw.prBest.v1"
         static let gear = "tw.gear.v1"
         static let lock = "tw.lock.v1"
+        static let weekdays = "tw.trainWeekdays.v1"
+        static let deload = "tw.deloadWeek.v1"
         static let hr = "tw.hr.v2"
         static let hrv = "tw.hrv.v2"
         static let hrAt = "tw.hrAt.v2"
@@ -995,6 +1005,87 @@ final class TWStore: ObservableObject {
     func canDo(_ m: MoveItem) -> Bool { ownedGear.contains(m.equipment) }
 
     var availableMoves: [MoveItem] { allMoves.filter { canDo($0) } }
+
+    /// 训练备注：结算页写的一句话，回历史里能看见
+    func setSessionNote(id: UUID, note: String) {
+        guard let i = sessions.firstIndex(where: { $0.id == id }) else { return }
+        let trimmed = note.trimmingCharacters(in: .whitespacesAndNewlines)
+        sessions[i].note = trimmed.isEmpty ? nil : trimmed
+        persistSoon()
+    }
+
+    // MARK: - 训练日排期
+
+    /// 通知用：设了固定训练日就按它，没设就按平时习惯猜
+    var reminderWeekdays: Set<Int> {
+        trainWeekdays.isEmpty ? habitWeekdays() : trainWeekdays
+    }
+
+    /// 今天是不是排了训练；没设排期返回 nil
+    var todayIsTrainingDay: Bool? {
+        guard !trainWeekdays.isEmpty else { return nil }
+        return trainWeekdays.contains(Calendar.current.component(.weekday, from: Date()))
+    }
+
+    static func weekdayName(_ w: Int) -> String {
+        switch w {
+        case 1: return "日"
+        case 2: return "一"
+        case 3: return "二"
+        case 4: return "三"
+        case 5: return "四"
+        case 6: return "五"
+        default: return "六"
+        }
+    }
+
+    // MARK: - 减载周
+
+    var weekKeyNow: String {
+        let c = Calendar.current
+        let y = c.component(.yearForWeekOfYear, from: Date())
+        let w = c.component(.weekOfYear, from: Date())
+        return String(format: "%d-W%02d", y, w)
+    }
+
+    var isDeloadWeek: Bool { deloadWeekKey == weekKeyNow }
+
+    func toggleDeloadWeek() {
+        deloadWeekKey = isDeloadWeek ? nil : weekKeyNow
+        persistSoon()
+    }
+
+    /// 过去连续多少周每周都在 20 组以上（本周不算，避免周一误报）
+    var hardWeekStreak: Int {
+        var n = 0
+        for i in 1...10 {
+            if weeklySetCount(i) >= 20 { n += 1 } else { break }
+        }
+        return n
+    }
+
+    /// 什么时候该减载：卡住两个动作以上，或连续 6 周堆量没停
+    var deloadAdvice: String? {
+        if isDeloadWeek { return nil }
+        if stalledMoves(limit: 6).count >= 2 {
+            return "已有两个以上动作卡住，这周按减载练：组数减半、重量不动"
+        }
+        if hardWeekStreak >= 6 {
+            return "连续 6 周每周 20 组以上，这周该减载：组数减半、重量不动"
+        }
+        return nil
+    }
+
+    // MARK: - 目标体重到达时间
+
+    var weightGoalETA: Date? {
+        guard weightGoal > 0, bodyWeight > 0, let trend = weightTrendPerWeek, abs(trend) > 0.02 else { return nil }
+        let diff = weightGoal - bodyWeight
+        guard (diff < 0 && trend < 0) || (diff > 0 && trend > 0) else { return nil }
+        let weeks = abs(diff / trend)
+        guard weeks <= 52 else { return nil }
+        return Calendar.current.date(byAdding: .day, value: Int((weeks * 7).rounded()), to: Date())
+    }
 
     // MARK: - 强度换算
 
@@ -1874,7 +1965,8 @@ final class TWStore: ObservableObject {
     }
 
     @discardableResult
-    func endSession(plan: String = "", day: String = "", moves: Int = 0, moveNames: [String] = []) -> SessionLog? {
+    func endSession(plan: String = "", day: String = "", moves: Int = 0,
+                    moveNames: [String] = [], plannedSets: Int = 0) -> SessionLog? {
         let start = sessionStart ?? Date()
         let mins = max(1, Int(Date().timeIntervalSince(start) / 60))
         var added: SessionLog? = nil
@@ -1888,7 +1980,8 @@ final class TWStore: ObservableObject {
                 minutes: mins,
                 moveNames: moveNames,
                 tonnage: sessionTonnage > 0 ? sessionTonnage : nil,
-                records: sessionRecords.isEmpty ? nil : sessionRecords
+                records: sessionRecords.isEmpty ? nil : sessionRecords,
+                plannedSets: plannedSets > 0 ? plannedSets : nil
             )
             sessions.insert(entry, at: 0)
             added = entry
@@ -2263,6 +2356,8 @@ final class TWStore: ObservableObject {
         }
         d.set(Array(ownedGear), forKey: Key.gear)
         d.set(lockEnabled, forKey: Key.lock)
+        d.set(Array(trainWeekdays), forKey: Key.weekdays)
+        if let k = deloadWeekKey { d.set(k, forKey: Key.deload) } else { d.removeObject(forKey: Key.deload) }
         if let v = try? JSONEncoder().encode(sleepLogs) {
             d.set(v, forKey: Key.sleeps)
         }
@@ -2375,6 +2470,8 @@ final class TWStore: ObservableObject {
             ownedGear = Set(arr)
         }
         lockEnabled = d.bool(forKey: Key.lock)
+        if let arr = d.array(forKey: Key.weekdays) as? [Int] { trainWeekdays = Set(arr) }
+        deloadWeekKey = d.string(forKey: Key.deload)
         if let v = d.data(forKey: Key.sleeps),
            let decoded = try? JSONDecoder().decode([SleepLog].self, from: v) {
             sleepLogs = decoded

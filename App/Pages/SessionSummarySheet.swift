@@ -9,6 +9,7 @@ struct SessionSummarySheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var appeared = false
     @State private var cardMsg: String? = nil
+    @State private var noteText: String = ""
 
     private var setDelta: Int? {
         guard let p = prev else { return nil }
@@ -114,6 +115,10 @@ struct SessionSummarySheet: View {
 
                     VStack(spacing: 0) {
                         row("计划", "\(entry.plan)")
+                        if let planned = entry.plannedSets, planned > 0 {
+                            divider
+                            row("完成度", "\(min(entry.sets, planned))/\(planned) 组 · \(min(100, Int(Double(entry.sets) / Double(planned) * 100)))%")
+                        }
                         divider
                         row("训练日", entry.day)
                         divider
@@ -130,6 +135,26 @@ struct SessionSummarySheet: View {
                             divider
                             row("总吨位", "\(Int(t)) kg（重量 × 次数累计）")
                         }
+                    }
+                    .padding(16)
+                    .twGlass()
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("这次留一句话")
+                            .font(.tw(12.5, .bold))
+                            .foregroundStyle(TWColor.ink2)
+                        TextField("比如：状态一般，卧推降了 5kg；下次先睡好", text: $noteText, axis: .vertical)
+                            .font(.tw(12.5))
+                            .foregroundStyle(TWColor.ink)
+                            .lineLimit(2...4)
+                            .padding(10)
+                            .background {
+                                RoundedRectangle(cornerRadius: 11, style: .continuous)
+                                    .fill(TWColor.glass(0.5))
+                            }
+                        Text("写在这次记录里，历史详情能看到；不写也行。")
+                            .font(.tw(10))
+                            .foregroundStyle(TWColor.ink3)
                     }
                     .padding(16)
                     .twGlass()
@@ -174,7 +199,11 @@ struct SessionSummarySheet: View {
             }
         }
         .onAppear {
+            noteText = entry.note ?? ""
             withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) { appeared = true }
+        }
+        .onDisappear {
+            store.setSessionNote(id: entry.id, note: noteText)
         }
     }
 

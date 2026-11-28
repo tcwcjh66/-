@@ -39,6 +39,10 @@ struct FlowPage: View {
     @State private var setElapsed = 0
     @State private var tempoOn = TWTempo.isOn
     @State private var weightNote = ""
+    /// 练后拉伸：展开状态和单条计时
+    @State private var stretchOpen = false
+    @State private var stretchLeft = 0
+    @State private var stretchNow = ""
 
     private var planIndex: Int {
         min(max(store.planPick, 0), max(store.allPlans.count - 1, 0))
@@ -50,6 +54,18 @@ struct FlowPage: View {
 
     private var plan: PlanTemplate {
         store.allPlans[planIndex]
+    }
+
+    /// 今天计划的总组数，和已经记下来的计划内组数
+    private var planTotalSets: Int { max(1, day.items.reduce(0) { $0 + $1.sets }) }
+
+    private var planDoneSets: Int {
+        let names = Set(day.items.map { swapped[$0.name] ?? $0.name })
+        return store.sessionRecords.filter { names.contains($0.move) }.count
+    }
+
+    private var planPct: Int {
+        min(100, Int(Double(planDoneSets) / Double(planTotalSets) * 100))
     }
 
     private var day: PlanDay {
@@ -84,6 +100,8 @@ struct FlowPage: View {
             timerCard
             progressionCard
             stallCard
+            deloadCard
+            stretchCard
             calendarCard
             historyCard
         }
@@ -108,6 +126,13 @@ struct FlowPage: View {
         .animation(.snappy(duration: 0.25), value: store.prBurst)
         .onReceive(tick) { _ in
             tickSet()
+            if stretchLeft > 0 {
+                stretchLeft -= 1
+                if stretchLeft == 0 {
+                    UINotificationFeedbackGenerator().notificationOccurred(.success)
+                    TWVoice.speak("\(stretchNow) 拉完了，换下一个")
+                }
+            }
             guard running else { return }
             if remain > 0 {
                 remain -= 1
@@ -435,6 +460,9 @@ struct FlowPage: View {
                              (store.sessionTonnage > 0 ? " · \(Int(store.sessionTonnage)) kg 总量" : ""))
                             .font(.tw(12.5, .medium))
                             .foregroundStyle(TWColor.ink3)
+                        Text("计划完成 \(min(planDoneSets, planTotalSets))/\(planTotalSets) 组 · \(planPct)%")
+                            .font(.tw(10.5, .semibold))
+                            .foregroundStyle(planPct >= 80 ? TWColor.mint : TWColor.amber)
                     }
                     Spacer(minLength: 0)
 
@@ -462,7 +490,8 @@ struct FlowPage: View {
                         withAnimation(.snappy(duration: 0.2)) {
                             if let e = store.endSession(plan: plan.name, day: day.title,
                                                         moves: day.items.count,
-                                                        moveNames: day.items.map { swapped[$0.name] ?? $0.name }) {
+                                                        moveNames: day.items.map { swapped[$0.name] ?? $0.name },
+                                                        plannedSets: planTotalSets) {
                                 summaryEntry = e
                                 summaryPrev = store.sessions.dropFirst()
                                     .first { $0.plan == e.plan && $0.day == e.day }
@@ -920,6 +949,148 @@ struct FlowPage: View {
     // MARK: - 热身清单
 
     /// 按今天的动作推热身：练腿就髋膝踝，练胸就肩袖，主项再加一组递增。
+    /// 减载周：连着堆量或卡住两个动作时出现，一键把这周标成减载
+    @ViewBuilder
+    private var deloadCard: some View {
+        if store.isDeloadWeek {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 7) {
+                    Image(systemName: "arrow.down.right.circle.fill")
+                        .font(.tw(14, .semibold))
+                        .foregroundStyle(TWColor.blue)
+                    Text("这周是减载周")
+                        .font(.tw(14.5, .bold))
+                        .foregroundStyle(TWColor.ink)
+                    Spacer()
+                    Button("取消") {
+                        UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                        store.toggleDeloadWeek()
+                    }
+                    .font(.tw(11, .bold))
+                    .foregroundStyle(TWColor.ink3)
+                }
+                Text("每个动作组数砍一半，重量保持；练完应该还有余力，下周再爬。")
+                    .font(.tw(12))
+                    .foregroundStyle(TWColor.ink2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(16)
+            .twGlass()
+        } else if let advice = store.deloadAdvice {
+            VStack(alignment: .leading, spacing: 9) {
+                HStack(spacing: 7) {
+                    Image(systemName: "arrow.down.right.circle")
+                        .font(.tw(14, .semibold))
+                        .foregroundStyle(TWColor.blue)
+                    Text("该减载了")
+                        .font(.tw(14.5, .bold))
+                        .foregroundStyle(TWColor.ink)
+                    Spacer()
+                }
+                Text(advice)
+                    .font(.tw(12))
+                    .foregroundStyle(TWColor.ink2)
+                    .fixedSize(horizontal: false, vertical: true)
+                Button {
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    withAnimation(.snappy(duration: 0.2)) { store.toggleDeloadWeek() }
+                } label: {
+                    Text("把这周标成减载")
+                        .font(.tw(12, .bold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 8)
+                        .background {
+                            Capsule().fill(LinearGradient(colors: [TWColor.blue, TWColor.purple],
+                                                          startPoint: .leading, endPoint: .trailing))
+                        }
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(16)
+            .twGlass()
+        }
+    }
+
+    /// 今天练到的肌群 → 拉伸清单
+    private var stretchGroups: Set<String> {
+        var out: Set<String> = []
+        for it in day.items {
+            let name = swapped[it.name] ?? it.name
+            if let m = allMoves.first(where: { $0.name == name }) {
+                out.insert(m.group)
+            }
+        }
+        return out
+    }
+
+    private var stretchSteps: [StretchStep] { Stretch.steps(groups: stretchGroups) }
+
+    private var stretchCard: some View {
+        VStack(alignment: .leading, spacing: 9) {
+            Button {
+                UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                withAnimation(.snappy(duration: 0.22)) { stretchOpen.toggle() }
+            } label: {
+                HStack(spacing: 7) {
+                    Image(systemName: "figure.cooldown")
+                        .font(.tw(14, .semibold))
+                        .foregroundStyle(TWColor.violet)
+                    Text("练后拉伸")
+                        .font(.tw(14.5, .bold))
+                        .foregroundStyle(TWColor.ink)
+                    Spacer()
+                    if stretchLeft > 0 {
+                        Text("\(stretchNow) · \(stretchLeft)s")
+                            .font(.tw(11, .bold))
+                            .foregroundStyle(TWColor.violet)
+                    } else {
+                        Text(stretchOpen ? "收起" : "\(stretchSteps.count) 条 · 各 30 秒")
+                            .font(.tw(11))
+                            .foregroundStyle(TWColor.ink3)
+                    }
+                    Image(systemName: stretchOpen ? "chevron.up" : "chevron.down")
+                        .font(.tw(10, .bold))
+                        .foregroundStyle(TWColor.ink3)
+                }
+            }
+            .buttonStyle(.plain)
+
+            if stretchOpen {
+                ForEach(stretchSteps) { step in
+                    HStack(alignment: .top, spacing: 8) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(step.name)
+                                .font(.tw(13, .semibold))
+                                .foregroundStyle(TWColor.ink)
+                            Text(step.tip)
+                                .font(.tw(10.5))
+                                .foregroundStyle(TWColor.ink3)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        Spacer(minLength: 4)
+                        Button {
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            stretchNow = step.name
+                            stretchLeft = step.seconds
+                            TWVoice.speak("开始 \(step.name)，\(step.seconds) 秒")
+                        } label: {
+                            Text(stretchLeft > 0 && stretchNow == step.name ? "\(stretchLeft)s" : "\(step.seconds)s")
+                                .font(.tw(11, .bold))
+                                .foregroundStyle(TWColor.violet)
+                                .padding(.horizontal, 9)
+                                .padding(.vertical, 5)
+                                .background { Capsule().fill(TWColor.violet.opacity(0.12)) }
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+        }
+        .padding(16)
+        .twGlass()
+    }
+
     private var warmupCard: some View {
         let steps = Warmup.steps(moveNames: day.items.map { swapped[$0.name] ?? $0.name })
         return VStack(alignment: .leading, spacing: 10) {

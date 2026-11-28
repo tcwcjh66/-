@@ -67,6 +67,7 @@ struct SettingsSheet: View {
                     sideloadCard
                     goalCard
                     gearCard
+                    scheduleCard
                     iconCard
                     lockCard
                     dataCard
@@ -389,6 +390,57 @@ struct SettingsSheet: View {
     }
 
     // MARK: - 图标
+
+    /// 训练日：选了就按这几天提醒，不选按平时习惯猜
+    private var scheduleCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 7) {
+                Image(systemName: "calendar.badge.clock")
+                    .font(.tw(14, .semibold))
+                    .foregroundStyle(TWColor.blue)
+                Text("训练日")
+                    .font(.tw(15, .bold))
+                    .foregroundStyle(TWColor.ink)
+                Spacer()
+                GlassPill(text: store.trainWeekdays.isEmpty ? "按习惯" : "已排 \(store.trainWeekdays.count) 天",
+                          tint: store.trainWeekdays.isEmpty ? TWColor.ink3 : TWColor.mint)
+            }
+
+            HStack(spacing: 6) {
+                ForEach([2, 3, 4, 5, 6, 7, 1], id: \.self) { w in
+                    let on = store.trainWeekdays.contains(w)
+                    Button {
+                        UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                        if on { store.trainWeekdays.remove(w) } else { store.trainWeekdays.insert(w) }
+                        store.persistSoon()
+                    } label: {
+                        Text(TWStore.weekdayName(w))
+                            .font(.tw(13, on ? .heavy : .medium))
+                            .foregroundStyle(on ? .white : TWColor.ink2)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 36)
+                            .background {
+                                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                    .fill(on
+                                          ? AnyShapeStyle(LinearGradient(colors: [TWColor.blue, TWColor.purple],
+                                                                         startPoint: .topLeading, endPoint: .bottomTrailing))
+                                          : AnyShapeStyle(TWColor.glass(0.55)))
+                            }
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+
+            Text(store.trainWeekdays.isEmpty
+                 ? "不选就按你平时练的日子提醒；选了就只看这几天，今天没排也能手动开练。"
+                 : "首页会写今天该练还是休息，训练提醒也只落在这几天。")
+                .font(.tw(10.5))
+                .foregroundStyle(TWColor.ink3)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(16)
+        .twGlass()
+    }
 
     /// 应用锁：Face ID / 设备密码，挡的是界面不是数据
     private var lockCard: some View {

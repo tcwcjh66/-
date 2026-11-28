@@ -610,6 +610,9 @@ struct TodayPage: View {
         if store.sessionStart != nil {
             return "正在练：\(store.sessionMoves.first ?? "")"
         }
+        if let train = store.todayIsTrainingDay, train == false {
+            return "今天排的是休息日 · 想练也能直接开"
+        }
         if let hint = store.nextDayHint {
             return "今天该练：\(hint.day)（\(hint.plan)）"
         }

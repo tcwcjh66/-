@@ -5,6 +5,7 @@ struct LibPage: View {
     @EnvironmentObject var store: TWStore
     @State private var group: String = "全部"
     @State private var query: String = ""
+    @State private var gearFilter: String = "全部"
     @State private var detail: MoveItem?
 
     private let groups = ["全部", "收藏", "胸", "背", "腿", "肩", "手臂", "核心"]
@@ -16,6 +17,7 @@ struct LibPage: View {
             } else if group != "全部" {
                 guard m.group == group else { return false }
             }
+            if gearFilter != "全部", m.equipment != gearFilter { return false }
             guard !query.isEmpty else { return true }
             return m.name.contains(query) || m.equipment.contains(query) || m.group.contains(query)
         }
@@ -55,6 +57,29 @@ struct LibPage: View {
                     }
                 }
                 .padding(.vertical, 2)
+            }
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 7) {
+                    ForEach(["全部"] + ["哑铃", "杠铃", "器械", "自重", "弹力带"].filter { store.ownedGear.contains($0) },
+                            id: \.self) { g in
+                        Button {
+                            UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                            withAnimation(.snappy(duration: 0.2)) { gearFilter = g }
+                        } label: {
+                            Text(g)
+                                .font(.tw(12.5, gearFilter == g ? .bold : .medium))
+                                .foregroundStyle(gearFilter == g ? TWColor.purple : TWColor.ink3)
+                                .padding(.horizontal, 11)
+                                .padding(.vertical, 6)
+                                .background {
+                                    Capsule().fill(gearFilter == g ? TWColor.purple.opacity(0.13) : TWColor.glass(0.45))
+                                }
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    Spacer(minLength: 0)
+                }
             }
 
             VStack(spacing: 10) {
