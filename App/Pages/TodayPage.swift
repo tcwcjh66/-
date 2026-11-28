@@ -30,28 +30,37 @@ struct TodayPage: View {
                 backupBanner
                     .padding(.bottom, 10)
             }
-            VStack(spacing: 0) {
-                heroDial
-                ringsCard
-                recoveryBar
+            VStack(spacing: 12) {
+                // 立绘 + 四环 = 一张「今天状态」卡
+                VStack(spacing: 0) {
+                    heroDial
+                    ringsCard
+                    recoveryBar
+                }
+                .twGlass(radius: 24)
+
                 if firstRun { firstRunCard }
-                hairline
+
                 todayTrainCard
+                    .twGlass(radius: 20)
+
                 weekGridCard
-                hairline
+                    .twGlass(radius: 20)
+
                 statsRow
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 12)
-                hairline
+
                 waterQuick
-                hairline
+                    .twGlass(radius: 18)
+
                 trendCard
-                hairline
+                    .twGlass(radius: 20)
+
                 tipCard
-                hairline
+                    .twGlass(radius: 20)
+
                 moodRow
+                    .twGlass(radius: 20)
             }
-            .twGlass(radius: 26)
         }
         .opacity(appeared ? 1 : 0)
         .offset(y: appeared ? 0 : 12)
@@ -500,17 +509,6 @@ struct TodayPage: View {
                     .foregroundStyle(TWColor.ink2)
                 Spacer()
                 GlassPill(text: "本周 \(weekCount) 次", tint: TWColor.mint)
-            }
-
-            // 本周七天，练了打勾、今天描紫边
-            HStack(spacing: 4) {
-                ForEach(Array(weekCells.enumerated()), id: \.offset) { pair in
-                    weekPill(pair.element)
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            if pair.element.isToday { onOpenFlow() }
-                        }
-                }
             }
 
             Text(todayPlanLine)
