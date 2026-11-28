@@ -22,6 +22,8 @@ struct SettingsSheet: View {
     @State private var sideloadText: String = TWSideload.dayText
     @State private var altIcon: String? = nil
     @State private var iconMsg: String = ""
+    @State private var showChangelog = false
+    @State private var lockOK = TWLock.canUse
 
     private var versionText: String {
         let v = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "3.0"
@@ -66,6 +68,7 @@ struct SettingsSheet: View {
                     goalCard
                     gearCard
                     iconCard
+                    lockCard
                     dataCard
                     statusCard
                     logCard
@@ -89,6 +92,11 @@ struct SettingsSheet: View {
         .sheet(isPresented: $showManualHealth) {
             ManualHealthSheet()
                 .environmentObject(store)
+                .presentationDetents([.large])
+                .presentationCornerRadius(28)
+        }
+        .sheet(isPresented: $showChangelog) {
+            ChangeLogSheet()
                 .presentationDetents([.large])
                 .presentationCornerRadius(28)
         }
@@ -382,6 +390,58 @@ struct SettingsSheet: View {
 
     // MARK: - 图标
 
+    /// 应用锁：Face ID / 设备密码，挡的是界面不是数据
+    private var lockCard: some View {
+        VStack(alignment: .leading, spacing: 11) {
+            HStack(spacing: 7) {
+                Image(systemName: "lock.shield")
+                    .font(.tw(14, .semibold))
+                    .foregroundStyle(TWColor.violet)
+                Text("隐私")
+                    .font(.tw(15, .bold))
+                    .foregroundStyle(TWColor.ink)
+                Spacer()
+                if !lockOK {
+                    GlassPill(text: "设备不支持", tint: TWColor.amber)
+                }
+            }
+
+            Toggle(isOn: Binding(
+                get: { store.lockEnabled },
+                set: { on in
+                    store.lockEnabled = on
+                    store.persistSoon()
+                    UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                }
+            )) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("打开 App 要验证")
+                        .font(.tw(13.5, .semibold))
+                        .foregroundStyle(TWColor.ink)
+                    Text("切到后台就上锁，回来用 Face ID 或设备密码解锁")
+                        .font(.tw(11))
+                        .foregroundStyle(TWColor.ink3)
+                }
+            }
+            .tint(TWColor.violet)
+            .disabled(!lockOK)
+
+            Text(lockOK ? "只挡界面，数据还是只在本机；忘了密码可以去系统设置里关掉。" : "这台设备没设 Face ID 也没设密码，先去系统设置里加一个再来开。")
+                .font(.tw(10.5))
+                .foregroundStyle(TWColor.ink3)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(16)
+        .twGlass()
+    }
+
+    /// 距离上次导出多久，超过 14 天变琥珀色
+    private var backupLine: String {
+        guard let days = store.backupDays else { return "还没导出过 · 重装会丢，先存一份" }
+        if days <= 0 { return "上次导出：今天" }
+        return "上次导出：\(days) 天前" + (store.backupStale ? " · 该存一份了" : "")
+    }
+
     private var iconCard: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 6) {
@@ -532,6 +592,11 @@ struct SettingsSheet: View {
                 }
             }
             .buttonStyle(.plain)
+
+            Text(backupLine)
+                .font(.tw(11))
+                .foregroundStyle(store.backupStale ? TWColor.amber : TWColor.ink3)
+                .padding(.leading, 45)
 
             Rectangle().fill(TWColor.ink3.opacity(0.12)).frame(height: 0.7)
 
@@ -763,6 +828,23 @@ struct SettingsSheet: View {
             infoRow("数据存储", "只在本机，不上传")
             infoRow("动作库", "\(allMoves.count) 个 · 方案 \(planTemplates.count) 套")
             infoRow("心率来源", "指尖 PPG / 手动 / 快捷指令回传")
+
+            Button {
+                UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                showChangelog = true
+            } label: {
+                HStack(spacing: 5) {
+                    Image(systemName: "clock.arrow.circlepath")
+                        .font(.tw(11, .bold))
+                    Text("这一版改了什么")
+                        .font(.tw(12, .bold))
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.tw(10, .bold))
+                }
+                .foregroundStyle(TWColor.blue)
+            }
+            .buttonStyle(.plain)
 
             Text("所有身体数据来自 iPhone 自身传感器或你手动输入，不含模拟数据。手表数据需要 HealthKit 授权，免费签名下不可用。")
                 .font(.tw(11.5))

@@ -58,6 +58,7 @@ struct GoalSheet: View {
                     }
 
                     smartCard
+                    adaptiveCard
 
                     fieldBox("每日热量", unit: "kcal", text: $kcalText, index: 0,
                              note: "总消耗之外想吃到多少，减脂一般比维持低 15%")
@@ -110,6 +111,58 @@ struct GoalSheet: View {
             proteinText = String(Int(store.proteinGoal))
             waterText = String(store.waterTarget)
             weightText = store.weightGoal > 0 ? String(format: "%g", store.weightGoal) : ""
+        }
+    }
+
+    /// 依据近两周体重趋势给出的热量修正；差得不多就不出现
+    @ViewBuilder
+    private var adaptiveCard: some View {
+        if let a = store.adaptiveKcalAdvice {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(spacing: 7) {
+                    Image(systemName: "arrow.triangle.2.circlepath")
+                        .font(.tw(13, .bold))
+                        .foregroundStyle(TWColor.mint)
+                    Text("按体重趋势修一下")
+                        .font(.tw(14.5, .bold))
+                        .foregroundStyle(TWColor.ink)
+                    Spacer()
+                    GlassPill(text: store.goalModeLabel, tint: TWColor.mint)
+                }
+                Text(a.reason)
+                    .font(.tw(12))
+                    .foregroundStyle(TWColor.ink2)
+                    .fixedSize(horizontal: false, vertical: true)
+                HStack(spacing: 10) {
+                    Text("\(a.target) kcal")
+                        .font(.tw(20, .heavy))
+                        .foregroundStyle(TWColor.ink)
+                        .monospacedDigit()
+                    Spacer(minLength: 0)
+                    Button {
+                        UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                        kcalText = "\(a.target)"
+                        store.dietTarget = Double(a.target)
+                        store.persistSoon()
+                    } label: {
+                        Text("采纳")
+                            .font(.tw(12.5, .bold))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 8)
+                            .background {
+                                Capsule().fill(LinearGradient(colors: [TWColor.mint, TWColor.blue],
+                                                              startPoint: .leading, endPoint: .trailing))
+                            }
+                    }
+                    .buttonStyle(.plain)
+                }
+                Text("按近两周体重算的，只看趋势不看单日；采纳后目标立刻生效。")
+                    .font(.tw(10.5))
+                    .foregroundStyle(TWColor.ink3)
+            }
+            .padding(14)
+            .twGlass()
         }
     }
 

@@ -22,6 +22,9 @@ struct DietPage: View {
     @State private var monthOffset = 0
     @State private var showDay = false
     @State private var detailKey = ""
+    /// 批量整理：勾选后可以一次删、改餐次、挪日期
+    @State private var pickMode = false
+    @State private var pickedMeals: Set<UUID> = []
 
     private let slots = ["早餐", "午餐", "晚餐", "加餐"]
 
@@ -1052,9 +1055,23 @@ struct DietPage: View {
                 .buttonStyle(.plain)
 
                 if !store.meals.isEmpty {
-                    Button("清空") { store.resetToday() }
-                        .font(.tw(12.5, .semibold))
-                        .foregroundStyle(TWColor.ink3)
+                    Button(pickMode ? "完成" : "整理") {
+                        UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                        withAnimation(.snappy(duration: 0.2)) {
+                            pickMode.toggle()
+                            if !pickMode { pickedMeals.removeAll() }
+                        }
+                    }
+                    .font(.tw(12.5, .bold))
+                    .foregroundStyle(pickMode ? TWColor.purple : TWColor.ink3)
+
+                    Button("清空") {
+                        store.resetToday()
+                        pickMode = false
+                        pickedMeals.removeAll()
+                    }
+                    .font(.tw(12.5, .semibold))
+                    .foregroundStyle(TWColor.ink3)
                 }
             }
 
@@ -1087,13 +1104,80 @@ struct DietPage: View {
                     }
                 }
             }
+
+            if pickMode && !pickedMeals.isEmpty {
+                bulkBar
+            }
         }
         .padding(16)
         .twGlass()
     }
 
+    private var bulkBar: some View {
+        HStack(spacing: 8) {
+            Text("已选 \(pickedMeals.count) 条")
+                .font(.tw(11.5, .bold))
+                .foregroundStyle(TWColor.purple)
+
+            Spacer(minLength: 0)
+
+            Menu {
+                ForEach(slots, id: \.self) { s in
+                    Button(s) { store.setMealSlot(ids: pickedMeals, slot: s) }
+                }
+            } label: {
+                Text("改餐次")
+                    .font(.tw(11.5, .bold))
+                    .foregroundStyle(TWColor.ink2)
+                    .padding(.horizontal, 9)
+                    .padding(.vertical, 6)
+                    .background { Capsule().fill(TWColor.ink3.opacity(0.10)) }
+            }
+
+            Button {
+                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                withAnimation(.snappy(duration: 0.2)) {
+                    store.moveMealsToYesterday(ids: pickedMeals)
+                    pickedMeals.removeAll()
+                    pickMode = false
+                }
+            } label: {
+                Text("挪到昨天")
+                    .font(.tw(11.5, .bold))
+                    .foregroundStyle(TWColor.amber)
+                    .padding(.horizontal, 9)
+                    .padding(.vertical, 6)
+                    .background { Capsule().fill(TWColor.amber.opacity(0.12)) }
+            }
+            .buttonStyle(.plain)
+
+            Button {
+                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                withAnimation(.snappy(duration: 0.2)) {
+                    store.deleteMeals(ids: pickedMeals)
+                    pickedMeals.removeAll()
+                    pickMode = false
+                }
+            } label: {
+                Text("删除")
+                    .font(.tw(11.5, .bold))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 11)
+                    .padding(.vertical, 6)
+                    .background { Capsule().fill(TWColor.coral) }
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.top, 4)
+    }
+
     private func mealRow(_ m: MealEntry) -> some View {
         HStack(spacing: 10) {
+            if pickMode {
+                Image(systemName: pickedMeals.contains(m.id) ? "checkmark.circle.fill" : "circle")
+                    .font(.tw(17, .bold))
+                    .foregroundStyle(pickedMeals.contains(m.id) ? TWColor.purple : TWColor.ink3.opacity(0.6))
+            }
             VStack(alignment: .leading, spacing: 2) {
                 Text(m.name)
                     .font(.tw(14, .semibold))
@@ -1108,17 +1192,25 @@ struct DietPage: View {
             Text("\(Int(m.kcal))")
                 .font(.tw(15, .heavy))
                 .foregroundStyle(TWColor.ink2)
-            Button {
-                UIImpactFeedbackGenerator(style: .soft).impactOccurred()
-                withAnimation(.snappy(duration: 0.2)) { store.deleteMeal(id: m.id) }
-            } label: {
-                Image(systemName: "xmark.circle.fill")
-                    .font(.tw(16))
-                    .foregroundStyle(TWColor.ink3.opacity(0.65))
-                    .frame(width: 30, height: 30)
-                    .contentShape(Rectangle())
+            if !pickMode {
+                Button {
+                    UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                    withAnimation(.snappy(duration: 0.2)) { store.deleteMeal(id: m.id) }
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.tw(16))
+                        .foregroundStyle(TWColor.ink3.opacity(0.65))
+                        .frame(width: 30, height: 30)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
+        }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            guard pickMode else { return }
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            if pickedMeals.contains(m.id) { pickedMeals.remove(m.id) } else { pickedMeals.insert(m.id) }
         }
     }
 

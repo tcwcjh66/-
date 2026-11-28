@@ -139,13 +139,14 @@ struct SystemStatusSheet: View {
                                 }
                                 .frame(maxWidth: .infinity, alignment: .leading)
                             }
-                            if let zero = issues.first(where: { $0.kind == "zero" }) {
+                            if issues.contains(where: { $0.kind == "zero" || $0.kind == "meal" }) {
                                 Button {
-                                    let n = store.cleanZeroSessions()
+                                    UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                                    let n = store.cleanDataIssues()
                                     issues = store.auditData()
-                                    cleanTip = n > 0 ? "已清掉 \(n) 条" : "没有可清的"
+                                    cleanTip = n > 0 ? "已修好 \(n) 条" : "没有可修的"
                                 } label: {
-                                    Text(cleanTip.isEmpty ? "清掉这 \(zero.count) 条空训练" : cleanTip)
+                                    Text(cleanTip.isEmpty ? "一键修好能修的" : cleanTip)
                                         .font(.tw(12, .bold))
                                 }
                                 .foregroundStyle(TWColor.mint)
@@ -156,6 +157,8 @@ struct SystemStatusSheet: View {
                     }
 
                     card("自动备份") {
+                        row("上次手动导出", store.backupDays == nil ? "还没导过" : (store.backupDays == 0 ? "今天" : "\(store.backupDays ?? 0) 天前"),
+                            store.backupStale ? TWColor.amber : TWColor.mint)
                         row("备份份数", "\(backups.count) 份", backups.isEmpty ? TWColor.coral : TWColor.mint)
                         row("占用", bytes(backupBytes), TWColor.ink2)
                         if let latest = backups.first {

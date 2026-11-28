@@ -83,6 +83,7 @@ struct FlowPage: View {
             setCard
             timerCard
             progressionCard
+            stallCard
             calendarCard
             historyCard
         }
@@ -488,6 +489,8 @@ struct FlowPage: View {
 
                 loadRow
 
+                percentRow
+
                 }
                 .padding(14)
                 .twGlass(radius: 18)
@@ -579,6 +582,119 @@ struct FlowPage: View {
             TWRestLive.setProgress(store.sessionSets + 1)
             TWRestLive.start(seconds: sec, move: name, next: next, setNo: store.sessionSets + 1)
             TWVoice.announceRest(sec, move: name)
+        }
+    }
+
+    /// 百分比强度条：按这个动作最好成绩换算，点一下填进这组
+    private var percentChips: [TWPctRow] {
+        guard !activeMove.isEmpty else { return [] }
+        return store.percentTable(move: activeMove)
+    }
+
+    @ViewBuilder
+    private var percentRow: some View {
+        if !percentChips.isEmpty {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("\(activeMove) 的强度换算 · 点一下填进这组")
+                    .font(.tw(10.5, .semibold))
+                    .foregroundStyle(TWColor.ink3)
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 7) {
+                        ForEach(percentChips) { r in
+                            Button {
+                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                setWeight = r.kg
+                                setReps = r.reps
+                                weightNote = "\(r.pct)% 强度 · 目标 \(r.reps) 次"
+                            } label: {
+                                VStack(spacing: 1) {
+                                    Text("\(r.pct)%")
+                                        .font(.tw(9.5, .bold))
+                                        .foregroundStyle(TWColor.ink3)
+                                    Text("\(fmtKg(r.kg))kg")
+                                        .font(.tw(12.5, .heavy))
+                                        .foregroundStyle(TWColor.purple)
+                                    Text("×\(r.reps)")
+                                        .font(.tw(9))
+                                        .foregroundStyle(TWColor.ink3)
+                                }
+                                .padding(.horizontal, 9)
+                                .padding(.vertical, 6)
+                                .background {
+                                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                        .fill(TWColor.purple.opacity(0.09))
+                                }
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /// 卡住和堆量的提醒：只在真到了的时候出现，没数据就不占地方
+    @ViewBuilder
+    private var stallCard: some View {
+        let stalls = store.stalledMoves()
+        let jump = store.volumeJump
+        if !stalls.isEmpty || jump != nil {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(spacing: 7) {
+                    Image(systemName: "exclamationmark.circle")
+                        .font(.tw(13, .semibold))
+                        .foregroundStyle(TWColor.amber)
+                    Text("进度提醒")
+                        .font(.tw(14.5, .bold))
+                        .foregroundStyle(TWColor.ink)
+                    Spacer()
+                    GlassPill(text: stalls.isEmpty ? "只看量" : "\(stalls.count) 个卡住", tint: TWColor.amber)
+                }
+
+                if let j = jump {
+                    HStack(alignment: .top, spacing: 7) {
+                        Circle().fill(TWColor.coral.opacity(0.6))
+                            .frame(width: 4, height: 4)
+                            .padding(.top, 6)
+                        Text("本周 \(j.now) 组，比上周 \(j.prev) 组多了 \(j.pct)%，先别再加量，把吃和睡跟上")
+                            .font(.tw(12))
+                            .foregroundStyle(TWColor.ink2)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+
+                ForEach(stalls) { st in
+                    HStack(alignment: .center, spacing: 8) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(st.move)
+                                .font(.tw(13, .semibold))
+                                .foregroundStyle(TWColor.ink)
+                            Text("\(st.days) 天没破 \(fmtKg(st.best))kg · 现在 \(fmtKg(st.last))kg")
+                                .font(.tw(10.5))
+                                .foregroundStyle(TWColor.ink3)
+                                .lineLimit(1)
+                        }
+                        Spacer(minLength: 4)
+                        Button {
+                            UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                            activeMove = st.move
+                            setWeight = max(2.5, (st.last * 0.9 * 2).rounded() / 2)
+                            weightNote = "降到 \(fmtKg(setWeight))kg 重新爬，两周没动就换动作"
+                        } label: {
+                            Text("降到 90%")
+                                .font(.tw(10.5, .bold))
+                                .foregroundStyle(TWColor.amber)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background { Capsule().fill(TWColor.amber.opacity(0.13)) }
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(16)
+            .twGlass()
         }
     }
 

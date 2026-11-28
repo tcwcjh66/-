@@ -143,6 +143,23 @@ struct GirthLog: Codable, Identifiable, Hashable {
     var hip: Double
 }
 
+/// 百分比强度：按最好 e1RM 换算出来的「该用多重、做几次」
+struct TWPctRow: Identifiable, Hashable {
+    var id: Int { pct }
+    let pct: Int
+    let kg: Double
+    let reps: Int
+}
+
+/// 一个卡住的动作：最好成绩停在哪天，现在多重
+struct TWStallInfo: Identifiable, Hashable {
+    var id: String { move }
+    let move: String
+    let days: Int
+    let best: Double
+    let last: Double
+}
+
 /// 一条可以撤销的删除：text 是提示语，run 是恢复动作
 struct TWUndoAction: Identifiable {
     let id = UUID()
@@ -464,6 +481,8 @@ final class TWStore: ObservableObject {
     @Published var pendingSession: TWPendingSession?
     /// 手上有哪些器械，计划只从能做的动作里挑
     @Published var ownedGear: Set<String> = ["哑铃", "杠铃", "器械", "自重", "弹力带"]
+    /// 打开 App 要 Face ID / 设备密码，设置里可关
+    @Published var lockEnabled: Bool = false
 
     // 饮水
     @Published var waterCups: Int = 0
@@ -509,6 +528,7 @@ final class TWStore: ObservableObject {
     private enum Key {
         static let prBest = "tw.prBest.v1"
         static let gear = "tw.gear.v1"
+        static let lock = "tw.lock.v1"
         static let hr = "tw.hr.v2"
         static let hrv = "tw.hrv.v2"
         static let hrAt = "tw.hrAt.v2"
@@ -976,6 +996,172 @@ final class TWStore: ObservableObject {
 
     var availableMoves: [MoveItem] { allMoves.filter { canDo($0) } }
 
+    // MARK: - 强度换算
+
+    /// 60–90% 的常用强度，按这个动作的历史最好 e1RM 换算；点一下直接填进这一组
+    func percentTable(move: String) -> [TWPctRow] {
+        guard !move.isEmpty else { return [] }
+        var best = prBest[move] ?? 0
+        if best <= 0, let p = e1rmPoints(move: move, limit: 1).last { best = p.kg }
+        guard best > 0 else { return [] }
+        let rows: [(Int, Int)] = [(60, 15), (70, 12), (75, 10), (80, 8), (85, 6), (90, 4)]
+        return rows.map { r in
+            let kg = max(2.5, (best * Double(r.0) / 100 * 2).rounded() / 2)
+            return TWPctRow(pct: r.0, kg: kg, reps: r.1)
+        }
+    }
+
+    // MARK: - 停滞与过载
+
+    /// 连续三周没破自己最好成绩的动作；没到 21 天的不算，免得刚开始练就报
+    func stalledMoves(limit: Int = 3) -> [TWStallInfo] {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        let today = Calendar.current.startOfDay(for: Date())
+        let names = Array(Set(prBest.keys).union(Set(sessions.flatMap { ($0.records ?? []).map { $0.move } })))
+        var out: [TWStallInfo] = []
+        for name in names {
+            let pts = e1rmPoints(move: name, limit: 8)
+            guard pts.count >= 4, let bestPoint = pts.max(by: { $0.kg < $1.kg }) else { continue }
+            let best = bestPoint.kg
+            let last = pts.last?.kg ?? best
+            guard last <= best + 0.01, let bd = f.date(from: bestPoint.date) else { continue }
+            let days = Calendar.current.dateComponents([.day], from: bd, to: today).day ?? 0
+            if days >= 21 {
+                out.append(TWStallInfo(move: name, days: days, best: best, last: last))
+            }
+        }
+        return Array(out.sorted { $0.days > $1.days }.prefix(limit))
+    }
+
+    /// 某一周练了多少组（0 = 本周，1 = 上周）
+    func weeklySetCount(_ weeksAgo: Int = 0) -> Int {
+        let cal = Calendar.current
+        guard let thisWeek = cal.dateInterval(of: .weekOfYear, for: Date())?.start,
+              let start = cal.date(byAdding: .weekOfYear, value: -weeksAgo, to: thisWeek) else { return 0 }
+        let end = cal.date(byAdding: .weekOfYear, value: 1, to: start) ?? start
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        return sessions.filter { s in
+            guard let d = f.date(from: s.date) else { return false }
+            return d >= start && d < end
+        }.reduce(0) { $0 + $1.sets }
+    }
+
+    /// 本周组数比上周多 40% 以上就提醒，别硬堆
+    var volumeJump: (pct: Int, now: Int, prev: Int)? {
+        let now = weeklySetCount(0)
+        let prev = weeklySetCount(1)
+        guard prev >= 6, now > prev else { return nil }
+        let pct = Int(((Double(now) / Double(prev)) - 1) * 100)
+        return pct >= 40 ? (pct, now, prev) : nil
+    }
+
+    // MARK: - 热量随体重自适应
+
+    /// 近两周体重的周均变化（kg/周）
+    var weightTrendPerWeek: Double? {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        let cutoff = Calendar.current.date(byAdding: .day, value: -14, to: Date()) ?? Date()
+        let pts = weightLogs.compactMap { w -> (Date, Double)? in
+            guard let d = f.date(from: w.id), d >= cutoff, w.kg > 0 else { return nil }
+            return (d, w.kg)
+        }.sorted { $0.0 < $1.0 }
+        guard pts.count >= 3, let a = pts.first, let b = pts.last else { return nil }
+        let days = b.0.timeIntervalSince(a.0) / 86400
+        guard days >= 7 else { return nil }
+        return (b.1 - a.1) / days * 7
+    }
+
+    /// 实际趋势和目标差太多时给一个新热量；没差到值得改就不返回
+    var adaptiveKcalAdvice: (target: Int, reason: String)? {
+        guard bodyWeight > 0, let trend = weightTrendPerWeek else { return nil }
+        let target: Double
+        switch goalMode {
+        case 0: target = -0.0075 * bodyWeight
+        case 2: target = 0.0025 * bodyWeight
+        default: target = 0
+        }
+        let tol = 0.0025 * bodyWeight
+        let now = Int(dietTarget)
+        let trendText = String(format: "%@%.2f kg/周", trend >= 0 ? "+" : "−", abs(trend))
+        if trend < target - tol {
+            let why: String
+            switch goalMode {
+            case 0: why = "掉得比目标快，容易连肌肉一起掉"
+            case 2: why = "涨得比目标慢，热量还不够"
+            default: why = "往下飘得有点快"
+            }
+            return (min(6000, now + 200), "近两周 \(trendText)，\(why)，先加 200 kcal")
+        }
+        if trend > target + tol {
+            let why: String
+            switch goalMode {
+            case 0: why = "减得比目标慢"
+            case 2: why = "涨得比目标快，多出来的多半是脂肪"
+            default: why = "在往上飘"
+            }
+            return (max(800, now - 200), "近两周 \(trendText)，\(why)，建议收 200 kcal")
+        }
+        return nil
+    }
+
+    // MARK: - 饮食批量整理
+
+    func deleteMeals(ids: Set<UUID>) {
+        guard !ids.isEmpty else { return }
+        let removed = meals.filter { ids.contains($0.id) }
+        meals.removeAll { ids.contains($0.id) }
+        applyMealDelta(removed)
+        syncMealHistory()
+        persistSoon()
+    }
+
+    func setMealSlot(ids: Set<UUID>, slot: String) {
+        guard !ids.isEmpty else { return }
+        for i in meals.indices where ids.contains(meals[i].id) { meals[i].slot = slot }
+        syncMealHistory()
+        persistSoon()
+    }
+
+    /// 记错日子的：从今天挪到昨天，两边统计一起改
+    func moveMealsToYesterday(ids: Set<UUID>) {
+        guard !ids.isEmpty else { return }
+        let removed = meals.filter { ids.contains($0.id) }
+        meals.removeAll { ids.contains($0.id) }
+        applyMealDelta(removed)
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        let y = Calendar.current.date(byAdding: .day, value: -1, to: Date()) ?? Date()
+        let key = f.string(from: y)
+        var list = mealHistory[key] ?? []
+        list.append(contentsOf: removed)
+        mealHistory[key] = list
+        syncMealHistory()
+        persistSoon()
+    }
+
+    private func applyMealDelta(_ removed: [MealEntry]) {
+        for m in removed {
+            dietKcal = max(0, dietKcal - m.kcal)
+            protein = max(0, protein - m.protein)
+            carb = max(0, carb - m.carb)
+            fat = max(0, fat - m.fat)
+            veg = max(0, veg - m.veg)
+            moveKcal = max(0, moveKcal - m.kcal * 0.06)
+        }
+    }
+
+    // MARK: - 备份提醒
+
+    var backupDays: Int? {
+        guard let d = TWStore.lastExportAt else { return nil }
+        return Calendar.current.dateComponents([.day], from: d, to: Date()).day
+    }
+
+    var backupStale: Bool { (backupDays ?? 99) >= 14 }
+
     // MARK: - 补录
 
     /// 补一条过去的训练。合并到同一天的记录里，没那天就新建。
@@ -1029,6 +1215,14 @@ final class TWStore: ObservableObject {
                 count: zero.count, kind: "zero"))
         }
 
+        let bad = meals.filter { $0.kcal <= 0 || $0.grams <= 0 || $0.name.isEmpty }
+        if !bad.isEmpty {
+            out.append(TWDataIssue(
+                title: "饮食记录不完整 \(bad.count) 条",
+                detail: "没有克数或热量是 0，多半是识别失败后硬存进来的。可以一键清掉。",
+                count: bad.count, kind: "meal"))
+        }
+
         let sorted = weightLogs.sorted { $0.id < $1.id }
         var jumps: [String] = []
         var prev: WeightLog?
@@ -1046,6 +1240,21 @@ final class TWStore: ObservableObject {
         }
 
         return out
+    }
+
+    /// 体检发现的一键修：空训练 + 不完整饮食，返回处理了几条
+    @discardableResult
+    func cleanDataIssues() -> Int {
+        var n = cleanZeroSessions()
+        let bad = meals.filter { $0.kcal <= 0 || $0.grams <= 0 || $0.name.isEmpty }
+        if !bad.isEmpty {
+            meals.removeAll { $0.kcal <= 0 || $0.grams <= 0 || $0.name.isEmpty }
+            applyMealDelta(bad)
+            syncMealHistory()
+            n += bad.count
+        }
+        if n > 0 { persistSoon() }
+        return n
     }
 
     /// 清掉 0 时长、0 动作的训练记录，返回删了几条
@@ -2053,6 +2262,7 @@ final class TWStore: ObservableObject {
             d.set(v, forKey: Key.prBest)
         }
         d.set(Array(ownedGear), forKey: Key.gear)
+        d.set(lockEnabled, forKey: Key.lock)
         if let v = try? JSONEncoder().encode(sleepLogs) {
             d.set(v, forKey: Key.sleeps)
         }
@@ -2164,6 +2374,7 @@ final class TWStore: ObservableObject {
         if let arr = d.array(forKey: Key.gear) as? [String], !arr.isEmpty {
             ownedGear = Set(arr)
         }
+        lockEnabled = d.bool(forKey: Key.lock)
         if let v = d.data(forKey: Key.sleeps),
            let decoded = try? JSONDecoder().decode([SleepLog].self, from: v) {
             sleepLogs = decoded

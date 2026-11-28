@@ -26,6 +26,10 @@ struct TodayPage: View {
                 saveBanner(issue)
                     .padding(.bottom, 10)
             }
+            if store.backupStale {
+                backupBanner
+                    .padding(.bottom, 10)
+            }
             VStack(spacing: 0) {
                 heroDial
                 ringsCard
@@ -100,6 +104,33 @@ struct TodayPage: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 9)
         .twGlass(radius: 14)
+    }
+
+    /// 备份提醒：超过两周没导出就挂一条，侧载重装前心里有数
+    private var backupBanner: some View {
+        Button {
+            UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+            showSettings = true
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "externaldrive.badge.exclamationmark")
+                    .font(.tw(11, .bold))
+                    .foregroundStyle(TWColor.amber)
+                Text(store.backupDays == nil
+                     ? "还没导出过备份 · 点这里存一份"
+                     : "上次备份 \(store.backupDays ?? 0) 天前 · 点这里再存一份")
+                    .font(.tw(11))
+                    .foregroundStyle(TWColor.ink2)
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right")
+                    .font(.tw(9, .bold))
+                    .foregroundStyle(TWColor.ink3)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 9)
+            .twGlass(radius: 14)
+        }
+        .buttonStyle(.plain)
     }
 
     /// 今天一条数据都没有：新装第一天，或者刚清空过

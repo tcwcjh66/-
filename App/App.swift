@@ -8,8 +8,11 @@ struct TianCaiWeiApp: App {
     init() {
         TWCrashGuard.install()
         TWCrashGuard.checkLastCrash()
-        // 首启把动作和食物塞进系统搜索，之后按库版本决定要不要重建
-        TWSpotlight.indexIfNeeded()
+        // 首启把动作和食物塞进系统搜索，之后按库版本决定要不要重建。
+        // 900 多条一次编会拖慢冷启动，等首帧出来 3 秒再放到后台跑。
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+            TWSpotlight.indexIfNeeded()
+        }
     }
 
     @StateObject private var store = TWStore.shared

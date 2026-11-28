@@ -9,6 +9,10 @@ struct RootView: View {
     /// 手指在拖 / 惯性未停，逐帧动画据此暂停
     @State private var isScrolling = false
     @State private var scrollWork: DispatchWorkItem?
+    @Environment(\.scenePhase) private var scenePhase
+    /// 应用锁：开启后切后台就上锁，回来先过 Face ID
+    @State private var locked = false
+    @State private var unlocking = false
 
     var body: some View {
         Group {
@@ -23,6 +27,64 @@ struct RootView: View {
         // 组件格子、长按图标、系统深链都从这里进来
         .onReceive(NotificationCenter.default.publisher(for: .twShortcut)) { note in
             go(to: (note.object as? String) ?? "")
+        }
+        .overlay {
+            if store.lockEnabled && locked { lockScreen }
+        }
+        .animation(.easeInOut(duration: 0.22), value: locked)
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .background, store.lockEnabled { locked = true }
+        }
+        .onAppear {
+            if store.lockEnabled { locked = true; askUnlock() }
+        }
+    }
+
+    /// 隐私锁：只挡界面，不动数据
+    private var lockScreen: some View {
+        ZStack {
+            AuroraBG().ignoresSafeArea()
+            VStack(spacing: 16) {
+                Image(systemName: "lock.fill")
+                    .font(.tw(30, .bold))
+                    .foregroundStyle(TWColor.purple)
+                    .frame(width: 76, height: 76)
+                    .background { Circle().fill(TWColor.purple.opacity(0.12)) }
+                Text("Persist 已锁")
+                    .font(.tw(20, .heavy))
+                    .foregroundStyle(TWColor.ink)
+                Text(store.lockEnabled ? "训练、饮食、身体数据都在这儿，先验证一下" : "")
+                    .font(.tw(12.5))
+                    .foregroundStyle(TWColor.ink3)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 30)
+                Button {
+                    askUnlock()
+                } label: {
+                    Text(unlocking ? "验证中…" : "用 Face ID 解锁")
+                        .font(.tw(15, .bold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 26)
+                        .padding(.vertical, 13)
+                        .background {
+                            Capsule().fill(LinearGradient(colors: [TWColor.purple, TWColor.violet],
+                                                          startPoint: .leading, endPoint: .trailing))
+                        }
+                }
+                .buttonStyle(.plain)
+                .disabled(unlocking)
+            }
+        }
+        .transition(.opacity)
+        .zIndex(10)
+    }
+
+    private func askUnlock() {
+        guard !unlocking else { return }
+        unlocking = true
+        TWLock.unlock { ok in
+            unlocking = false
+            if ok { locked = false }
         }
     }
 
