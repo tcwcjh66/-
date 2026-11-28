@@ -10,8 +10,6 @@ struct TWWidgetBundle: WidgetBundle {
         TWWaterWidget()
         TWTrainWidget()
         TWStandByWidget()
-        TWWaterControl()
-        TWTrainControl()
     }
 }
 
