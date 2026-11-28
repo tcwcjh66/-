@@ -5,10 +5,29 @@ import AVFoundation
 enum TWVoice {
     private static let synth = AVSpeechSynthesizer()
     private static let key = "tw.voice.on.v1"
+    private static let tenKey = "tw.voice.ten.v1"
 
     static var isOn: Bool {
         get { UserDefaults.standard.object(forKey: key) as? Bool ?? true }
         set { UserDefaults.standard.set(newValue, forKey: key) }
+    }
+
+    /// 剩 10 秒时提醒一句，默认开
+    static var countdownOn: Bool {
+        get { UserDefaults.standard.object(forKey: tenKey) as? Bool ?? true }
+        set { UserDefaults.standard.set(newValue, forKey: tenKey) }
+    }
+
+    private static var tenSaid = false
+
+    /// 开始新一轮休息时清掉「已提示过」
+    static func resetCountdown() { tenSaid = false }
+
+    /// 倒计时每秒调一次，到 10 秒提示
+    static func tick(_ remain: Int) {
+        guard countdownOn, remain == 10, !tenSaid else { return }
+        tenSaid = true
+        speak("还有 10 秒")
     }
 
     static func speak(_ text: String) {

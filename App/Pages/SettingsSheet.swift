@@ -215,12 +215,72 @@ struct SettingsSheet: View {
                 }
             }
 
+            Rectangle().fill(TWColor.ink3.opacity(0.10)).frame(height: 0.6)
+
+            toggleLine(icon: "drop.circle",
+                       tint: TWColor.blue,
+                       title: "图标角标",
+                       detail: "桌面图标显示今天还差几杯水",
+                       on: Binding(
+                        get: { TWBadge.isOn },
+                        set: { on in
+                            TWBadge.isOn = on
+                            if !on { TWBadge.clear() }
+                            else { TWBadge.refresh(left: store.waterTarget - store.waterCups) }
+                        }))
+
+            toggleLine(icon: "waveform",
+                       tint: TWColor.pink,
+                       title: "倒计时提醒",
+                       detail: "休息还剩 10 秒时说一句",
+                       on: Binding(
+                        get: { TWVoice.countdownOn },
+                        set: { TWVoice.countdownOn = $0 }))
+
+            toggleLine(icon: "calendar.badge.plus",
+                       tint: TWColor.mint,
+                       title: "训练写进日历",
+                       detail: "练完在系统日历留一条",
+                       on: Binding(
+                        get: { TWCalendar.isOn },
+                        set: { on in
+                            TWCalendar.isOn = on
+                            if on { Task { _ = await TWCalendar.requestAccess() } }
+                        }))
+
             Text("本地通知，不联网。关了就不会再响。")
                 .font(.tw(11))
                 .foregroundStyle(TWColor.ink3)
         }
         .padding(16)
         .twGlass()
+    }
+
+    private func toggleLine(icon: String, tint: Color, title: String, detail: String,
+                            on: Binding<Bool>) -> some View {
+        HStack(spacing: 11) {
+            Image(systemName: icon)
+                .font(.tw(14, .semibold))
+                .foregroundStyle(tint)
+                .frame(width: 32, height: 32)
+                .background {
+                    RoundedRectangle(cornerRadius: 9, style: .continuous)
+                        .fill(tint.opacity(0.12))
+                }
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.tw(14, .semibold))
+                    .foregroundStyle(TWColor.ink)
+                Text(detail)
+                    .font(.tw(11))
+                    .foregroundStyle(TWColor.ink3)
+            }
+            Spacer(minLength: 0)
+            Toggle("", isOn: on)
+                .labelsHidden()
+                .tint(tint)
+        }
+        .padding(.vertical, 3)
     }
 
     private func notifyBinding(_ k: TWNotify.Kind) -> Binding<Bool> {

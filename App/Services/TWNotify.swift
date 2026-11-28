@@ -84,6 +84,20 @@ enum TWNotify {
     }
 
     /// 按当前开关重排全部提醒。改开关后调一次，App 启动也调一次。
+    /// 训练进行中：喝水、称重这类定时提醒先撤掉，别在组间轰炸
+    static func suspendForTraining() {
+        let c = UNUserNotificationCenter.current()
+        let keep = Set(restIDs)
+        let ids = allIDs().filter { !keep.contains($0) }
+        guard !ids.isEmpty else { return }
+        c.removePendingNotificationRequests(withIdentifiers: ids)
+    }
+
+    /// 练完把撤掉的提醒按原样排回来
+    static func resumeAfterTraining() {
+        reschedule()
+    }
+
     static func reschedule() {
         registerCategories()
         let c = UNUserNotificationCenter.current()
@@ -105,6 +119,7 @@ enum TWNotify {
     static let waterCategory = "TW_WATER"
     static let trainCategory = "TW_TRAIN"
     static let restCategory = "TW_REST"
+    private static var restIDs: [String] { [restID] }
 
     /// 注册带按钮的通知分类，锁屏上能直接处理，不用先解锁
     static func registerCategories() {

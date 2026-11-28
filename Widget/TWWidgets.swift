@@ -7,6 +7,11 @@ struct TWWidgetBundle: WidgetBundle {
     var body: some Widget {
         TWEntryWidget()
         TWRestLiveWidget()
+        TWWaterWidget()
+        TWTrainWidget()
+        TWStandByWidget()
+        TWWaterControl()
+        TWTrainControl()
     }
 }
 
@@ -75,6 +80,7 @@ struct TWEntryView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         case .accessoryInline:
             Label("Persist · 记今天", systemImage: "bolt.heart.fill")
+
         case .systemMedium:
             mediumView
         default:
@@ -148,6 +154,102 @@ struct TWEntryView: View {
                     .fill(.white.opacity(0.16))
             }
         }
+    }
+}
+
+// MARK: - 锁屏快捷：记水 / 开练
+
+/// 没法读主 App 数据（免费签名没有 App Group），所以这里不显示数字，
+/// 只把最常点的两个动作摆到锁屏上，一点就到位。
+struct TWQuickEntry: TimelineEntry { let date: Date }
+
+struct TWQuickProvider: TimelineProvider {
+    func placeholder(in context: Context) -> TWQuickEntry { TWQuickEntry(date: Date()) }
+    func getSnapshot(in context: Context, completion: @escaping (TWQuickEntry) -> Void) {
+        completion(TWQuickEntry(date: Date()))
+    }
+    func getTimeline(in context: Context, completion: @escaping (Timeline<TWQuickEntry>) -> Void) {
+        completion(Timeline(entries: [TWQuickEntry(date: Date())], policy: .never))
+    }
+}
+
+struct TWWaterWidget: Widget {
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: "TWWaterQuick", provider: TWQuickProvider()) { _ in
+            Link(destination: URL(string: "twfit://water?add=1")!) {
+                VStack(spacing: 3) {
+                    Image(systemName: "drop.fill")
+                        .font(.system(size: 20, weight: .bold))
+                    Text("+1 杯")
+                        .font(.system(size: 10, weight: .semibold))
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+            .containerBackground(for: .widget) {
+                LinearGradient(colors: [Color(red: 0.24, green: 0.55, blue: 0.98),
+                                        Color(red: 0.20, green: 0.75, blue: 0.72)],
+                               startPoint: .topLeading, endPoint: .bottomTrailing)
+            }
+        }
+        .configurationDisplayName("记一杯水")
+        .description("锁屏上一点，直接加一杯。")
+        .supportedFamilies([.accessoryCircular, .systemSmall])
+    }
+}
+
+struct TWTrainWidget: Widget {
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: "TWTrainQuick", provider: TWQuickProvider()) { _ in
+            Link(destination: URL(string: "twfit://train?start=1")!) {
+                VStack(spacing: 3) {
+                    Image(systemName: "figure.strengthtraining.traditional")
+                        .font(.system(size: 19, weight: .bold))
+                    Text("开练")
+                        .font(.system(size: 10, weight: .semibold))
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+            .containerBackground(for: .widget) {
+                LinearGradient(colors: [Color(red: 0.56, green: 0.34, blue: 0.95),
+                                        Color(red: 0.95, green: 0.35, blue: 0.48)],
+                               startPoint: .topLeading, endPoint: .bottomTrailing)
+            }
+        }
+        .configurationDisplayName("开始训练")
+        .description("按今天的计划直接开练。")
+        .supportedFamilies([.accessoryCircular, .systemSmall])
+    }
+}
+
+/// 待机模式：手机横放充电时摆一块大字时间 + 今天练什么
+struct TWStandByWidget: Widget {
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: "TWStandBy", provider: TWQuickProvider()) { entry in
+            VStack(alignment: .leading, spacing: 10) {
+                Text(entry.date, style: .time)
+                    .font(.system(size: 44, weight: .heavy, design: .rounded))
+                    .monospacedDigit()
+                    .minimumScaleFactor(0.6)
+                HStack(spacing: 8) {
+                    Image(systemName: "dumbbell.fill")
+                        .font(.system(size: 14, weight: .bold))
+                    Text("今天练了就记一笔")
+                        .font(.system(size: 14, weight: .semibold))
+                }
+                .foregroundStyle(.white.opacity(0.72))
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+            .padding(4)
+            .widgetURL(URL(string: "twfit://train?start=1"))
+            .containerBackground(for: .widget) {
+                LinearGradient(colors: [Color(red: 0.10, green: 0.09, blue: 0.22),
+                                        Color(red: 0.34, green: 0.16, blue: 0.42)],
+                               startPoint: .top, endPoint: .bottom)
+            }
+        }
+        .configurationDisplayName("待机 · 今日训练")
+        .description("横放充电时显示时间和训练入口。")
+        .supportedFamilies([.systemMedium])
     }
 }
 

@@ -18,6 +18,7 @@ struct ShortcutGuideSheet: View {
                     stepOne
                     stepTwo
                     checkCard
+                    voiceCard
                     whyCard
                 }
                 .padding(.horizontal, 18)
@@ -158,6 +159,46 @@ struct ShortcutGuideSheet: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
         .twGlass(radius: 20)
+    }
+
+    /// 3.64 之后新加的 Siri 口令，全都列出来，省得靠猜
+    private var voiceCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Siri 直接说这些")
+                .font(.tw(13.5, .bold))
+                .foregroundStyle(TWColor.ink)
+            voiceLine("记一杯水", "「嘿 Siri，给 Persist 记一杯水」")
+            voiceLine("记体重", "「用 Persist 记体重」，会追问公斤数")
+            voiceLine("记一组", "「给 Persist 记一组」，会追问重量和次数")
+            voiceLine("开始训练", "「用 Persist 开始训练」，按今天的计划直接开")
+            voiceLine("今天练什么", "「Persist 今天练什么」，不开 App 就能听")
+            voiceLine("训练进度", "「Persist 这周练了几次」，读今天几组、这周几次")
+            voiceLine("换动作", "「用 Persist 换个动作」，说肌群或器械就切过去")
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .twGlass(radius: 20)
+    }
+
+    private func voiceLine(_ title: String, _ phrase: String) -> some View {
+        HStack(alignment: .top, spacing: 8) {
+            Image(systemName: "waveform")
+                .font(.tw(11, .bold))
+                .foregroundStyle(TWColor.purple)
+                .frame(width: 18, height: 18)
+                .background { Circle().fill(TWColor.purple.opacity(0.14)) }
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.tw(12.5, .semibold))
+                    .foregroundStyle(TWColor.ink)
+                Text(phrase)
+                    .font(.tw(11.5))
+                    .foregroundStyle(TWColor.ink3)
+                    .lineSpacing(2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
+        }
     }
 
     private var whyCard: some View {

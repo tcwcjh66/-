@@ -9,6 +9,7 @@ struct SessionSummarySheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var appeared = false
     @State private var cardMsg: String? = nil
+    @State private var shareImg: UIImage? = nil
     @State private var noteText: String = ""
 
     private var setDelta: Int? {
@@ -41,6 +42,8 @@ struct SessionSummarySheet: View {
             cardMsg = ok ? "已存进相簿" : "没存成，去设置给相册权限"
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.2) { cardMsg = nil }
         }
+        // 同时备一份，按钮变成「发给朋友」
+        shareImg = img
     }
 
     private var subline: String {
@@ -176,6 +179,27 @@ struct SessionSummarySheet: View {
                     }
                     .buttonStyle(.plain)
                     .padding(.horizontal, 18)
+
+                    // 直接发出去：系统分享面板，微信/朋友圈/备忘录都在里面
+                    if let img = shareImg {
+                        ShareLink(item: Image(uiImage: img), preview: SharePreview("Persist 成绩单")) {
+                            HStack(spacing: 7) {
+                                Image(systemName: "square.and.arrow.up")
+                                    .font(.tw(14, .bold))
+                                Text("发给朋友")
+                                    .font(.tw(15, .bold))
+                            }
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 13)
+                            .background {
+                                RoundedRectangle(cornerRadius: 15, style: .continuous)
+                                    .fill(LinearGradient(colors: [TWColor.pink, TWColor.coral],
+                                                         startPoint: .leading, endPoint: .trailing))
+                            }
+                        }
+                        .padding(.horizontal, 18)
+                    }
 
                     Button {
                         UIImpactFeedbackGenerator(style: .medium).impactOccurred()

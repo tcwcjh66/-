@@ -132,7 +132,26 @@ struct FlowPage: View {
                 startToday()
             } else if cmd.hasPrefix("train:move:") {
                 activeMove = String(cmd.dropFirst("train:move:".count))
+            } else if cmd == "train:log" {
+                // 长按图标「记一组」：没开练就先开，再按上次的重量次数补一组
+                if store.sessionStart == nil { startToday() }
+                let name = store.sessionMoves.first ?? activeMove
+                guard !name.isEmpty else { return }
+                let last = store.lastRecord(move: name)
+                withAnimation(.snappy(duration: 0.2)) {
+                    store.addSet(weight: last?.weight ?? 20, reps: last?.reps ?? 8,
+                                 move: name, rir: last?.rir ?? 2)
+                }
+                TWRestLive.setProgress(store.sessionSets + 1, done: planDoneSets, total: planTotalSets)
+                UINotificationFeedbackGenerator().notificationOccurred(.success)
             }
+        }
+        .onAppear {
+            // Siri「换个动作」先记名字，页面出现时再接走
+            let pick = store.pendingMovePick
+            guard !pick.isEmpty else { return }
+            activeMove = pick
+            store.pendingMovePick = ""
         }
         .onReceive(tick) { _ in
             tickSet()
@@ -146,6 +165,7 @@ struct FlowPage: View {
             guard running else { return }
             if remain > 0 {
                 remain -= 1
+                TWVoice.tick(remain)
             } else {
                 running = false
                 // 前台自己响（系统不会弹横幅），顺带撤掉还没触发的那条通知
@@ -631,6 +651,7 @@ struct FlowPage: View {
             TWRestLive.setProgress(store.sessionSets + 1, done: planDoneSets, total: planTotalSets)
             TWRestLive.start(seconds: sec, move: name, next: next, setNo: store.sessionSets + 1,
                              done: planDoneSets, total: planTotalSets)
+            TWVoice.resetCountdown()
             TWVoice.announceRest(sec, move: name)
         }
     }

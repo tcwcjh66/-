@@ -845,6 +845,7 @@ final class TWStore: ObservableObject {
     func addWater(_ cups: Int = 1) {
         waterCups = max(0, min(waterCups + cups, 30))
         persistSoon()
+        TWBadge.refresh(left: waterTarget - waterCups)
     }
 
     /// 直接记录任意毫升摄入：先凑整杯，余数记进零头
@@ -1005,6 +1006,9 @@ final class TWStore: ObservableObject {
     func canDo(_ m: MoveItem) -> Bool { ownedGear.contains(m.equipment) }
 
     var availableMoves: [MoveItem] { allMoves.filter { canDo($0) } }
+
+    /// Siri「换个动作」记下要切去的动作，训练页出现时接走
+    @Published var pendingMovePick: String = ""
 
     /// 训练备注：结算页写的一句话，回历史里能看见
     func setSessionNote(id: UUID, note: String) {
@@ -1934,6 +1938,8 @@ final class TWStore: ObservableObject {
 
     func startSession(moves: [String]) {
         discardPendingSession()
+        // 训练中先把喝水/称重的定时提醒撤掉，别在组间弹
+        TWNotify.suspendForTraining()
         sessionStart = Date()
         sessionSets = 0
         sessionMoves = moves
@@ -1993,6 +1999,9 @@ final class TWStore: ObservableObject {
         sessionTonnage = 0
         sessionRecords = []
         pendingSession = nil
+        TWNotify.resumeAfterTraining()
+        TWCalendar.log(plan: plan, day: day, sets: added?.sets ?? 0, minutes: mins,
+                       tonnage: added?.tonnage ?? 0)
         d.removeObject(forKey: "tw.pendingSession.v1")
         mood = "win"
         upsertToday()

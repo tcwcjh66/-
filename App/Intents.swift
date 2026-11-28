@@ -172,6 +172,40 @@ struct TrainingProgressIntent: AppIntent {
     }
 }
 
+// MARK: - 换动作
+
+/// 「用哑铃练胸」——不进 App 也能把训练页切到对应动作
+struct SwapMoveIntent: AppIntent {
+    static var title: LocalizedStringResource = "换个动作"
+    static var description: IntentDescription = IntentDescription("按肌群或器械找动作，直接切到训练页那个动作。")
+    static var openAppWhenRun: Bool = true
+
+    @Parameter(title: "肌群", description: "比如胸、背、腿；不填就按器械找")
+    var group: String?
+
+    @Parameter(title: "器械", description: "比如哑铃、杠铃、器械")
+    var gear: String?
+
+    func perform() async throws -> some IntentResult & ProvidesDialog {
+        let r = await MainActor.run { () -> (String, Bool) in
+            let s = TWStore.shared
+            let pool = s.availableMoves
+            let picked = pool.first {
+                (group?.isEmpty == false && $0.group.contains(group!))
+                    || (gear?.isEmpty == false && $0.equipment.contains(gear!))
+            } ?? pool.first { group?.isEmpty == false ? $0.group.contains(group!) : false }
+            guard let m = picked else { return ("", false) }
+            NotificationCenter.default.post(name: .twDeepLink, object: "train:move:\(m.name)")
+            s.pendingMovePick = m.name
+            return (m.name, true)
+        }
+        guard r.1 else {
+            return .result(dialog: "没找到对得上的动作，打开 App 按肌群挑一个吧。")
+        }
+        return .result(dialog: "切到 \(r.0) 了。")
+    }
+}
+
 // MARK: - Siri 短语
 
 struct TWAppShortcuts: AppShortcutsProvider {
@@ -214,6 +248,16 @@ struct TWAppShortcuts: AppShortcutsProvider {
             phrases: ["\(.applicationName)今天练什么"],
             shortTitle: "今天练什么",
             systemImageName: "figure.strengthtraining.traditional"
+        )
+        AppShortcut(
+            intent: SwapMoveIntent(),
+            phrases: [
+                "\(.applicationName)换个动作",
+                "用\(.applicationName)练胸",
+                "用\(.applicationName)找个动作"
+            ],
+            shortTitle: "换个动作",
+            systemImageName: "arrow.triangle.2.circlepath"
         )
         AppShortcut(
             intent: TrainingProgressIntent(),

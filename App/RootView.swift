@@ -107,6 +107,16 @@ struct RootView: View {
             withAnimation(.snappy(duration: 0.26)) { tab = .flow }
         case "tw.shortcut.weight":
             withAnimation(.snappy(duration: 0.26)) { tab = .bio }
+        case "tw.shortcut.photo":
+            withAnimation(.snappy(duration: 0.26)) { tab = .diet }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                NotificationCenter.default.post(name: .twDeepLink, object: "diet:photo")
+            }
+        case "tw.shortcut.set":
+            withAnimation(.snappy(duration: 0.26)) { tab = .flow }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                NotificationCenter.default.post(name: .twDeepLink, object: "train:log")
+            }
         default:
             // 未知 host（比如快捷指令回传）不抢导航，留在当前页
             break

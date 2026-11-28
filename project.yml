@@ -16,7 +16,7 @@ settings:
     ENABLE_USER_SCRIPT_SANDBOXING: "NO"
     SWIFT_OPTIMIZATION_LEVEL: "-O"
     # CI 会用命令行覆盖这三个：版本随提交走，构建号用 run number，commit 前 7 位写进包
-    MARKETING_VERSION: "3.67"
+    MARKETING_VERSION: "3.68"
     CURRENT_PROJECT_VERSION: "1"
     TW_COMMIT: "local"
 
@@ -51,6 +51,12 @@ targets:
           - UIApplicationShortcutItemType: tw.shortcut.weight
             UIApplicationShortcutItemTitle: 记体重
             UIApplicationShortcutItemIconType: UIApplicationShortcutIconTypeBookmark
+          - UIApplicationShortcutItemType: tw.shortcut.photo
+            UIApplicationShortcutItemTitle: 拍餐识别
+            UIApplicationShortcutItemIconType: UIApplicationShortcutIconTypeCapturePhoto
+          - UIApplicationShortcutItemType: tw.shortcut.set
+            UIApplicationShortcutItemTitle: 记一组
+            UIApplicationShortcutItemIconType: UIApplicationShortcutIconTypeAdd
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         TWCommit: "$(TW_COMMIT)"
@@ -61,6 +67,7 @@ targets:
         UIViewControllerBasedStatusBarAppearance: true
         NSMotionUsageDescription: 用于读取 iPhone 运动芯片的实时步数、距离与爬楼层数。
         NSFaceIDUsageDescription: 用 Face ID 解锁 Persist，挡住别人翻你的训练和身体数据。
+        NSCalendarsWriteOnlyAccessUsageDescription: 用于把练完的训练记录写进系统日历，方便回头查哪天练了什么。
         NSCameraUsageDescription: 用于拍摄食物照片并识别其中的热量与营养。
         NSPhotoLibraryUsageDescription: 用于从相册选择餐食照片进行识别。
         NSPhotoLibraryAddUsageDescription: 用于把训练成绩单存进相簿。
