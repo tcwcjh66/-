@@ -173,7 +173,9 @@ struct TWRestLiveWidget: Widget {
                         .lineLimit(1)
                     Text(resting
                          ? (context.state.next.isEmpty ? "歇够了继续" : "下一个：\(context.state.next)")
-                         : "第 \(max(1, context.state.setNo)) 组 · 记完一组自动更新")
+                         : (context.state.planTotal > 0
+                            ? "第 \(max(1, context.state.setNo)) 组 · 完成 \(context.state.planDone)/\(context.state.planTotal)"
+                            : "第 \(max(1, context.state.setNo)) 组 · 记完一组自动更新"))
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(.white)
                         .lineLimit(1)

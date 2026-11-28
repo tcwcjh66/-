@@ -7,14 +7,21 @@ import UniformTypeIdentifiers
 enum TWSpotlight {
     static let domain = "com.tiancaiwei.spotlight"
     private static let versionKey = "tw.spotlight.version"
+    private static let countKey = "tw.spotlight.count"
+
+    /// 运行状态页要显示「已索引多少条」
+    static var indexedCount: Int {
+        UserDefaults.standard.integer(forKey: countKey)
+    }
 
     static func indexIfNeeded(force: Bool = false) {
-        let version = "v2-\(FoodBase.items.count)-\(allMoves.count)"
+        let version = "v3-\(FoodBase.items.count)-\(allMoves.count)-\(planTemplates.count)"
         if !force, UserDefaults.standard.string(forKey: versionKey) == version { return }
         UserDefaults.standard.set(version, forKey: versionKey)
 
         let moves = allMoves
         let foods = FoodBase.items
+        let plans = planTemplates
 
         DispatchQueue.global(qos: .utility).async {
             var items: [CSSearchableItem] = []
@@ -39,6 +46,17 @@ enum TWSpotlight {
                                               attributeSet: a))
             }
 
+            for p in plans {
+                let a = CSSearchableItemAttributeSet(contentType: .text)
+                a.title = p.name
+                let days = p.days.map { "\($0.title)" }.joined(separator: " / ")
+                a.contentDescription = "\(p.days.count) 天 · \(days)"
+                a.keywords = [p.name, "训练计划", "计划"] + p.days.map { $0.title }
+                items.append(CSSearchableItem(uniqueIdentifier: "plan:\(p.name)",
+                                              domainIdentifier: domain,
+                                              attributeSet: a))
+            }
+
             // 900 多条一次塞会超时，分批来
             let chunk = 200
             var i = 0
@@ -47,6 +65,7 @@ enum TWSpotlight {
                 CSSearchableIndex.default().indexSearchableItems(part) { _ in }
                 i += chunk
             }
+            UserDefaults.standard.set(items.count, forKey: countKey)
         }
     }
 }

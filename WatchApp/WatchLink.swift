@@ -8,6 +8,12 @@ final class WatchLink: NSObject, ObservableObject, WCSessionDelegate {
     @Published var hr = 0
     @Published var hrv = 0
     @Published var phoneSteps = 0
+    @Published var plan = ""
+    @Published var day = ""
+    @Published var sets = 0
+    @Published var active = false
+    @Published var water = 0
+    @Published var waterTarget = 0
     @Published var activated = false
     @Published var reachable = false
 
@@ -16,6 +22,17 @@ final class WatchLink: NSObject, ObservableObject, WCSessionDelegate {
         guard WCSession.isSupported() else { return }
         WCSession.default.delegate = self
         WCSession.default.activate()
+    }
+
+    /// 训练中抬手点一下，手机补记一组
+    func sendAddSet() {
+        let s = WCSession.default
+        guard s.activationState == .activated else { return }
+        let p: [String: Any] = ["addSet": 1, "at": Date().timeIntervalSince1970]
+        if s.isReachable {
+            s.sendMessage(p, replyHandler: nil) { _ in }
+        }
+        try? s.updateApplicationContext(["addSet": 1, "at": Date().timeIntervalSince1970])
     }
 
     func sendSteps(_ steps: Int) {
@@ -60,6 +77,12 @@ final class WatchLink: NSObject, ObservableObject, WCSessionDelegate {
             if let v = d["hr"] as? Int { self.hr = v }
             if let v = d["hrv"] as? Int { self.hrv = v }
             if let v = d["steps"] as? Int { self.phoneSteps = v }
+            if let v = d["plan"] as? String { self.plan = v }
+            if let v = d["day"] as? String { self.day = v }
+            if let v = d["sets"] as? Int { self.sets = v }
+            if let v = d["active"] as? Int { self.active = v > 0 }
+            if let v = d["water"] as? Int { self.water = v }
+            if let v = d["waterTarget"] as? Int { self.waterTarget = v }
         }
     }
 }

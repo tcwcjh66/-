@@ -19,6 +19,9 @@ struct TWRestAttributes: ActivityAttributes {
         var move: String = ""
         /// 下一个要做的
         var next: String = ""
+        /// 这次计划完成了几组 / 一共几组（0 表示老状态，不显示）
+        var planDone: Int = 0
+        var planTotal: Int = 0
     }
 
     /// 这次训练用的是哪个方案

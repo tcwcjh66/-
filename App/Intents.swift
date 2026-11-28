@@ -151,6 +151,27 @@ struct TodayTrainingIntent: AppIntent {
     }
 }
 
+// MARK: - 查训练进度
+
+struct TrainingProgressIntent: AppIntent {
+    static var title: LocalizedStringResource = "训练进度"
+    static var description: IntentDescription = IntentDescription("读出今天做了几组、这周练了几次，不用打开 App。")
+    static var openAppWhenRun: Bool = false
+
+    func perform() async throws -> some IntentResult & ProvidesDialog {
+        let r = await MainActor.run { () -> (Int, Int, Int) in
+            let s = TWStore.shared
+            let cutoff = DateFormatter.twDay.string(from: Date().addingTimeInterval(-6 * 86400))
+            let week = s.sessions.filter { $0.date >= cutoff }
+            return (s.sessionSets, week.count, week.reduce(0) { $0 + $1.sets })
+        }
+        if r.0 == 0 && r.1 == 0 {
+            return .result(dialog: "今天还没记组，这周也还没开练。说一句「开始训练」就能开一场。")
+        }
+        return .result(dialog: "今天已记 \(r.0) 组；这周练了 \(r.1) 次，共 \(r.2) 组。")
+    }
+}
+
 // MARK: - Siri 短语
 
 struct TWAppShortcuts: AppShortcutsProvider {
@@ -193,6 +214,16 @@ struct TWAppShortcuts: AppShortcutsProvider {
             phrases: ["\(.applicationName)今天练什么"],
             shortTitle: "今天练什么",
             systemImageName: "figure.strengthtraining.traditional"
+        )
+        AppShortcut(
+            intent: TrainingProgressIntent(),
+            phrases: [
+                "\(.applicationName)今天练了几组",
+                "\(.applicationName)这周练了几次",
+                "\(.applicationName)训练进度"
+            ],
+            shortTitle: "训练进度",
+            systemImageName: "chart.bar.fill"
         )
     }
 }

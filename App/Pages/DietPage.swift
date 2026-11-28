@@ -85,6 +85,9 @@ struct DietPage: View {
             trendCard
             weekCard
         }
+        .onReceive(NotificationCenter.default.publisher(for: .twDeepLink)) { note in
+            if (note.object as? String) == "diet:photo" { showPhoto = true }
+        }
         .sheet(isPresented: $showPicker) {
             FoodPicker(defaultSlot: autoSlot) { item in
                 store.addMeal(item)

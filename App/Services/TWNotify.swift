@@ -104,6 +104,7 @@ enum TWNotify {
 
     static let waterCategory = "TW_WATER"
     static let trainCategory = "TW_TRAIN"
+    static let restCategory = "TW_REST"
 
     /// 注册带按钮的通知分类，锁屏上能直接处理，不用先解锁
     static func registerCategories() {
@@ -115,10 +116,15 @@ enum TWNotify {
                                            intentIdentifiers: [], options: [])
         let skip = UNNotificationAction(identifier: "TW_TRAIN_SKIP", title: "今天不练", options: [])
         let tomorrow = UNNotificationAction(identifier: "TW_TRAIN_TOMORROW", title: "推迟到明天", options: [])
+        let start = UNNotificationAction(identifier: "TW_TRAIN_START", title: "现在开始", options: [.foreground])
         let train = UNNotificationCategory(identifier: trainCategory,
-                                           actions: [skip, tomorrow],
+                                           actions: [start, skip, tomorrow],
                                            intentIdentifiers: [], options: [])
-        UNUserNotificationCenter.current().setNotificationCategories([water, train])
+        let again = UNNotificationAction(identifier: "TW_REST_AGAIN", title: "再歇 30 秒", options: [])
+        let next = UNNotificationAction(identifier: "TW_REST_NEXT", title: "开始下一组", options: [.foreground])
+        let rest = UNNotificationCategory(identifier: restCategory,
+                                          actions: [again, next], intentIdentifiers: [], options: [])
+        UNUserNotificationCenter.current().setNotificationCategories([water, train, rest])
     }
 
     private static func add(id: String, kind: Kind, hour: Int, minute: Int) {
@@ -311,6 +317,7 @@ enum TWNotify {
         content.title = "休息结束"
         content.body = move.isEmpty ? "该下一组了。" : "\(move) 的休息结束了，该下一组。"
         content.sound = .default
+        content.categoryIdentifier = restCategory
         content.interruptionLevel = .active
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: max(1, Double(sec)), repeats: false)
         c.add(UNNotificationRequest(identifier: restID, content: content, trigger: trigger))

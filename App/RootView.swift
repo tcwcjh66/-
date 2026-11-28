@@ -150,8 +150,22 @@ struct RootView: View {
         }
         .environment(\.twScrollPause, isScrolling)
         .ignoresSafeArea(edges: .bottom)
+        .onReceive(NotificationCenter.default.publisher(for: .twDeepLink)) { note in
+            guard let cmd = note.object as? String else { return }
+            withAnimation(.snappy(duration: 0.24)) {
+                if cmd.hasPrefix("train") { tab = .flow }
+                else if cmd.hasPrefix("diet") { tab = .diet }
+                else if cmd.hasPrefix("bio") { tab = .bio }
+            }
+        }
         .onReceive(NotificationCenter.default.publisher(for: .twSpotlight)) { note in
             guard let id = note.object as? String else { return }
+            if id.hasPrefix("plan:") {
+                let name = String(id.dropFirst("plan:".count))
+                if let i = store.allPlans.firstIndex(where: { $0.name == name }) {
+                    store.setPlan(i)
+                }
+            }
             withAnimation(.snappy(duration: 0.22)) {
                 tab = id.hasPrefix("food:") ? .diet : .flow
             }
@@ -181,9 +195,38 @@ struct RootView: View {
             if let v = item.value, !v.isEmpty { dict[item.name.lowercased()] = v }
         }
 
-        // twfit://train 或 twfit://any?open=train —— 直接跳到训练页
-        if url.host == "train" || url.path == "/train" || dict["open"] == "train" {
+        // 统一深链：twfit://train?start=1 / diet?photo=1 / bio?weight=1 / plan?name=...
+        func post(_ s: String) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                NotificationCenter.default.post(name: .twDeepLink, object: s)
+            }
+        }
+        let host = url.host ?? (url.path.hasPrefix("/") ? String(url.path.dropFirst()) : url.path)
+
+        if host == "train" || dict["open"] == "train" {
             UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+            withAnimation(.snappy(duration: 0.26)) { tab = .flow }
+            if dict["start"] == "1" { post("train:start") }
+            if let m = dict["move"], !m.isEmpty { post("train:move:\(m)") }
+            return
+        }
+        if host == "diet" || dict["open"] == "diet" {
+            UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+            withAnimation(.snappy(duration: 0.26)) { tab = .diet }
+            if dict["photo"] == "1" { post("diet:photo") }
+            return
+        }
+        if host == "bio" || dict["open"] == "bio" {
+            UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+            withAnimation(.snappy(duration: 0.26)) { tab = .bio }
+            if dict["weight"] == "1" { post("bio:weight") }
+            return
+        }
+        if host == "plan" {
+            if let name = dict["name"],
+               let i = store.allPlans.firstIndex(where: { $0.name == name }) {
+                store.setPlan(i)
+            }
             withAnimation(.snappy(duration: 0.26)) { tab = .flow }
             return
         }

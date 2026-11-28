@@ -32,20 +32,23 @@ enum TWRestLive {
     }
 
     /// 记完一组：把卡上的组号往前推，不打断正在走的休息
-    static func setProgress(_ setNo: Int) {
+    static func setProgress(_ setNo: Int, done: Int = 0, total: Int = 0) {
         guard running, let a = active else { return }
         let state = TWRestAttributes.ContentState(endAt: Date(), total: 0,
-                                                  phase: "training", setNo: setNo)
+                                                  phase: "training", setNo: setNo,
+                                                  planDone: done, planTotal: total)
         Task { await a.update(ActivityContent(state: state, staleDate: nil)) }
     }
 
     /// 组间休息：优先复用已有的训练卡，没有就新建一张
-    static func start(seconds: Int, move: String, next: String, setNo: Int = 0) {
+    static func start(seconds: Int, move: String, next: String, setNo: Int = 0,
+                      done: Int = 0, total: Int = 0) {
         guard seconds > 0 else { return }
         guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
         let state = TWRestAttributes.ContentState(
             endAt: Date().addingTimeInterval(Double(seconds)),
-            total: seconds, phase: "rest", setNo: setNo, move: move, next: next
+            total: seconds, phase: "rest", setNo: setNo, move: move, next: next,
+            planDone: done, planTotal: total
         )
         let content = ActivityContent(state: state, staleDate: state.endAt)
 

@@ -260,6 +260,22 @@ struct SystemStatusSheet: View {
                        ? "包内没有扩展，桌面长按不会出现「Persist」"
                        : "已打进包：\(exts.joined(separator: "、"))"))
 
+        let idx = TWSpotlight.indexedCount
+        out.append(Cap(name: "系统搜索", ok: idx > 0,
+                       detail: idx > 0 ? "已索引 \(idx) 条动作、食物、计划"
+                                       : "还没建索引，下次启动会自动补"))
+
+        let pl = PhoneLink.shared
+        out.append(Cap(name: "手表", ok: pl.paired,
+                       detail: pl.paired
+                       ? (pl.installed
+                          ? (pl.reachable ? "已配对、已装，当前可达" : "已配对并安装，抬腕就连")
+                          : "已配对，手表 App 还没装")
+                       : "没有配对的手表，装好后可看计划、点 +1 组"))
+
+        out.append(Cap(name: "深链", ok: true,
+                       detail: "twfit:// 已注册，通知按钮、搜索、快捷指令都能直达"))
+
         await MainActor.run {
             caps = out
             checking = false

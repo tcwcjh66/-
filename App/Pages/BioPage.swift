@@ -90,6 +90,9 @@ struct BioPage: View {
             .presentationCornerRadius(26)
         }
         .onAppear { loadSteps() }
+        .onReceive(NotificationCenter.default.publisher(for: .twDeepLink)) { note in
+            if (note.object as? String) == "bio:weight" { showBody = true }
+        }
         .sheet(isPresented: $showBody) {
             BodySheet(w: $wText, h: $hText, waist: $waistText, goal: $goalText,
                       chest: $chestText, arm: $armText, thigh: $thighText, hip: $hipText) {

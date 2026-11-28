@@ -54,6 +54,41 @@ struct WatchHome: View {
                 }
                 .padding(.horizontal, 6)
 
+                HStack(spacing: 6) {
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(link.day.isEmpty ? "今天还没排" : link.day)
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.75))
+                            .lineLimit(1)
+                        Text(link.active ? "已 \(link.sets) 组" : "未开练")
+                            .font(.system(size: 12, weight: .heavy))
+                            .foregroundStyle(link.active ? Color(red: 1.0, green: 0.55, blue: 0.35) : .white.opacity(0.5))
+                    }
+                    Spacer(minLength: 0)
+                    Button {
+                        link.sendAddSet()
+                    } label: {
+                        Image(systemName: "plus")
+                            .font(.system(size: 14, weight: .heavy))
+                            .frame(width: 34, height: 28)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(Color(red: 1.0, green: 0.42, blue: 0.36))
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 6)
+                .background {
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(Color.white.opacity(0.08))
+                }
+                .padding(.horizontal, 6)
+
+                if link.waterTarget > 0 {
+                    Text("水 \(link.water)/\(link.waterTarget) 杯")
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.55))
+                }
+
                 HStack(spacing: 4) {
                     Circle()
                         .fill(link.reachable ? Color(red: 0.20, green: 0.83, blue: 0.60) : Color.white.opacity(0.3))

@@ -126,6 +126,14 @@ struct FlowPage: View {
             }
         }
         .animation(.snappy(duration: 0.25), value: store.prBurst)
+        .onReceive(NotificationCenter.default.publisher(for: .twDeepLink)) { note in
+            guard let cmd = note.object as? String else { return }
+            if cmd == "train:start" {
+                startToday()
+            } else if cmd.hasPrefix("train:move:") {
+                activeMove = String(cmd.dropFirst("train:move:".count))
+            }
+        }
         .onReceive(tick) { _ in
             tickSet()
             if stretchLeft > 0 {
@@ -439,6 +447,15 @@ struct FlowPage: View {
         }
     }
 
+    /// 从通知/语音/深链进来，直接开今天这一练
+    private func startToday() {
+        guard store.sessionStart == nil else { return }
+        store.startSession(moves: day.items.map { swapped[$0.name] ?? $0.name })
+        doneMoves.removeAll()
+        activeMove = day.items.first.map { swapped[$0.name] ?? $0.name } ?? ""
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+    }
+
     /// 在当前方案里找 focus 对上这个肌群的那天，直接切过去
     private func jumpTo(group: String) {
         if let i = plan.days.firstIndex(where: {
@@ -473,6 +490,7 @@ struct FlowPage: View {
                         withAnimation(.snappy(duration: 0.2)) {
                             store.addSet(weight: setWeight, reps: setReps, move: activeMove, rir: rir)
                         }
+                        TWRestLive.setProgress(store.sessionSets + 1, done: planDoneSets, total: planTotalSets)
                     } label: {
                         Text("记一组")
                             .font(.tw(14, .bold))
@@ -610,8 +628,9 @@ struct FlowPage: View {
             }
             // 就算把手机揣兜里、切出去刷视频，到点也会响
             TWNotify.scheduleRest(after: sec, move: name)
-            TWRestLive.setProgress(store.sessionSets + 1)
-            TWRestLive.start(seconds: sec, move: name, next: next, setNo: store.sessionSets + 1)
+            TWRestLive.setProgress(store.sessionSets + 1, done: planDoneSets, total: planTotalSets)
+            TWRestLive.start(seconds: sec, move: name, next: next, setNo: store.sessionSets + 1,
+                             done: planDoneSets, total: planTotalSets)
             TWVoice.announceRest(sec, move: name)
         }
     }
@@ -1348,11 +1367,13 @@ struct FlowPage: View {
                     // 暂停就撤通知，继续就按剩余秒数重约一条
                     if running {
                         TWNotify.scheduleRest(after: remain, move: restFrom)
-                        TWRestLive.start(seconds: remain, move: restFrom, next: restNext, setNo: store.sessionSets + 1)
+                        TWRestLive.start(seconds: remain, move: restFrom, next: restNext,
+                                         setNo: store.sessionSets + 1,
+                                         done: planDoneSets, total: planTotalSets)
                     } else {
                         TWNotify.cancelRest()
                         // 暂停休息不等于结束训练：锁屏切回「训练中 · 第 N 组」
-                        TWRestLive.setProgress(store.sessionSets + 1)
+                        TWRestLive.setProgress(store.sessionSets + 1, done: planDoneSets, total: planTotalSets)
                     }
                 } label: {
                     HStack(spacing: 6) {

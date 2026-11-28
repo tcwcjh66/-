@@ -7,6 +7,8 @@ extension Notification.Name {
     static let twShortcut = Notification.Name("tw.shortcut")
     /// 从系统搜索点进来（Spotlight 命中动作或食物）
     static let twSpotlight = Notification.Name("tw.spotlight")
+    /// 统一深链：通知按钮、Spotlight、快捷指令都把参数投到这里
+    static let twDeepLink = Notification.Name("tw.deeplink")
 }
 
 /// SwiftUI 生命周期拿不到 shortcut 和通知回调，挂一个轻量 delegate 专门接这两件事。
@@ -71,6 +73,21 @@ extension TWAppDelegate: UNUserNotificationCenterDelegate {
             UNUserNotificationCenter.current().add(
                 UNNotificationRequest(identifier: "tw.notif.req.water.snooze", content: c, trigger: trigger))
 
+        case "TW_TRAIN_START":
+            postDeep("train:start")
+
+        case "TW_REST_NEXT":
+            postDeep("train")
+
+        case "TW_REST_AGAIN":
+            let c = UNMutableNotificationContent()
+            c.title = "再歇 30 秒"
+            c.body = "30 秒到了，下一组。"
+            c.sound = .default
+            let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 30, repeats: false)
+            UNUserNotificationCenter.current().add(
+                UNNotificationRequest(identifier: "tw.notif.req.rest.again", content: c, trigger: trigger))
+
         case "TW_TRAIN_SKIP", "TW_TRAIN_TOMORROW":
             UserDefaults.standard.set(DateFormatter.twDay.string(from: Date()),
                                       forKey: "tw.trainSkipDay.v1")
@@ -79,5 +96,12 @@ extension TWAppDelegate: UNUserNotificationCenterDelegate {
             break
         }
         completionHandler()
+    }
+
+    /// 等 RootView 订阅上再投递，冷启动点通知也不会丢
+    private func postDeep(_ s: String) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+            NotificationCenter.default.post(name: .twDeepLink, object: s)
+        }
     }
 }
